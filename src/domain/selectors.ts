@@ -1,4 +1,5 @@
 import type { Alert, AppState, CrewId, Episode, Measurement, MeasurementKind } from '../../shared/types'
+import { uiLang } from '../locale'
 import { FRESH_MS, SLEEP_FRESH_MS, STALE_GAP_MS } from './constants'
 import { crewById } from './crew'
 
@@ -58,14 +59,21 @@ export function crewPosture(state: AppState, crewId: CrewId): CrewPosture {
     latest?.integrity === 'stale' ||
     state.rejected.some((item) => item.sensorId === latest?.sensorId && item.reason === 'altered')
 
+  const english = uiLang() === 'en'
   if (!reliable) {
     return {
       observed: 'no_recent_evaluation',
       evidence: unreliable ? 'no_confiable' : 'pendiente',
-      summary: 'No hay una medición confiable reciente. Esto no indica un estado estable.',
+      summary: english
+        ? 'There is no recent reliable measurement. That does not mean a stable state.'
+        : 'No hay una medición confiable reciente. Esto no indica un estado estable.',
       evidenceDetail: latest
-        ? `La última lectura de frecuencia cardíaca es de ${latest.value} ${latest.unit} y no se usa como evaluación actual (${latest.integrity === 'stale' ? 'dato antiguo' : 'integridad no válida'}).`
-        : 'No llegó una lectura reciente de frecuencia cardíaca.',
+        ? english
+          ? `The latest heart-rate reading is ${latest.value} ${latest.unit} and is not used as a current evaluation (${latest.integrity === 'stale' ? 'old data' : 'integrity not valid'}).`
+          : `La última lectura de frecuencia cardíaca es de ${latest.value} ${latest.unit} y no se usa como evaluación actual (${latest.integrity === 'stale' ? 'dato antiguo' : 'integridad no válida'}).`
+        : english
+          ? 'No recent heart-rate reading arrived.'
+          : 'No llegó una lectura reciente de frecuencia cardíaca.',
     }
   }
 
@@ -78,21 +86,35 @@ export function crewPosture(state: AppState, crewId: CrewId): CrewPosture {
       observed: 'change',
       evidence: hasRestControl && !unreliable ? 'actualizada' : unreliable ? 'no_confiable' : 'incompleta',
       summary: above
-        ? `La frecuencia cardíaca (${Math.round(reliable.value)} lpm) está por encima de su línea base (${profile.baseline.hrMin}–${profile.baseline.hrMax} lpm).`
-        : 'Hay síntomas reportados. Las cifras por sí solas no cierran la evaluación.',
+        ? english
+          ? `Heart rate (${Math.round(reliable.value)} bpm) is above baseline (${profile.baseline.hrMin}–${profile.baseline.hrMax} bpm).`
+          : `La frecuencia cardíaca (${Math.round(reliable.value)} lpm) está por encima de su línea base (${profile.baseline.hrMin}–${profile.baseline.hrMax} lpm).`
+        : english
+          ? 'Symptoms were reported. Numbers alone do not close the evaluation.'
+          : 'Hay síntomas reportados. Las cifras por sí solas no cierran la evaluación.',
       evidenceDetail: hasRestControl
-        ? 'Hay una repetición marcada en reposo. Sigue haciendo falta revisión humana.'
-        : 'Falta una medición de control en reposo o hay un problema de integridad. La calidad de señal no es una certeza clínica.',
+        ? english
+          ? 'There is a repeat reading marked at rest. Human review is still required.'
+          : 'Hay una repetición marcada en reposo. Sigue haciendo falta revisión humana.'
+        : english
+          ? 'A resting control measurement is missing, or integrity is a problem. Signal quality is not clinical certainty.'
+          : 'Falta una medición de control en reposo o hay un problema de integridad. La calidad de señal no es una certeza clínica.',
     }
   }
 
   return {
     observed: 'stable',
     evidence: unreliable ? 'no_confiable' : 'actualizada',
-    summary: `La última frecuencia cardíaca confiable (${Math.round(reliable.value)} lpm) está dentro de su línea base.`,
+    summary: english
+      ? `The latest reliable heart rate (${Math.round(reliable.value)} bpm) is within baseline.`
+      : `La última frecuencia cardíaca confiable (${Math.round(reliable.value)} lpm) está dentro de su línea base.`,
     evidenceDetail: unreliable
-      ? 'Hay un aviso de integridad abierto. La cifra confiable no anula ese aviso.'
-      : 'La evidencia reciente está disponible y no muestra un cambio respecto a su línea base.',
+      ? english
+        ? 'An integrity notice is open. The reliable number does not clear that notice.'
+        : 'Hay un aviso de integridad abierto. La cifra confiable no anula ese aviso.'
+      : english
+        ? 'Recent evidence is available and shows no change from baseline.'
+        : 'La evidencia reciente está disponible y no muestra un cambio respecto a su línea base.',
   }
 }
 

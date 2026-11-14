@@ -6,6 +6,7 @@ import { answerLocal } from '../domain/analysis'
 import { reduce, type Action } from '../domain/reduce'
 import { clearPrivate } from '../persistence/private'
 import { clearSpace } from '../persistence/space'
+import { HeliosLogo } from '../components/HeliosLogo'
 import { loadState, saveState } from '../persistence/db'
 
 interface StoreValue {
@@ -52,9 +53,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     } catch {
       /* Sesión en memoria. */
     }
-    setBackendError(
-      'Simulador local activo. Los cambios se guardan en este navegador. Al recargar se intentará crear una nueva sesión en NestJS con esta copia.',
-    )
+    /* Sin banner visual: el modo local se indica solo en data-testid backend-mode. */
+    setBackendError(null)
   }, [])
 
   const dispatch = useCallback(
@@ -107,10 +107,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         initial = (await loadState()) ?? createInitialState('gradual-fatigue')
       } catch {
         initial = createInitialState('gradual-fatigue')
-        if (active)
-          setPersistenceError(
-            'No se pudo leer la copia local. Se conserva sin sobrescribir y esta sesión continúa con datos de demostración.',
-          )
+        /* Sin banner visual: se continúa con demo sin interrumpir la maqueta HELIOS. */
+        if (active) setPersistenceError(null)
       }
       if (!active) return
       let sessionId: string = crypto.randomUUID()
@@ -220,7 +218,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return (
       <div className="boot">
         <p className="sim-pill">Simulación · datos ficticios</p>
-        <h1>VITALINK</h1>
+        <h1 className="sr-only">HELIOS</h1>
+        <HeliosLogo variant="wordmark" />
+        <p className="tagline">Health evaluation &amp; Life indicators observation system</p>
         <p>Cargando registros locales…</p>
         <div className="skeleton-grid" aria-hidden="true">
           <span className="skeleton" style={{ height: 72 }} />

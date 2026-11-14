@@ -5,6 +5,7 @@ import { ageLabel, auditActionLabel, formatMission, roleLabel } from '../domain/
 import { latestMeasurement } from '../domain/selectors'
 import { answerLocal } from '../domain/analysis'
 import { canManageComms } from '../domain/access'
+import { useLocale } from '../i18n'
 import { useApp } from '../state/store'
 import { SpaceRequests } from '../components/SpaceRequests'
 import { Badge, Field } from '../components/ui'
@@ -12,6 +13,8 @@ import { Badge, Field } from '../components/ui'
 const ORDER = ['draft', 'queued', 'sent', 'received'] as const
 
 export function MedicalPage() {
+  const { lang } = useLocale()
+  const en = lang === 'en'
   const { state, dispatch } = useApp()
   const allowed = canManageComms(state.role)
   const episode = state.episodes.find((item) => item.id === state.selectedEpisodeId) ?? state.episodes.find((item) => item.status !== 'closed')
@@ -25,9 +28,13 @@ export function MedicalPage() {
     <div className="page">
       <header className="page-head">
         <div>
-          <p className="kicker">Equipo médico</p>
-          <h1>Orientación y enlace con Tierra</h1>
-          <p className="lede">Borrador, cola, enviado y recibido son estados distintos. Enviado no significa recibido. El rol es simulado en este navegador.</p>
+          <p className="kicker">{en ? 'Medical team' : 'Equipo médico'}</p>
+          <h1>{en ? 'Specialized care' : 'Atención especializada'}</h1>
+          <p className="lede">
+            {en
+              ? 'Pre-flight: review readiness. On board: follow episodes. Post-mission: progress and reviews. Draft, queued, sent, and received are different states. The role is simulated in this browser.'
+              : 'Preembarque: revisar preparación. A bordo: atender episodios. Posmisión: evolución y revisiones. Borrador, cola, enviado y recibido son estados distintos. El rol es simulado en este navegador.'}
+          </p>
         </div>
         <div className="stack">
           <Badge tone={state.link === 'down' ? 'bad' : 'ok'}>{state.link === 'down' ? 'Sin enlace' : state.link === 'delayed' ? 'Enlace con demora' : 'Enlace en línea'}</Badge>
@@ -69,7 +76,7 @@ export function MedicalPage() {
         {state.link === 'down' ? <p className="callout callout-amber">El enlace está cortado. La cola se conserva y no se marca como enviada.</p> : null}
         <dl className="quiet-metrics">
           {ORDER.map((status) => (
-            <div key={status} className="metric"><dt>{statusLabel(status)}</dt><dd>{state.communications.filter((item) => item.status === status).length}</dd></div>
+            <div key={status} className="metric"><dt>{statusLabel(status, en)}</dt><dd>{state.communications.filter((item) => item.status === status).length}</dd></div>
           ))}
         </dl>
         {state.communications.length === 0 ? <p className="muted">No hay mensajes en este escenario.</p> : (
@@ -81,7 +88,7 @@ export function MedicalPage() {
                   <tr key={item.id}>
                     <td>{item.sequence}</td>
                     <td>{item.subject}<br /><span className="muted">{CREW.find((crew) => crew.id === item.crewId)?.name}</span></td>
-                    <td>{statusLabel(item.status)}</td>
+                    <td>{statusLabel(item.status, en)}</td>
                     <td>{item.queuedAt ? formatMission(item.queuedAt) : '—'}</td>
                     <td>{item.sentAt ? formatMission(item.sentAt) : '—'}</td>
                     <td>{item.receivedAt ? formatMission(item.receivedAt) : '—'}</td>
@@ -101,9 +108,9 @@ export function MedicalPage() {
   )
 }
 
-function statusLabel(status: string): string {
-  if (status === 'draft') return 'Borrador'
-  if (status === 'queued') return 'En cola'
-  if (status === 'sent') return 'Enviado'
-  return 'Recibido'
+function statusLabel(status: string, en: boolean): string {
+  if (status === 'draft') return en ? 'Draft' : 'Borrador'
+  if (status === 'queued') return en ? 'Queued' : 'En cola'
+  if (status === 'sent') return en ? 'Sent' : 'Enviado'
+  return en ? 'Received' : 'Recibido'
 }

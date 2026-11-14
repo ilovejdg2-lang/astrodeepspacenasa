@@ -1,3 +1,4 @@
+import { uiLang } from '../locale'
 import type {
   Alert,
   AlertStatus,
@@ -11,11 +12,14 @@ import type {
   Measurement,
   Resource,
   Role,
+  MissionStage,
+  PrepStatus,
   ScenarioId,
   SharedRequestLevel,
   SpaceRequest,
   Speed,
 } from '../../shared/types'
+import { MISSION_STAGE_LABEL } from '../../shared/mission'
 import { canCloseHealthAlert, canManageComms, canUseInventory, isSensorAlert } from './access'
 import { crewById } from './crew'
 import { ensureAlert } from './messages'
@@ -72,6 +76,8 @@ export type Action =
   | { type: 'appendChat'; message: ChatMessage }
   | { type: 'raiseSpaceAlert'; crewId: CrewId; categories: string[]; idempotencyKey: string }
   | { type: 'sendSpaceRequest'; crewId: CrewId; level: SharedRequestLevel; text: string; idempotencyKey: string }
+  | { type: 'setMissionStage'; stage: MissionStage }
+  | { type: 'setPrepStatus'; prepId: string; status: PrepStatus }
 
 const COMM_NEXT: Record<CommStatus, CommStatus | null> = {
   draft: 'queued',
@@ -145,6 +151,10 @@ export function reduce(state: AppState, action: Action): AppState {
       return raiseSpaceAlert(state, action)
     case 'sendSpaceRequest':
       return sendSpaceRequest(state, action)
+    case 'setMissionStage':
+      return setMissionStage(state, action.stage)
+    case 'setPrepStatus':
+      return setPrepStatus(state, action.prepId, action.status)
     default:
       return state
   }
@@ -194,8 +204,65 @@ function swapScenario(state: AppState, scenarioId: ScenarioId): AppState {
     role: state.role,
     sessionCrewId: state.sessionCrewId,
     soundEnabled: state.soundEnabled,
-    notice: { tone: 'ok', text: 'La simulación volvió a su estado inicial. El reloj está en pausa.' },
+    mission: {
+      ...fresh.mission,
+      stage: state.mission.stage,
+      stageChangedAt: state.mission.stageChangedAt,
+      name: state.mission.name,
+      destination: state.mission.destination,
+      durationDays: state.mission.durationDays,
+      activities: state.mission.activities,
+    },
+    prepItems: state.prepItems,
+    notice: { tone: 'ok', text: 'La simulación volvió a su estado inicial. El reloj está en pausa. La etapa de la misión se conservó.' },
   }
+}
+
+function setMissionStage(state: AppState, stage: MissionStage): AppState {
+  if (state.mission.stage === stage) {
+    return withNotice(state, 'warn', `La misión ya estaba en ${MISSION_STAGE_LABEL[stage]}.`)
+  }
+  if (state.role === 'astronaut') {
+    return withNotice(state, 'err', 'Este rol simulado no cambia la etapa de la misión.')
+  }
+  const openEpisodes = state.episodes.filter((item) => item.status !== 'closed').length
+  const next = {
+    ...state,
+    mission: {
+      ...state.mission,
+      stage,
+      stageChangedAt: state.clock.simulatedAt,
+    },
+  }
+  const text =
+    openEpisodes > 0
+      ? `Etapa: ${MISSION_STAGE_LABEL[stage]}. Hay ${openEpisodes} episodio(s) abiertos: el cambio de etapa no los cierra.`
+      : `Etapa: ${MISSION_STAGE_LABEL[stage]}. El historial se conserva.`
+  return addAudit(withNotice(next, 'ok', text), {
+    actor: state.role,
+    action: 'set-mission-stage',
+    entityId: state.mission.id,
+    detail: text,
+  })
+}
+
+function setPrepStatus(state: AppState, prepId: string, status: PrepStatus): AppState {
+  if (state.role === 'astronaut') {
+    return withNotice(state, 'err', 'Este rol simulado no actualiza la lista de preparación.')
+  }
+  const current = state.prepItems.find((item) => item.id === prepId)
+  if (!current) return withNotice(state, 'err', 'No existe ese elemento de preparación.')
+  if (current.status === status) return withNotice(state, 'warn', 'Ese elemento ya tenía ese estado.')
+  const prepItems = state.prepItems.map((item) =>
+    item.id === prepId ? { ...item, status, updatedAt: state.clock.simulatedAt } : item,
+  )
+  const text = `Preparación actualizada: ${current.title} → ${status}.`
+  return addAudit(withNotice({ ...state, prepItems }, 'ok', text), {
+    actor: state.role,
+    action: 'set-prep-status',
+    entityId: prepId,
+    detail: text,
+  })
 }
 
 function setLink(state: AppState, link: LinkStatus): AppState {
@@ -261,7 +328,7 @@ function ackAlert(state: AppState, alertId: string): AppState {
   if (!alert) return withNotice(state, 'err', 'No se encontró el aviso.')
   if (alert.astronautAck) return withNotice(state, 'warn', 'Ese aviso ya estaba confirmado.')
   const alerts = state.alerts.map((item) =>
-    item.id === alertId ? { ...item, astronautAck: true, status: item.status === 'active' ? 'following' as const : item.status, updatedAt: state.clock.simulatedAt } : item,
+    item.id === alertId ? { ...item, astronautAck: true, updatedAt: state.clock.simulatedAt } : item,
   )
   return addAudit(withNotice({ ...state, alerts }, 'ok', 'Aviso confirmado. El episodio, si existe, sigue abierto.'), {
     actor: state.role,
@@ -283,7 +350,7 @@ function setAlertStatus(state: AppState, alertId: string, status: AlertStatus): 
     actor: state.role,
     action: 'set-alert-status',
     entityId: alertId,
-    detail: `La alerta pasó a ${status}.`,
+    detail: `La alerta pasó a ${status === 'following' ? 'seguimiento' : status === 'closed' ? 'cerrada' : 'activa'}.`,
   })
 }
 
@@ -467,7 +534,7 @@ function createCommunication(
     actor: state.role,
   }
   const next = rememberKey({ ...bumped.state, communications: [...state.communications, communication] }, action.idempotencyKey)
-  return addAudit(withNotice(next, 'ok', 'Borrador guardado. Todavía no está en cola ni fue enviado.'), {
+  return addAudit(withNotice(next, 'ok', uiLang() === 'en' ? 'Draft saved. It is not queued or sent yet.' : 'Borrador guardado. Todavía no está en cola ni fue enviado.'), {
     actor: state.role,
     action: 'draft-communication',
     entityId: communication.id,
@@ -521,7 +588,7 @@ function writeComm(state: AppState, current: Communication, status: CommStatus):
 }
 
 function statusLabel(status: CommStatus): string {
-  if (status === 'queued') return 'El mensaje quedó en cola. Aún no fue enviado.'
+  if (status === 'queued') return uiLang() === 'en' ? 'The message is queued. It has not been sent yet.' : 'El mensaje quedó en cola. Aún no fue enviado.'
   if (status === 'sent') return 'Marcado como enviado. Eso no confirma la recepción.'
   return 'Recepción confirmada.'
 }

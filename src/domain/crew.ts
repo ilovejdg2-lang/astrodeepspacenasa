@@ -57,6 +57,30 @@ export const CREW: readonly CrewProfile[] = [
   },
 ]
 
+const DUTY_EN: Record<string, string> = {
+  'Especialista de misión': 'Mission specialist',
+  'Ingeniero de sistemas': 'Systems engineer',
+  'Científica de carga': 'Payload scientist',
+  Piloto: 'Pilot',
+}
+
+const PLACE_EN: Record<string, string> = {
+  'Módulo Hábitat A': 'Habitat module A',
+  Laboratorio: 'Laboratory',
+  'Módulo Ciencia': 'Science module',
+  'Módulo Hábitat B': 'Habitat module B',
+}
+
+export function crewDuty(profile: CrewProfile, lang: 'en' | 'es' = 'en'): string {
+  if (lang === 'es') return profile.duty
+  return DUTY_EN[profile.duty] ?? profile.duty
+}
+
+export function crewPlace(profile: CrewProfile, lang: 'en' | 'es' = 'en'): string {
+  if (lang === 'es') return profile.location
+  return PLACE_EN[profile.location] ?? profile.location
+}
+
 export function crewById(id: CrewId): CrewProfile {
   const profile = CREW.find((crew) => crew.id === id)
   if (!profile) throw new Error(`Tripulante desconocido: ${id}`)

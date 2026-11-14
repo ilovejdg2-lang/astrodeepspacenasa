@@ -1,8 +1,17 @@
-# VITALINK
+# HELIOS
 
-Simulador local de monitoreo de salud para una tripulación ficticia. No es una herramienta clínica y no produce diagnósticos.
+**Health Evaluation & Life Indicators Observation System** — simulador de evaluación de salud e indicadores vitales para una tripulación ficticia. No es una herramienta clínica y no produce diagnósticos.
 
 La documentación extendida está en la carpeta hermana [`../mds/README.md`](../mds/README.md) cuando el repo se usa dentro de la carpeta de trabajo `Nasa`. Esa carpeta no forma parte de este repositorio git.
+
+## Qué demuestra
+
+- Etapas de misión: preembarque, a bordo y posmisión (cambiar de etapa no cierra episodios).
+- Lista de preparación con estados (propuesto → cargado y verificado).
+- Biblioteca seleccionada de riesgos NASA (HRR/HRP, OCHMO, OSDR).
+- Monitoreo, alertas, inventario y Quirón Bot (motor local + IA opcional).
+- Espacio privado de bienestar con consentimiento antes de compartir.
+- Continuidad local si Nest no responde; enlace Tierra simulado por separado.
 
 ## Requisitos
 
@@ -29,12 +38,27 @@ La aplicación queda en `http://127.0.0.1:5173`. Las rutas `/api` las atiende el
 | `npm run test:e2e` | Playwright |
 | `npm run build` | Typecheck y build de producción |
 
-El escenario inicial es “Cambio y cansancio”, con Elena Torres en 104 lpm y un autorreporte. El reloj arranca en pausa.
+El escenario inicial es “Cambio y cansancio”, con Elena Torres en 104 lpm y un autorreporte. El reloj arranca en pausa. La misión demo arranca en etapa **a bordo**.
 
 ## Estado y continuidad local
 
-NestJS conserva el estado de simulación por sesión y ejecuta las acciones del dominio. IndexedDB conserva una copia local. El indicador de la barra superior muestra “NestJS conectado” o “Simulador local”. Si la API deja de responder, se continúa localmente y se prepara una sesión nueva para importar esa copia al recargar. La sesión remota anterior se conserva. El enlace simulado con Tierra se controla de forma independiente.
+`stateVersion` es 3 (incluye `mission` y `prepItems`). NestJS conserva el estado de simulación por sesión. IndexedDB conserva una copia local. El indicador de la barra superior muestra “NestJS conectado” o “Simulador local”. Si la API deja de responder, se continúa localmente. El enlace simulado con Tierra se controla de forma independiente.
 
-Los diez escenarios y las reglas de análisis siguen disponibles sin API. La copia del dominio en React sirve al simulador local y a los selectores de presentación. La suite Jest del backend comprueba su paridad. Los archivos server/ conservan el servicio Hono histórico con sus pruebas y los comandos oficiales ejecutan NestJS.
+Los diez escenarios y las reglas de análisis siguen disponibles sin API. La arquitectura, los contratos y los recursos científicos se documentan en el [README del backend](../NASA_SPACE_APP-BACKEND/README.md).
 
-La arquitectura, los contratos, las variables, los endpoints y los recursos científicos se documentan en el [README del backend](../NASA_SPACE_APP-BACKEND/README.md).
+## Supabase
+
+HELIOS usa **Vite + Nest**, no Next.js. La conexión se hace con `@supabase/supabase-js` y variables `VITE_SUPABASE_*` en el frontend (y `SUPABASE_*` en Nest).
+
+1. Copiá `.env.example` → `.env` en `astrodeepspacenasa` y en `NASA_SPACE_APP-BACKEND`.
+2. Completá URL y publishable key. La **contraseña de la base** solo va en el `.env` del backend (`SUPABASE_DB_PASSWORD`), nunca en el navegador.
+3. Health check Nest: `GET http://127.0.0.1:3000/api/supabase/health`.
+
+La simulación sigue en Nest/IndexedDB hasta que migremos tablas a Supabase.
+
+## Fuentes NASA (documentales + OSDR)
+
+- HRR Evidence, Medical Operations, OCHMO Technical Briefs, BPS/OSDR data.
+- NTRS sobre monitoreo metabólico EVA (FC / BTU/hr); **no hay telemetría EMU/xEMU pública en vivo**.
+- Metadatos OSDR vía Nest: `GET /api/nasa/sources` y `GET /api/nasa/osdr/studies/OSD-575` (cortesía: NASA Open Science Data Repository).
+- Pantalla **Riesgos NASA** lista riesgos, rangos EVA documentados y el resultado de la consulta OSDR.

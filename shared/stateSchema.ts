@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { analysisResultSchema } from './aiSchema'
-import { CREW_IDS, SCENARIO_IDS, UNIT_BY_KIND } from './types'
+import { CREW_IDS, MISSION_STAGES, PREP_STATUSES, SCENARIO_IDS, UNIT_BY_KIND } from './types'
 
 export const id = z.string().min(1).max(3000)
 export const crewId = z.enum(CREW_IDS)
@@ -154,7 +154,7 @@ const chat = z
 const list = <T extends z.ZodType>(schema: T) => z.array(schema).max(100000)
 export const stateSchema = z
   .object({
-    stateVersion: z.literal(2),
+    stateVersion: z.literal(3),
     scenarioId: z.enum(SCENARIO_IDS),
     seed: z.number().int(),
     clock: z
@@ -171,6 +171,33 @@ export const stateSchema = z
     sessionCrewId: crewId,
     selectedCrewId: crewId,
     selectedEpisodeId: id.nullable(),
+    mission: z
+      .object({
+        id,
+        name: text,
+        stage: z.enum(MISSION_STAGES),
+        destination: text,
+        durationDays: z.number().int().positive().max(10000),
+        crewCount: z.number().int().positive().max(100),
+        activities: z.array(z.string().max(200)).max(40),
+        openedAt: at,
+        stageChangedAt: at,
+      })
+      .strict(),
+    prepItems: list(
+      z
+        .object({
+          id,
+          title: text,
+          category: z.enum(['entrenamiento', 'planificacion', 'equipo', 'suministro', 'habitat', 'proteccion']),
+          status: z.enum(PREP_STATUSES),
+          riskIds: z.array(id).max(40),
+          resourceId: id.nullable(),
+          note: text,
+          updatedAt: at,
+        })
+        .strict(),
+    ),
     measurements: list(measurement),
     symptoms: list(symptom),
     alerts: list(alert),

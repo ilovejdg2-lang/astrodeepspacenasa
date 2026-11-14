@@ -7,5 +7,5 @@ const port = Number(process.env.PORT ?? 8787)
 const hostname = '127.0.0.1'
 
 serve({ fetch: createApp().fetch, port, hostname }, (info) => {
-  console.log(`VITALINK API escuchando en http://${info.address}:${info.port}`)
+  console.log(`HELIOS API escuchando en http://${info.address}:${info.port}`)
 })

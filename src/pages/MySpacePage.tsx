@@ -9,6 +9,7 @@ import { SIMULATED_PINS, simulatedPinMatches } from '../domain/spaceAccess'
 import { answerSpace, applySpaceProposal, openSpace } from '../domain/spaceEngine'
 import { spacePreview } from '../domain/spacePreview'
 import { readSpace, writeSpace, type SpaceDataUse, type SpaceRecord, type SpaceShareLevel } from '../persistence/space'
+import { useLocale } from '../i18n'
 import { useApp } from '../state/store'
 import { Field } from '../components/ui'
 
@@ -28,6 +29,8 @@ const SWITCHES: { id: keyof SpaceDataUse; label: string }[] = [
 ]
 
 export function MySpacePage() {
+  const { lang } = useLocale()
+  const en = lang === 'en'
   const { state, dispatch, authenticatedCrewId, unlockSpace } = useApp()
   const allowed = canReadMySpace(state.role, authenticatedCrewId, state.sessionCrewId)
   const [record, setRecord] = useState<SpaceRecord | null>(null)
@@ -176,9 +179,13 @@ export function MySpacePage() {
     <div className="page">
       <header className="page-head">
         <div>
-          <p className="kicker">Privado</p>
-          <h1>Mi espacio · Privado</h1>
-          <p className="lede">Tus datos se guardan a bordo · motor local siempre activo. Si el modelo responde, se etiqueta aparte y no envía la solicitud.</p>
+          <p className="kicker">{en ? 'Emotional wellbeing' : 'Bienestar emocional'}</p>
+          <h1>{en ? 'My space · Private' : 'Mi espacio · Privado'}</h1>
+          <p className="lede">
+            {en
+              ? 'A private conversation with Quirón Bot. Review, edit, and authorize a summary before sharing it. The full conversation does not appear on the general panel.'
+              : 'Conversación privada con Quirón Bot. Revisá, editá y autorizá un resumen antes de compartirlo. La conversación completa no aparece en el panel general.'}
+          </p>
         </div>
       </header>
       {state.role !== 'astronaut' ? (

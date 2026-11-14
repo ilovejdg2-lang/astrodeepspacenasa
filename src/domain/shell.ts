@@ -1,3 +1,4 @@
+import { defaultMission, defaultPrepItems } from '../../shared/mission'
 import { STATE_VERSION, type AppState, type Resource, type ScenarioId } from '../../shared/types'
 import { DEFAULT_SEED, MISSION_EPOCH } from './constants'
 
@@ -37,6 +38,8 @@ export function blankState(scenarioId: ScenarioId, seed = DEFAULT_SEED): AppStat
     sessionCrewId: 'elena-torres',
     selectedCrewId: 'elena-torres',
     selectedEpisodeId: null,
+    mission: defaultMission(),
+    prepItems: defaultPrepItems(MISSION_EPOCH),
     measurements: [],
     symptoms: [],
     alerts: [],

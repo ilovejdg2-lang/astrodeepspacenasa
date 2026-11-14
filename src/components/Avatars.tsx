@@ -1,10 +1,10 @@
 import type { CrewId } from '../../shared/types'
 
 const FACES: Record<CrewId, { skin: string; hair: string; accent: string }> = {
-  'elena-torres': { skin: '#e7b89a', hair: '#3b2a24', accent: '#0f6e84' },
+  'elena-torres': { skin: '#e7b89a', hair: '#3b2a24', accent: '#e6004d' },
   'mateo-ruiz': { skin: '#c68642', hair: '#2a2118', accent: '#8a5a2b' },
-  'sofia-chen': { skin: '#f0c7a8', hair: '#1d1a17', accent: '#9a3d55' },
-  'alex-morgan': { skin: '#f1d2b6', hair: '#d7b07a', accent: '#3d6b58' },
+  'sofia-chen': { skin: '#f0c7a8', hair: '#1d1a17', accent: '#111111' },
+  'alex-morgan': { skin: '#f1d2b6', hair: '#d7b07a', accent: '#5c5c5c' },
 }
 
 export function Avatar({ id, name }: { id: CrewId; name: string }) {

@@ -3,12 +3,15 @@ import { useMemo, useState } from 'react'
 import { CREW } from '../domain/crew'
 import { exportBundle, filterHistory, historyRows, toCsv, type HistoryRow } from '../domain/exportData'
 import { episodeStatusLabel, formatMission } from '../domain/format'
+import { useLocale } from '../i18n'
 import { useApp } from '../state/store'
 import { TrendChart } from '../components/Charts'
 import { Empty } from '../components/ui'
 import type { CrewId } from '../../shared/types'
 
 export function HistoryPage() {
+  const { lang } = useLocale()
+  const en = lang === 'en'
   const { state } = useApp()
   const [crewId, setCrewId] = useState<CrewId | 'all'>('all')
   const [type, setType] = useState<HistoryRow['type'] | 'all'>('all')
@@ -21,20 +24,20 @@ export function HistoryPage() {
     <div className="page">
       <header className="page-head">
         <div>
-          <p className="kicker">Historial</p>
-          <h1>Seguimiento del periodo</h1>
-          <p className="lede">El pulso y el descanso van en gráficos separados: no comparten eje porque las unidades no son comparables.</p>
+          <p className="kicker">{en ? 'History' : 'Historial'}</p>
+          <h1>{en ? 'Period follow-up' : 'Seguimiento del periodo'}</h1>
+          <p className="lede">{en ? 'Pulse and sleep use separate charts: they do not share an axis because the units are not comparable.' : 'El pulso y el descanso van en gráficos separados: no comparten eje porque las unidades no son comparables.'}</p>
         </div>
         <div className="row no-print">
-          <button className="btn" type="button" onClick={() => download('vitalink-historial.json', exportBundle(state, rows), 'application/json')}><Download aria-hidden="true" size={18} strokeWidth={1.75} /> Exportar JSON</button>
-          <button className="btn" type="button" onClick={() => download('vitalink-historial.csv', toCsv(rows), 'text/csv')}><FileSpreadsheet aria-hidden="true" size={18} strokeWidth={1.75} /> Exportar CSV</button>
-          <button className="btn" type="button" onClick={() => window.print()}><Printer aria-hidden="true" size={18} strokeWidth={1.75} /> Vista imprimible</button>
+          <button className="btn" type="button" onClick={() => download('helios-historial.json', exportBundle(state, rows), 'application/json')}><Download aria-hidden="true" size={18} strokeWidth={1.75} /> {en ? 'Export JSON' : 'Exportar JSON'}</button>
+          <button className="btn" type="button" onClick={() => download('helios-historial.csv', toCsv(rows), 'text/csv')}><FileSpreadsheet aria-hidden="true" size={18} strokeWidth={1.75} /> {en ? 'Export CSV' : 'Exportar CSV'}</button>
+          <button className="btn" type="button" onClick={() => window.print()}><Printer aria-hidden="true" size={18} strokeWidth={1.75} /> {en ? 'Print view' : 'Vista imprimible'}</button>
         </div>
       </header>
       <div className="row filters">
-        <label>Persona
-          <select aria-label="Filtrar por persona" value={crewId} onChange={(event) => setCrewId(event.target.value as CrewId | 'all')}>
-            <option value="all">Toda la tripulación</option>
+        <label>{en ? 'Person' : 'Persona'}
+          <select aria-label={en ? 'Filter by person' : 'Filtrar por persona'} value={crewId} onChange={(event) => setCrewId(event.target.value as CrewId | 'all')}>
+            <option value="all">{en ? 'Whole crew' : 'Toda la tripulación'}</option>
             {CREW.map((crew) => <option key={crew.id} value={crew.id}>{crew.name}</option>)}
           </select>
         </label>
@@ -52,17 +55,17 @@ export function HistoryPage() {
       </div>
       <div className="layout">
         <section className="panel">
-          <h2>Pulso medio por día</h2>
-          <TrendChart points={days.hr} unit="lpm" caption="Promedio de las frecuencias cardíacas registradas cada día, en lpm." />
+          <h2>{en ? 'Average pulse by day' : 'Pulso medio por día'}</h2>
+          <TrendChart points={days.hr} unit={en ? 'bpm' : 'lpm'} caption={en ? 'Average of the heart rates recorded each day, in bpm.' : 'Promedio de las frecuencias cardíacas registradas cada día, en lpm.'} />
         </section>
         <section className="panel">
-          <h2>Descanso por día</h2>
-          <TrendChart points={days.sleep} unit="h" caption="Horas de descanso registradas, en horas. No está en el mismo eje que el pulso." />
+          <h2>{en ? 'Sleep by day' : 'Descanso por día'}</h2>
+          <TrendChart points={days.sleep} unit="h" caption={en ? 'Recorded sleep, in hours. It does not share an axis with pulse.' : 'Horas de descanso registradas, en horas. No está en el mismo eje que el pulso.'} />
         </section>
       </div>
       <div className="split">
         <section className="panel">
-          <h2>Cronología</h2>
+          <h2>{en ? 'Timeline' : 'Cronología'}</h2>
           {rows.length === 0 ? <Empty title="Sin eventos" text="Ese filtro no tiene registros." /> : (
             <ol className="timeline">
               {rows.slice(0, 40).map((row) => (
@@ -78,7 +81,7 @@ export function HistoryPage() {
           )}
         </section>
         <aside className="detail">
-          <h2>Episodio</h2>
+          <h2>{en ? 'Episode' : 'Episodio'}</h2>
           {episode ? (
             <>
               <p>{episode.title}</p>

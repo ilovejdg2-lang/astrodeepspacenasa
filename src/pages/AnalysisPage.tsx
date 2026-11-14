@@ -1,24 +1,39 @@
 import { CircleHelp, ClipboardList, ListChecks, Loader2, Package } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
+import { useLocation } from 'react-router-dom'
 import { DEMO_PROTOCOLS, findProtocol } from '../../shared/protocols'
 import type { AnalysisResult } from '../../shared/types'
 import { analysisIsStale, episodeFingerprint, runLocalAnalysis } from '../domain/analysis'
 import { buildAnalysisContext } from '../ai/context'
 import { askModel, getAiHealth, type AiHealth } from '../ai/client'
 import { useApp } from '../state/store'
+import { SciencePanel } from '../components/SciencePanel'
 import { Badge } from '../components/ui'
+import { CREW } from '../domain/crew'
+import { briefForCrew } from '../domain/scienceBrief'
+import { useLocale } from '../i18n'
 
 const QUESTIONS = [
   '¿Qué cambió respecto a las últimas mediciones?',
   '¿Qué información falta?',
   '¿En qué datos se basa esta alerta?',
   '¿Qué equipo tenemos para repetir la medición?',
-  'Prepará un resumen para el equipo médico.',
+  'Prepará un resumen para mi especialista.',
+  '¿Qué debo revisar antes de abordar?',
+  '¿Qué seguimiento tengo pendiente después de regresar?',
 ]
 
 export function AnalysisPage() {
   const { state, dispatch, backendMode, analyzeEpisode } = useApp()
-  const episode = state.episodes.find((item) => item.id === state.selectedEpisodeId) ?? state.episodes.find((item) => item.status !== 'closed')
+  const { lang, copy } = useLocale()
+  const en = lang === 'en'
+  const location = useLocation()
+  const linkedId = (location.state as { alertId?: string } | null)?.alertId
+  const linked = linkedId ? state.alerts.find((item) => item.id === linkedId) : undefined
+  const episode = linked
+    ? state.episodes.find((item) => item.id === linked.episodeId)
+    : state.episodes.find((item) => item.id === state.selectedEpisodeId) ?? state.episodes.find((item) => item.status !== 'closed')
+  const linkedName = linked?.crewId ? CREW.find((crew) => crew.id === linked.crewId)?.name : undefined
   const [health, setHealth] = useState<AiHealth | null>(null)
   const [pending, setPending] = useState(false)
   const [modelError, setModelError] = useState('')
@@ -91,7 +106,7 @@ export function AnalysisPage() {
       flight.current = ''
       return
     }
-    const context = buildAnalysisContext(state, episode.id, trimmed)
+    const context = buildAnalysisContext(state, episode.id, trimmed, lang)
     if (!context) return
     const controller = new AbortController()
     abortRef.current = controller
@@ -133,19 +148,21 @@ export function AnalysisPage() {
     <div className="page">
       <header className="page-head">
         <div>
-          <p className="kicker">Análisis</p>
-          <h1>{episode ? episode.title : 'Sin episodio abierto'}</h1>
-          <p className="lede">El motor local siempre está disponible. Una respuesta del modelo se etiqueta aparte y no ejecuta acciones.</p>
+          <p className="kicker">Quirón Bot</p>
+          <h1>{episode ? episode.title : (en ? 'No open episode' : 'Sin episodio abierto')}</h1>
+          <p className="lede">{en ? 'Quirón Bot supports with the local engine and, when a key is set, with a model. It does not diagnose or run medical actions.' : 'Quirón Bot acompaña con el motor local y, si hay clave, con un modelo. No diagnostica ni ejecuta acciones médicas.'}</p>
         </div>
         <AiBadge health={health} />
       </header>
       {analysisError ? <p className="callout callout-amber" role="status">{analysisError}</p> : null}
       {!episode || !local ? (
-        <p className="callout">{episode ? 'Actualizando el análisis del episodio…' : 'No hay un episodio de salud abierto. Una alerta de sensor, por sí sola, no crea uno.'}</p>
+        <p className="callout">{episode ? 'Actualizando el análisis del episodio…' : linked ? `${linkedName ? `${linkedName}: ` : ''}${linked.title}. ${linked.reason} Una alerta de sensor, por sí sola, no abre un episodio de salud.` : 'No hay un episodio de salud abierto. Una alerta de sensor, por sí sola, no crea uno.'}</p>
       ) : (
         <>
+          <p className="lede">{copy.analysisNasa}</p>
+          <SciencePanel brief={briefForCrew(state, episode.crewId, lang)} />
           <section className="panel" data-testid="analysis-local">
-            <div className="spread"><h2>Motor de análisis simulado</h2><Badge>Análisis local</Badge></div>
+            <div className="spread"><h2>{en ? 'Simulated analysis engine' : 'Motor de análisis simulado'}</h2><Badge>{en ? 'Local analysis' : 'Análisis local'}</Badge></div>
             <ResultView result={local} />
           </section>
           <section className="panel">

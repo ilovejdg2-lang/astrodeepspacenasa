@@ -5,7 +5,7 @@ import { formatClock } from '../domain/format'
 interface Point { label: string; value: number }
 
 function useColor(name: string): string {
-  const [color, setColor] = useState('#0f6e84')
+  const [color, setColor] = useState('#f5004f')
   useEffect(() => {
     const read = () => {
       const value = getComputedStyle(document.documentElement).getPropertyValue(name).trim()

@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test'
 
 test('NestJS persiste síntomas y conserva la sesión al recargar', async ({ page, request }) => {
-  await page.goto('/')
+  await page.goto('/app')
   await expect(page.getByTestId('backend-mode')).toHaveText('NestJS conectado')
   await page.getByTestId('open-symptom').click()
   await page.getByTestId('symptom-cansancio').check()
@@ -20,19 +20,17 @@ test('NestJS persiste síntomas y conserva la sesión al recargar', async ({ pag
 })
 
 test('la pérdida de API activa el simulador y permite continuar', async ({ page }) => {
-  await page.goto('/')
+  await page.goto('/app')
   await expect(page.getByTestId('backend-mode')).toHaveText('NestJS conectado')
   const previous = await page.evaluate(() => sessionStorage.getItem('vitalink-simulation-id'))
   await page.route('**/api/simulation/actions', (route) => route.abort('failed'))
-  await page.getByTestId('link-toggle').click()
-  await expect(page.getByTestId('backend-mode')).toHaveText('Simulador local')
-  const detached = await page.evaluate(() => sessionStorage.getItem('vitalink-simulation-id'))
-  expect(detached).not.toBe(previous)
-  await expect(page.getByText('Enlace Tierra: sin conexión')).toBeVisible()
   await page.getByTestId('open-symptom').click()
   await page.getByTestId('symptom-cansancio').check()
   await page.getByTestId('symptom-note').fill('Reporte en simulador local')
   await page.getByTestId('save-symptom').click()
+  await expect(page.getByTestId('backend-mode')).toHaveText('Simulador local')
+  const detached = await page.evaluate(() => sessionStorage.getItem('vitalink-simulation-id'))
+  expect(detached).not.toBe(previous)
   await expect(page.getByText('Reporte en simulador local')).toBeVisible()
   await page.waitForTimeout(500)
   await page.unroute('**/api/simulation/actions')

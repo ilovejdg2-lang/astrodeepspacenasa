@@ -1,4 +1,40 @@
-export const STATE_VERSION = 2 as const
+export const STATE_VERSION = 3 as const
+
+export const MISSION_STAGES = ['preembarque', 'a_bordo', 'posmision'] as const
+export type MissionStage = (typeof MISSION_STAGES)[number]
+
+export const PREP_STATUSES = [
+  'propuesto',
+  'pendiente_revision',
+  'aprobado',
+  'disponible',
+  'faltante',
+  'cargado_verificado',
+] as const
+export type PrepStatus = (typeof PREP_STATUSES)[number]
+
+export interface Mission {
+  id: string
+  name: string
+  stage: MissionStage
+  destination: string
+  durationDays: number
+  crewCount: number
+  activities: string[]
+  openedAt: number
+  stageChangedAt: number
+}
+
+export interface PrepItem {
+  id: string
+  title: string
+  category: 'entrenamiento' | 'planificacion' | 'equipo' | 'suministro' | 'habitat' | 'proteccion'
+  status: PrepStatus
+  riskIds: string[]
+  resourceId: string | null
+  note: string
+  updatedAt: number
+}
 
 export const CREW_IDS = ['elena-torres', 'mateo-ruiz', 'sofia-chen', 'alex-morgan'] as const
 export type CrewId = (typeof CREW_IDS)[number]
@@ -256,6 +292,8 @@ export interface AppState {
   sessionCrewId: CrewId
   selectedCrewId: CrewId
   selectedEpisodeId: string | null
+  mission: Mission
+  prepItems: PrepItem[]
   measurements: Measurement[]
   symptoms: SymptomReport[]
   alerts: Alert[]
