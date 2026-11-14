@@ -33,6 +33,10 @@ export function createInitialState(scenarioId: ScenarioId, seed = 20260201): App
       return buildLinkDown(state)
     case 'stale-normal':
       return buildStale(state)
+    case 'unwell-normal':
+      return buildUnwellNormal(state)
+    case 'pulse-escalation':
+      return buildPulseEscalation(state)
     default:
       return state
   }
@@ -219,6 +223,18 @@ function buildLinkDown(state: AppState): AppState {
   })
 }
 
+function buildUnwellNormal(state: AppState): AppState {
+  let next = addStableCrew(state, 'elena-torres', { hr: 70, spo2: 98, temp: 36.6, sleep: 7.6, resp: 13 }, NOW)
+  next = addStableCrew(next, 'sofia-chen', { hr: 70, spo2: 98, temp: 36.6, sleep: 7.5, resp: 14 }, NOW)
+  return next
+}
+
+function buildPulseEscalation(state: AppState): AppState {
+  let next = addStableCrew(state, 'elena-torres', { hr: 70, spo2: 98, temp: 36.6, sleep: 7.6, resp: 13 }, NOW)
+  next = addStableCrew(next, 'sofia-chen', { hr: 70, spo2: 98, temp: 36.6, sleep: 7.5, resp: 14 }, NOW)
+  return send(next, reading(crewOf('elena-torres'), 'heart_rate', 160, NOW, 'elena-hr-escalation'))
+}
+
 function buildStale(state: AppState): AppState {
   let next = addStableCrew(state, 'sofia-chen', { hr: 70, spo2: 98, temp: 36.6, sleep: 7.5, resp: 14 }, NOW)
   const measuredAt = NOW - 6 * HOUR_MS
@@ -318,6 +334,7 @@ export function latentHeartRate(scenarioId: ScenarioId, crewId: CrewId, minute: 
   if (scenarioId === 'frozen-sensor' && crewId === 'elena-torres') return 81
   if (scenarioId === 'gradual-fatigue' && crewId === 'elena-torres') return Math.round(Math.min(112, 104 + Math.max(0, minute) * 0.2))
   if (scenarioId === 'stale-normal' && crewId === 'elena-torres') return 98
+  if (scenarioId === 'pulse-escalation' && crewId === 'elena-torres') return 160
   const random = mulberry32(seed + minute + crew.name.length)()
   const mid = (crew.baseline.hrMin + crew.baseline.hrMax) / 2
   return clamp(Math.round(mid + (random - 0.5) * 4), crew.baseline.hrMin, crew.baseline.hrMax)

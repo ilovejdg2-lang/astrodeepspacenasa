@@ -16,7 +16,7 @@ copy .env.example .env
 npm run dev
 ```
 
-La aplicación queda en `http://127.0.0.1:5173` y el servicio de IA en `http://127.0.0.1:8787`. Sin `AI_API_KEY` el motor local sigue funcionando y la interfaz marca el servicio como no configurado.
+La aplicación queda en `http://127.0.0.1:5173`. Las rutas `/api` las atiende el backend Nest en `../NASA_SPACE_APP-BACKEND`, puerto 3000. Sin `AI_API_KEY` el motor local sigue funcionando y la interfaz marca el servicio como no configurado. `npm run dev:api` levanta el servidor de IA que vive dentro de este repositorio, en el puerto 8787, y no es el que usa la interfaz.
 
 ## Comandos
 

@@ -1,9 +1,15 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { buildAnalysisContext } from '../ai/context'
 import { answerLocal, runLocalAnalysis } from './analysis'
 import { advanceClock } from './clock'
 import { toCsv } from './exportData'
 import { canReadPrivateWellbeing } from './access'
+import type { CrewId } from '../../shared/types'
+import { isAppState } from './guard'
+import { readOwnedSpace, simulatedPinMatches, writeOwnedSpace } from './spaceAccess'
+import { visibleSpaceRequests } from './spaceRequests'
+import { spacePreview } from './spacePreview'
+import { answerSpace, applySpaceProposal, openSpace } from './spaceEngine'
 import { ingestLinkPacket, signedPacket } from './messages'
 import { reduce } from './reduce'
 import { createInitialState } from './scenarios'
@@ -248,6 +254,190 @@ describe('permisos y exportación', () => {
     expect(canReadPrivateWellbeing('medical', 'elena-torres', 'elena-torres')).toBe(false)
     expect(canReadPrivateWellbeing('astronaut', 'elena-torres', 'mateo-ruiz')).toBe(false)
     expect(canReadPrivateWellbeing('astronaut', 'elena-torres', 'elena-torres')).toBe(true)
+  })
+
+  it('mi espacio no se lee si el rol o la persona no son el dueño', async () => {
+    const load = vi.fn(async (id: CrewId) => ({ ownerId: id }))
+    const mateo = await readOwnedSpace('astronaut', 'mateo-ruiz', 'elena-torres', load)
+    const medical = await readOwnedSpace('medical', 'elena-torres', 'elena-torres', load)
+    const locked = await readOwnedSpace('astronaut', null, 'elena-torres', load)
+    expect(mateo).toEqual({ ok: false, reason: 'denied' })
+    expect(medical).toEqual({ ok: false, reason: 'denied' })
+    expect(locked).toEqual({ ok: false, reason: 'denied' })
+    expect(load).not.toHaveBeenCalled()
+
+    const elena = await readOwnedSpace('astronaut', 'elena-torres', 'elena-torres', load)
+    expect(elena).toEqual({ ok: true, record: { ownerId: 'elena-torres' } })
+    expect(load).toHaveBeenCalledTimes(1)
+    expect(load).toHaveBeenCalledWith('elena-torres')
+  })
+
+  it('mi espacio no se escribe si el rol o la persona no son el dueño', async () => {
+    const save = vi.fn(async () => undefined)
+    const denied = await writeOwnedSpace('ops', 'elena-torres', 'elena-torres', { note: 'privada' }, save)
+    expect(denied).toEqual({ ok: false, reason: 'denied' })
+    expect(save).not.toHaveBeenCalled()
+    expect(simulatedPinMatches('sofia-chen', '1003')).toBe(true)
+    expect(simulatedPinMatches('elena-torres', '1002')).toBe(false)
+  })
+
+  it('la vista genérica no lleva el texto libre y solo yo no sale al equipo', () => {
+    const generic = spacePreview('Elena', 'generica', 'Necesito descansar')
+    expect(generic.teamLine).toBe('Elena: necesita un bloque de descanso')
+    expect(generic.cardText).not.toContain('Necesito descansar')
+    expect(spacePreview('Elena', 'generica', 'Quiero hablar con alguien').teamLine).toBe('Elena: quiere hablar con alguien')
+    expect(spacePreview('Elena', 'medico', 'Me siento mal ahora').teamLine).toBe('Elena: Me siento mal ahora')
+    const mine = spacePreview('Elena', 'solo_yo', 'texto libre secreto')
+    expect(mine.teamLine).toBeNull()
+    expect(mine.cardText).toBe('Solo tú lo ves: texto libre secreto')
+  })
+
+  it('el motor local abre según la persona y escala sin modelo', () => {
+    const dataUse = { sleep: true, pulse: true, symptoms: true }
+    const elena = createInitialState('gradual-fatigue')
+    const opening = openSpace(elena, 'elena-torres', dataUse)
+    expect(opening).toContain('meas-elena-hr-0')
+    expect(opening).toContain('meas-elena-sleep-now')
+    expect(opening).toContain('sym-elena-seed')
+    expect(openSpace(elena, 'mateo-ruiz', dataUse)).toContain('No voy a suponer un problema')
+    expect(openSpace(elena, 'sofia-chen', dataUse)).toContain('No tengo datos recientes tuyos, así que no puedo comparar')
+
+    const tired = answerSpace(elena, 'elena-torres', dataUse, 'Necesito descansar')
+    expect(tired.requiereHumanoAhora).toBe(false)
+    expect(tired.suggestedLevel).toBe('generica')
+
+    const urgent = answerSpace(elena, 'elena-torres', dataUse, 'Tengo dificultad para respirar')
+    expect(urgent.requiereHumanoAhora).toBe(true)
+    expect(urgent.assistantText).toContain('Esto es importante y no debe quedarse solo entre tú y yo')
+    expect(urgent.categories).toContain('dificultad para respirar')
+
+    const baseline = createInitialState('baseline')
+    const calm = answerSpace(baseline, 'mateo-ruiz', dataUse, 'Me siento mal ahora')
+    expect(calm.requiereHumanoAhora).toBe(false)
+    expect(calm.assistantText).toContain('no contradice')
+
+    const high = {
+      ...baseline,
+      measurements: baseline.measurements.map((item) => item.crewId === 'mateo-ruiz' && item.kind === 'heart_rate' ? { ...item, value: 160 } : item),
+    }
+    expect(answerSpace(high, 'mateo-ruiz', dataUse, 'sigo aquí').categories).toContain('pulso fuera del umbral fijo')
+    expect(answerSpace(high, 'mateo-ruiz', { ...dataUse, pulse: false }, 'sigo aquí').requiereHumanoAhora).toBe(false)
+
+    const local = answerSpace(elena, 'elena-torres', dataUse, 'Necesito descansar')
+    expect(applySpaceProposal(local, null).source).toBe('local_engine')
+    const urgentTurn = answerSpace(elena, 'elena-torres', dataUse, 'Tengo dificultad para respirar')
+    const ignored = applySpaceProposal(urgentTurn, {
+      respuesta: 'No es nada.',
+      nivel: 'solo_yo',
+      vistaPrevia: 'Solo tú lo ves: no.',
+      humanReviewRequired: true,
+    })
+    expect(ignored.source).toBe('local_engine')
+    expect(ignored.text).toContain('no debe quedarse solo entre tú y yo')
+  })
+
+  it('la escalada crea una alerta y no la duplica', () => {
+    let state = reduce(createInitialState('gradual-fatigue'), { type: 'setRole', role: 'astronaut', sessionCrewId: 'elena-torres' })
+    const before = state.alerts.length
+    state = reduce(state, { type: 'raiseSpaceAlert', crewId: 'elena-torres', categories: ['desmayo'], idempotencyKey: 'esc-1' })
+    expect(state.alerts).toHaveLength(before + 1)
+    expect(state.alerts.some((item) => item.id === 'alert-space-elena-torres')).toBe(true)
+    expect(state.alerts.find((item) => item.id === 'alert-space-elena-torres')?.reason).not.toContain('texto privado')
+    const again = reduce(state, { type: 'raiseSpaceAlert', crewId: 'elena-torres', categories: ['desmayo'], idempotencyKey: 'esc-2' })
+    expect(again.alerts.filter((item) => item.id === 'alert-space-elena-torres')).toHaveLength(1)
+    const medical = reduce(createInitialState('gradual-fatigue'), { type: 'raiseSpaceAlert', crewId: 'elena-torres', categories: ['desmayo'], idempotencyKey: 'esc-med' })
+    expect(medical.alerts.some((item) => item.id === 'alert-space-elena-torres')).toBe(false)
+    const mateo = reduce(state, { type: 'setRole', role: 'astronaut', sessionCrewId: 'mateo-ruiz' })
+    const denied = reduce(mateo, { type: 'raiseSpaceAlert', crewId: 'elena-torres', categories: ['desmayo'], idempotencyKey: 'esc-mateo' })
+    expect(denied.alerts).toHaveLength(mateo.alerts.length)
+    expect(denied.notice?.tone).toBe('err')
+  })
+
+  it('publica la línea del nivel y oculta el texto médico al resto', () => {
+    let state = reduce(createInitialState('gradual-fatigue'), { type: 'setRole', role: 'astronaut', sessionCrewId: 'elena-torres' })
+    const comms = state.communications.length
+    state = reduce(state, { type: 'sendSpaceRequest', crewId: 'elena-torres', level: 'generica', text: 'Estoy mareado y necesito descansar', idempotencyKey: 'req-1' })
+    expect(state.spaceRequests[0]?.line).toBe('Elena: necesita un bloque de descanso')
+    expect(JSON.stringify(state.spaceRequests)).not.toContain('mareado')
+    expect(state.communications).toHaveLength(comms)
+    expect(state.audit.at(-1)?.detail).not.toContain('mareado')
+
+    state = reduce(state, { type: 'sendSpaceRequest', crewId: 'elena-torres', level: 'medico', text: 'Quiero hablar del mareo', idempotencyKey: 'req-2' })
+    const asMateo = reduce(state, { type: 'setRole', role: 'astronaut', sessionCrewId: 'mateo-ruiz' })
+    expect(visibleSpaceRequests(asMateo).map((item) => item.line)).toEqual(['Elena: necesita un bloque de descanso'])
+    const asMedical = reduce(state, { type: 'setRole', role: 'medical' })
+    expect(visibleSpaceRequests(asMedical).map((item) => item.line)).toContain('Elena: Quiero hablar del mareo')
+    expect(visibleSpaceRequests(reduce(state, { type: 'setRole', role: 'ops' }))).toHaveLength(0)
+
+    const denied = reduce(asMateo, { type: 'sendSpaceRequest', crewId: 'elena-torres', level: 'equipo', text: 'secreto de Elena', idempotencyKey: 'req-3' })
+    expect(denied.spaceRequests).toHaveLength(asMateo.spaceRequests.length)
+    expect(JSON.stringify(denied.spaceRequests)).not.toContain('secreto de Elena')
+    const again = reduce(state, { type: 'sendSpaceRequest', crewId: 'elena-torres', level: 'generica', text: 'Necesito descansar', idempotencyKey: 'req-1' })
+    expect(again.spaceRequests).toHaveLength(state.spaceRequests.length)
+    expect(isAppState({ ...createInitialState('baseline'), stateVersion: 1 })).toBe(false)
+  })
+
+  it('se siente mal con datos normales sugiere repetir y no contradice', () => {
+    const dataUse = { sleep: true, pulse: true, symptoms: true }
+    let state = createInitialState('unwell-normal')
+    expect(crewPosture(state, 'elena-torres').observed).toBe('stable')
+    expect(state.symptoms.some((item) => item.crewId === 'elena-torres')).toBe(false)
+    const pulse = latestReliable(state, 'elena-torres', 'heart_rate')
+    expect(pulse && pulse.value >= 64 && pulse.value <= 76).toBe(true)
+
+    const turn = answerSpace(state, 'elena-torres', dataUse, 'Me siento mal ahora')
+    expect(turn.requiereHumanoAhora).toBe(false)
+    expect(turn.assistantText).toContain('no contradice')
+    expect(turn.assistantText.toLowerCase()).toContain('repetir')
+
+    state = reduce(state, { type: 'setRunning', running: true })
+    state = reduce(state, { type: 'tick', realDeltaMs: 60_000 })
+    expect(crewPosture(state, 'elena-torres').observed).toBe('stable')
+    const later = answerSpace(state, 'elena-torres', dataUse, 'Me siento mal ahora')
+    expect(later.assistantText).toContain('no contradice')
+  })
+
+  it('la escalada de pulso se activa sin modelo y se conserva al avanzar el reloj', () => {
+    const dataUse = { sleep: true, pulse: true, symptoms: true }
+    let state = createInitialState('pulse-escalation')
+    expect(latestReliable(state, 'elena-torres', 'heart_rate')?.value).toBe(160)
+    const turn = answerSpace(state, 'elena-torres', dataUse, 'sigo aquí')
+    expect(turn.requiereHumanoAhora).toBe(true)
+    expect(turn.categories).toContain('pulso fuera del umbral fijo')
+    const kept = applySpaceProposal(turn, {
+      respuesta: 'No hace falta avisar a nadie.',
+      nivel: 'solo_yo',
+      vistaPrevia: 'Solo tú lo ves: no.',
+      humanReviewRequired: true,
+    })
+    expect(kept.source).toBe('local_engine')
+    expect(kept.text).toContain('no debe quedarse solo entre tú y yo')
+
+    state = reduce(state, { type: 'setRunning', running: true })
+    state = reduce(state, { type: 'tick', realDeltaMs: 60_000 })
+    expect(latestReliable(state, 'elena-torres', 'heart_rate')?.value).toBe(160)
+    expect(answerSpace(state, 'elena-torres', dataUse, 'sigo aquí').requiereHumanoAhora).toBe(true)
+  })
+
+  it('con el enlace interrumpido Mi espacio sigue en el motor local', () => {
+    const dataUse = { sleep: true, pulse: true, symptoms: true }
+    let state = reduce(createInitialState('unwell-normal'), { type: 'setLink', link: 'down' })
+    expect(state.link).toBe('down')
+    const turn = answerSpace(state, 'elena-torres', dataUse, 'Me siento mal ahora')
+    expect(turn.requiereHumanoAhora).toBe(false)
+    expect(turn.assistantText).toContain('no contradice')
+
+    state = reduce(state, { type: 'setRole', role: 'astronaut', sessionCrewId: 'elena-torres' })
+    const sent = reduce(state, {
+      type: 'sendSpaceRequest',
+      crewId: 'elena-torres',
+      level: 'generica',
+      text: 'Me siento mal ahora',
+      idempotencyKey: 'link-down-space',
+    })
+    expect(sent.spaceRequests[0]?.line).toBe('Elena: pide que alguien del equipo se acerque')
+    expect(sent.link).toBe('down')
+    expect(sent.communications.every((item) => item.status !== 'sent')).toBe(true)
   })
 
   it('exporta CSV sin perder comillas', () => {

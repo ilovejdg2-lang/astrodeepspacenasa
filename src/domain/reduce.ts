@@ -1,4 +1,5 @@
 import type {
+  Alert,
   AlertStatus,
   AnalysisRecord,
   AppState,
@@ -11,14 +12,20 @@ import type {
   Resource,
   Role,
   ScenarioId,
+  SharedRequestLevel,
+  SpaceRequest,
   Speed,
 } from '../../shared/types'
 import { canCloseHealthAlert, canManageComms, canUseInventory, isSensorAlert } from './access'
+import { crewById } from './crew'
+import { ensureAlert } from './messages'
+import { openEpisode } from './selectors'
 import { MINUTE_MS, MAX_TICK_MINUTES } from './constants'
 import { advanceClock } from './clock'
 import { planAdjustment, planResourceUse } from './inventory'
 import { appendLiveSample, createInitialState, latentHeartRate } from './scenarios'
 import { addAudit, hasKey, nextSeq, rememberKey, withNotice } from './stateOps'
+import { spacePreview } from './spacePreview'
 import { registerSymptom } from './symptoms'
 
 export type Action =
@@ -63,6 +70,8 @@ export type Action =
   | { type: 'confirmReceived' }
   | { type: 'recordAnalysis'; record: AnalysisRecord; idempotencyKey: string }
   | { type: 'appendChat'; message: ChatMessage }
+  | { type: 'raiseSpaceAlert'; crewId: CrewId; categories: string[]; idempotencyKey: string }
+  | { type: 'sendSpaceRequest'; crewId: CrewId; level: SharedRequestLevel; text: string; idempotencyKey: string }
 
 const COMM_NEXT: Record<CommStatus, CommStatus | null> = {
   draft: 'queued',
@@ -132,6 +141,10 @@ export function reduce(state: AppState, action: Action): AppState {
       return recordAnalysis(state, action.record, action.idempotencyKey)
     case 'appendChat':
       return appendChat(state, action.message)
+    case 'raiseSpaceAlert':
+      return raiseSpaceAlert(state, action)
+    case 'sendSpaceRequest':
+      return sendSpaceRequest(state, action)
     default:
       return state
   }
@@ -159,6 +172,11 @@ function applyMinute(state: AppState, minute: number): AppState {
   }
   if (state.scenarioId === 'frozen-sensor') {
     return appendLiveSample(state, 'elena-torres', 'heart_rate', 81, `live-frozen-${minute}`, 90, 'sensor-03')
+  }
+  if (state.scenarioId === 'pulse-escalation') {
+    const value = latentHeartRate(state.scenarioId, 'elena-torres', minute, state.seed)
+    if (value === null) return state
+    return appendLiveSample(state, 'elena-torres', 'heart_rate', value, `live-escalation-${minute}`)
   }
   let next = state
   for (const crewId of ['elena-torres', 'mateo-ruiz', 'sofia-chen', 'alex-morgan'] as const) {
@@ -522,6 +540,68 @@ function recordAnalysis(state: AppState, record: AnalysisRecord, idempotencyKey:
     action: 'record-analysis',
     entityId: record.id,
     detail: 'El análisis no modificó inventario, alertas ni comunicaciones.',
+  })
+}
+
+function raiseSpaceAlert(state: AppState, action: { crewId: CrewId; categories: string[]; idempotencyKey: string }): AppState {
+  if (state.role !== 'astronaut' || state.sessionCrewId !== action.crewId) {
+    return withNotice(state, 'err', 'Este rol simulado no puede crear esa alerta desde Mi espacio.')
+  }
+  if (hasKey(state, action.idempotencyKey) || action.categories.length === 0) return state
+  const id = `alert-space-${action.crewId}`
+  const already = state.alerts.some((item) => item.id === id && item.status !== 'closed')
+  let next = rememberKey(state, action.idempotencyKey)
+  if (already) return next
+  const profile = crewById(action.crewId)
+  const episode = openEpisode(next, action.crewId)
+  const alert: Alert = {
+    id,
+    type: 'symptom',
+    status: 'active',
+    crewId: action.crewId,
+    sensorId: null,
+    episodeId: episode?.id ?? null,
+    title: `Contacto humano ahora — ${profile.name}`,
+    reason: `Simulación del motor local. Hace falta una persona ahora. Se activó: ${action.categories.join(', ')}.`,
+    openedAt: next.clock.simulatedAt,
+    updatedAt: next.clock.simulatedAt,
+    astronautAck: false,
+    source: 'user',
+  }
+  next = ensureAlert(next, alert)
+  next = addAudit(next, {
+    actor: next.role,
+    action: 'raise-space-alert',
+    entityId: id,
+    detail: `Simulación. Contacto humano: ${action.categories.join(', ')}.`,
+  })
+  return withNotice(next, 'warn', 'Esto es importante y no debe quedarse solo entre tú y yo.')
+}
+
+function sendSpaceRequest(state: AppState, action: { crewId: CrewId; level: SharedRequestLevel; text: string; idempotencyKey: string }): AppState {
+  if (state.role !== 'astronaut' || state.sessionCrewId !== action.crewId) {
+    return withNotice(state, 'err', 'Este rol simulado no puede enviar esa solicitud.')
+  }
+  const text = action.text.trim().slice(0, 2000)
+  if (!text) return withNotice(state, 'err', 'La solicitud no tiene texto.')
+  if (hasKey(state, action.idempotencyKey)) return withNotice(state, 'warn', 'Esa solicitud ya estaba enviada.')
+  const profile = crewById(action.crewId)
+  const line = spacePreview(profile.name.split(' ')[0] ?? profile.name, action.level, text).teamLine
+  if (!line) return withNotice(state, 'err', 'Ese nivel no se comparte con el equipo.')
+  const request: SpaceRequest = {
+    id: `space-shared-${action.crewId}-${state.spaceRequests.length}`,
+    crewId: action.crewId,
+    level: action.level,
+    line: line.slice(0, 500),
+    sentAt: state.clock.simulatedAt,
+  }
+  const kept = state.spaceRequests.length >= 100 ? state.spaceRequests.slice(-99) : state.spaceRequests
+  const next = rememberKey({ ...state, spaceRequests: [...kept, request] }, action.idempotencyKey)
+  return addAudit(withNotice(next, 'ok', 'La solicitud quedó en el panel del equipo, con el nivel que elegiste.'), {
+    actor: next.role,
+    action: 'send-space-request',
+    entityId: request.id,
+    detail: `Simulación. Nivel ${action.level}. El texto privado no entra en la auditoría.`,
   })
 }
 

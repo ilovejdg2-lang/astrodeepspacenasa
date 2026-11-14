@@ -1,15 +1,18 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import type { AppState } from '../../shared/types'
+import type { AppState, CrewId } from '../../shared/types'
 import { createInitialState } from '../domain/scenarios'
 import { reduce, type Action } from '../domain/reduce'
 import { clearPrivate } from '../persistence/private'
+import { clearSpace } from '../persistence/space'
 import { loadState, saveState } from '../persistence/db'
 
 interface StoreValue {
   state: AppState
   persistenceError: string | null
   saving: boolean
+  authenticatedCrewId: CrewId | null
   dispatch: (action: Action) => void
+  unlockSpace: (crewId: CrewId) => void
   restoreDemo: () => Promise<void>
 }
 
@@ -19,6 +22,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AppState | null>(null)
   const [persistenceError, setPersistenceError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
+  const [authenticatedCrewId, setAuthenticatedCrewId] = useState<CrewId | null>(null)
+  const stateRef = useRef<AppState | null>(null)
+  stateRef.current = state
   const ready = useRef(false)
   const signature = useRef('')
   const saveGeneration = useRef(0)
@@ -80,13 +86,24 @@ export function AppProvider({ children }: { children: ReactNode }) {
       state,
       persistenceError,
       saving,
-      dispatch: (action) => setState((current) => (current ? reduce(current, action) : current)),
+      authenticatedCrewId,
+      dispatch: (action) => {
+        if (action.type === 'setRole') setAuthenticatedCrewId(null)
+        setState((current) => (current ? reduce(current, action) : current))
+      },
+      unlockSpace: (crewId) => {
+        const current = stateRef.current
+        if (!current || current.role !== 'astronaut' || current.sessionCrewId !== crewId) return
+        setAuthenticatedCrewId(crewId)
+      },
       restoreDemo: async () => {
+        setAuthenticatedCrewId(null)
         await clearPrivate().catch(() => undefined)
+        await clearSpace().catch(() => undefined)
         setState(reduce(createInitialState('baseline'), { type: 'restoreDemo' }))
       },
     }
-  }, [state, persistenceError, saving])
+  }, [state, persistenceError, saving, authenticatedCrewId])
 
   if (!value) {
     return (
