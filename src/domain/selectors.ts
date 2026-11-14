@@ -14,6 +14,7 @@ export interface CrewPosture {
 
 export function isReliable(measurement: Measurement, now: number): boolean {
   if (measurement.integrity !== 'valid') return false
+  if (measurement.measuredAt > now || measurement.receivedAt > now || measurement.signalQuality === 0) return false
   if (measurement.origin === 'link' && measurement.macValid !== true) return false
   if (measurement.receivedAt - measurement.measuredAt > STALE_GAP_MS) return false
   const window = measurement.kind === 'sleep_hours' ? SLEEP_FRESH_MS : FRESH_MS

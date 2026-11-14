@@ -1,6 +1,8 @@
-import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import type { AppState, CrewId } from '../../shared/types'
+import { createContext, useContext, useEffect, useMemo, useRef, useState, useCallback, type ReactNode } from 'react'
+import type { AppState, CrewId, AnalysisResult } from '../../shared/types'
+import { ApiError, SimulationClient } from '../api/simulation'
 import { createInitialState } from '../domain/scenarios'
+import { answerLocal } from '../domain/analysis'
 import { reduce, type Action } from '../domain/reduce'
 import { clearPrivate } from '../persistence/private'
 import { clearSpace } from '../persistence/space'
@@ -8,10 +10,13 @@ import { loadState, saveState } from '../persistence/db'
 
 interface StoreValue {
   state: AppState
+  backendMode: 'connected' | 'local_simulator'
+  backendError: string | null
   persistenceError: string | null
   saving: boolean
   authenticatedCrewId: CrewId | null
   dispatch: (action: Action) => void
+  analyzeEpisode: (episodeId: string, question?: string) => Promise<AnalysisResult>
   unlockSpace: (crewId: CrewId) => void
   restoreDemo: () => Promise<void>
 }
@@ -25,32 +30,128 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [authenticatedCrewId, setAuthenticatedCrewId] = useState<CrewId | null>(null)
   const stateRef = useRef<AppState | null>(null)
   stateRef.current = state
+  const [backendMode, setBackendMode] = useState<'connected' | 'local_simulator'>('local_simulator')
+  const [backendError, setBackendError] = useState<string | null>(null)
+  const client = useRef<SimulationClient | null>(null)
+  const connected = useRef(false)
+  const queue = useRef<Promise<void>>(Promise.resolve())
+  const tickPending = useRef(false)
   const ready = useRef(false)
+
+  const apply = useCallback((next: AppState) => {
+    stateRef.current = next
+    setState(next)
+  }, [])
+
+  const detach = useCallback(() => {
+    connected.current = false
+    setBackendMode('local_simulator')
+    // La copia local continúa en una sesión nueva para conservar ambas ramas de datos.
+    try {
+      sessionStorage.setItem('vitalink-simulation-id', crypto.randomUUID())
+    } catch {
+      /* Sesión en memoria. */
+    }
+    setBackendError(
+      'Simulador local activo. Los cambios se guardan en este navegador. Al recargar se intentará crear una nueva sesión en NestJS con esta copia.',
+    )
+  }, [])
+
+  const dispatch = useCallback(
+    (action: Action) => {
+      if (action.type === 'setRole') setAuthenticatedCrewId(null)
+      if (action.type === 'tick' && tickPending.current) return
+      if (action.type === 'tick') tickPending.current = true
+      queue.current = queue.current
+        .then(async () => {
+          const current = stateRef.current
+          if (!current) return
+          if (!connected.current || !client.current) {
+            apply(reduce(current, action))
+            return
+          }
+          try {
+            apply((await client.current.dispatch(action)).state)
+            setBackendError(null)
+          } catch (error) {
+            if (error instanceof ApiError && error.status < 500) {
+              if (error.status === 409) {
+                try {
+                  apply((await client.current.refresh()).state)
+                } catch {
+                  detach()
+                }
+              }
+              setBackendError(`La operación no se confirmó. ${error.message}`)
+              return
+            }
+            detach()
+            apply(reduce(current, action))
+          }
+        })
+        .catch(() => setBackendError('No se pudo aplicar la operación.'))
+        .finally(() => {
+          if (action.type === 'tick') tickPending.current = false
+        })
+    },
+    [apply, detach],
+  )
   const signature = useRef('')
   const saveGeneration = useRef(0)
 
   useEffect(() => {
     let active = true
-    loadState()
-      .then((saved) => {
+    async function initialize() {
+      let initial: AppState
+      try {
+        initial = (await loadState()) ?? createInitialState('gradual-fatigue')
+      } catch {
+        initial = createInitialState('gradual-fatigue')
+        if (active)
+          setPersistenceError(
+            'No se pudo leer la copia local. Se conserva sin sobrescribir y esta sesión continúa con datos de demostración.',
+          )
+      }
+      if (!active) return
+      let sessionId: string = crypto.randomUUID()
+      try {
+        sessionId = sessionStorage.getItem('vitalink-simulation-id') ?? sessionId
+        sessionStorage.setItem('vitalink-simulation-id', sessionId)
+      } catch {
+        /* El backend mantiene la sesión durante esta carga. */
+      }
+      const api = new SimulationClient(sessionId)
+      client.current = api
+      try {
+        const snapshot = await api.initialize(initial)
         if (!active) return
-        setState(saved ?? createInitialState('gradual-fatigue'))
-        ready.current = true
-      })
-      .catch(() => {
+        connected.current = true
+        setBackendMode('connected')
+        apply(snapshot.state)
+      } catch {
         if (!active) return
-        setState(createInitialState('gradual-fatigue'))
-        setPersistenceError('La persistencia local no está disponible. Los cambios de esta sesión se perderán al recargar.')
-        ready.current = true
-      })
+        detach()
+        apply(initial)
+      }
+      ready.current = true
+    }
+    void initialize()
     return () => {
       active = false
     }
-  }, [])
+  }, [apply, detach])
 
   useEffect(() => {
     if (!state || !ready.current || persistenceError) return
-    const nextSignature = [state.symptoms.length, state.alerts.length, state.communications.length, state.movements.length, state.analyses.length, state.chats.length, state.notice?.text ?? ''].join('|')
+    const nextSignature = [
+      state.symptoms.length,
+      state.alerts.length,
+      state.communications.length,
+      state.movements.length,
+      state.analyses.length,
+      state.chats.length,
+      state.notice?.text ?? '',
+    ].join('|')
     const userWrite = signature.current !== '' && signature.current !== nextSignature
     signature.current = nextSignature
     const mine = saveGeneration.current + 1
@@ -75,22 +176,31 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const now = performance.now()
       const delta = now - last
       last = now
-      setState((current) => (current ? reduce(current, { type: 'tick', realDeltaMs: delta }) : current))
+      dispatch({ type: 'tick', realDeltaMs: Math.min(delta, 300000) })
     }, 1000)
     return () => window.clearInterval(id)
-  }, [state?.clock.running])
+  }, [state?.clock.running, dispatch])
+
+  const analyzeEpisode = useCallback(async (episodeId: string, question = 'resumen'): Promise<AnalysisResult> => {
+    await queue.current
+    if (connected.current && client.current) return client.current.analysis(episodeId, question)
+    const current = stateRef.current
+    const result = current ? answerLocal(current, episodeId, question) : null
+    if (!result) throw new Error('Episodio no disponible')
+    return result
+  }, [])
 
   const value = useMemo<StoreValue | null>(() => {
     if (!state) return null
     return {
       state,
+      backendMode,
+      backendError,
       persistenceError,
       saving,
       authenticatedCrewId,
-      dispatch: (action) => {
-        if (action.type === 'setRole') setAuthenticatedCrewId(null)
-        setState((current) => (current ? reduce(current, action) : current))
-      },
+      dispatch,
+      analyzeEpisode,
       unlockSpace: (crewId) => {
         const current = stateRef.current
         if (!current || current.role !== 'astronaut' || current.sessionCrewId !== crewId) return
@@ -100,10 +210,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setAuthenticatedCrewId(null)
         await clearPrivate().catch(() => undefined)
         await clearSpace().catch(() => undefined)
-        setState(reduce(createInitialState('baseline'), { type: 'restoreDemo' }))
+        dispatch({ type: 'restoreDemo' })
+        await queue.current
       },
     }
-  }, [state, persistenceError, saving, authenticatedCrewId])
+  }, [state, persistenceError, saving, authenticatedCrewId, backendMode, backendError, dispatch, analyzeEpisode])
 
   if (!value) {
     return (

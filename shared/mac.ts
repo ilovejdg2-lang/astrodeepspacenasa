@@ -1,3 +1,5 @@
+import { UNIT_BY_KIND, type LinkPacket } from './types'
+
 /**
  * HMAC-SHA256 de demostración para el enlace simulado.
  * La clave está en el cliente a propósito: no hay una frontera de confianza.
@@ -116,15 +118,13 @@ function toHex(bytes: Uint8Array): string {
   return [...bytes].map((byte) => byte.toString(16).padStart(2, '0')).join('')
 }
 
-export function canonicalPacket(input: {
-  messageId: string
-  sequence: number
-  sensorId: string
-  kind: string
-  value: number
-  measuredAt: number
-}): string {
-  return [input.messageId, input.sequence, input.sensorId, input.kind, input.value, input.measuredAt].join('|')
+/** Versión 2. La representación incluye todos los campos del paquete. */
+export function canonicalPacket(input: Omit<LinkPacket, 'mac' | 'unit'> & { unit?: LinkPacket['unit'] }): string {
+  return JSON.stringify([
+    'v2', input.messageId, input.sequence, input.crewId, input.sensorId,
+    input.kind, input.value, input.unit ?? UNIT_BY_KIND[input.kind],
+    input.measuredAt, input.receivedAt, input.signalQuality, input.context,
+  ])
 }
 
 export function signPayload(payload: string, key = DEMO_MAC_KEY): string {
