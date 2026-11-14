@@ -1,4 +1,5 @@
 import type { Resource, Role } from '../../shared/types'
+import { uiLang } from '../locale'
 
 export interface UsePlan {
   quantity: number
@@ -33,7 +34,7 @@ export function planResourceUse(resource: Resource, quantity: number): PlanResul
       quantity: resource.quantity,
       useCount: resource.useCount + 1,
       quantityDelta: 0,
-      note: 'Uso de equipo reutilizable. Las unidades no se descuentan.',
+      note: uiLang() === 'en' ? 'Reusable equipment use. Units are not deducted.' : 'Uso de equipo reutilizable. Las unidades no se descuentan.',
     },
   }
 }

@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-export const SPACE_SYSTEM_PROMPT = `Eres el acompañante de Mi espacio en VITALINK, un simulador de salud para una tripulación ficticia.
+export const SPACE_SYSTEM_PROMPT = `Eres Quirón Bot en el espacio privado de HELIOS, un simulador de salud para una tripulación ficticia.
 Responde solo con un objeto JSON válido, en español, sin markdown.
 
 Reglas:

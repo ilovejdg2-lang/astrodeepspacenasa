@@ -2,6 +2,7 @@ import { ClipboardCheck, Pencil, Plus } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { DEMO_PROTOCOLS } from '../../shared/protocols'
 import { ageLabel, movementLabel } from '../domain/format'
+import { useLocale } from '../i18n'
 import { useApp } from '../state/store'
 import { ResourceMark } from '../components/Avatars'
 import { Badge, Empty, Field, Modal } from '../components/ui'
@@ -10,6 +11,8 @@ import type { Resource } from '../../shared/types'
 type Tab = 'equipment' | 'supply' | 'protocol'
 
 export function ResourcesPage() {
+  const { lang } = useLocale()
+  const en = lang === 'en'
   const { state } = useApp()
   const [tab, setTab] = useState<Tab>('equipment')
   const [query, setQuery] = useState('')
@@ -29,20 +32,20 @@ export function ResourcesPage() {
     <div className="page">
       <header className="page-head">
         <div>
-          <p className="kicker">Recursos</p>
-          <h1>Inventario de la nave</h1>
-          <p className="lede">El equipo reutilizable no se descuenta al usarlo. Un suministro no puede quedar bajo cero. Tenerlo a bordo no es una indicación médica.</p>
+          <p className="kicker">{en ? 'Resources' : 'Recursos'}</p>
+          <h1>{en ? 'Ship inventory' : 'Inventario de la nave'}</h1>
+          <p className="lede">{en ? 'Reusable equipment is not deducted when used. A supply cannot go below zero. Having it on board is not a medical indication.' : 'El equipo reutilizable no se descuenta al usarlo. Un suministro no puede quedar bajo cero. Tenerlo a bordo no es una indicación médica.'}</p>
         </div>
-        <button className="btn btn-primary" type="button" onClick={() => setAddOpen(true)}><Plus aria-hidden="true" size={18} strokeWidth={1.75} /> Añadir recurso</button>
+        <button className="btn btn-primary" type="button" onClick={() => setAddOpen(true)}><Plus aria-hidden="true" size={18} strokeWidth={1.75} /> {en ? 'Add resource' : 'Añadir recurso'}</button>
       </header>
       <div className="spread">
-        <div className="chips" role="tablist" aria-label="Categorías">
-          {([['equipment', 'Equipos'], ['supply', 'Suministros'], ['protocol', 'Protocolos']] as const).map(([id, label]) => (
+        <div className="chips" role="tablist" aria-label={en ? 'Categories' : 'Categorías'}>
+          {([['equipment', en ? 'Equipment' : 'Equipos'], ['supply', en ? 'Supplies' : 'Suministros'], ['protocol', en ? 'Protocols' : 'Protocolos']] as const).map(([id, label]) => (
             <button key={id} type="button" className="chip" role="tab" aria-selected={tab === id} onClick={() => setTab(id)}>{label}</button>
           ))}
         </div>
-        <Field id="search-resource" label="Buscar">
-          <input id="search-resource" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Nombre o ubicación" />
+        <Field id="search-resource" label={en ? 'Search' : 'Buscar'}>
+          <input id="search-resource" value={query} onChange={(event) => setQuery(event.target.value)} placeholder={en ? 'Name or location' : 'Nombre o ubicación'} />
         </Field>
       </div>
       <dl className="quiet-metrics">
@@ -65,14 +68,14 @@ export function ResourcesPage() {
         <div className="split">
           <div className="table-wrap">
             <table>
-              <thead><tr><th>Recurso</th><th>Disponible</th><th>Ubicación</th><th>Estado</th></tr></thead>
+              <thead><tr><th>{en ? 'Resource' : 'Recurso'}</th><th>{en ? 'Available' : 'Disponible'}</th><th>{en ? 'Location' : 'Ubicación'}</th><th>{en ? 'Status' : 'Estado'}</th></tr></thead>
               <tbody>
                 {rows.map((item) => (
                   <tr key={item.id} data-testid={`resource-${item.id}`} aria-selected={item.id === resource?.id}>
-                    <td><button type="button" className="btn btn-ghost" onClick={() => setSelected(item.id)}>{item.name}</button><span className="muted">{item.kind === 'reusable' ? 'Reutilizable' : 'Consumible'}</span></td>
+                    <td><button type="button" className="btn btn-ghost" onClick={() => setSelected(item.id)}>{item.name}</button><span className="muted">{item.kind === 'reusable' ? (en ? 'Reusable' : 'Reutilizable') : (en ? 'Consumable' : 'Consumible')}</span></td>
                     <td>{item.quantity} {item.unitLabel}</td>
                     <td>{item.location}</td>
-                    <td><Badge tone={item.status === 'ready' ? 'ok' : 'amber'}>{item.status === 'ready' ? 'Listo' : 'Por revisar'}</Badge></td>
+                    <td><Badge tone={item.status === 'ready' ? 'ok' : 'amber'}>{item.status === 'ready' ? (en ? 'Ready' : 'Listo') : (en ? 'Needs review' : 'Por revisar')}</Badge></td>
                   </tr>
                 ))}
               </tbody>
@@ -82,7 +85,7 @@ export function ResourcesPage() {
         </div>
       )}
       <section className="panel">
-        <h2>Movimientos</h2>
+        <h2>{en ? 'Movements' : 'Movimientos'}</h2>
         {state.movements.length === 0 ? <p className="muted">Todavía no hay movimientos en este escenario.</p> : (
           <ul>{[...state.movements].reverse().slice(0, 8).map((item) => <li key={item.id}>{movementLabel(item.type)} · {state.resources.find((resource) => resource.id === item.resourceId)?.name ?? item.resourceId} · {item.quantityDelta >= 0 ? '+' : ''}{item.quantityDelta} · quedan {item.quantityAfter}. {item.note}</li>)}</ul>
         )}
@@ -95,36 +98,40 @@ export function ResourcesPage() {
 }
 
 function ResourceDetail({ resource, onUse, onEdit, reviewed }: { resource: Resource; onUse: () => void; onEdit: () => void; reviewed: string }) {
+  const { lang } = useLocale()
+  const en = lang === 'en'
   return (
     <aside className="detail">
       <ResourceMark id={resource.id} />
       <h2>{resource.name}</h2>
       <p>{resource.quantity} {resource.unitLabel} · {resource.location}</p>
-      <p className="muted">Última revisión {reviewed}. Usos registrados: {resource.useCount}.</p>
-      <p className="callout callout-amber">Disponibilidad no equivale a indicación médica.</p>
+      <p className="muted">{en ? 'Last review' : 'Última revisión'} {reviewed}. {en ? 'Recorded uses' : 'Usos registrados'}: {resource.useCount}.</p>
+      <p className="callout callout-amber">{en ? 'Availability is not a medical indication.' : 'Disponibilidad no equivale a indicación médica.'}</p>
       <div className="row">
-        <button className="btn btn-primary" type="button" data-testid="open-use" onClick={onUse}><ClipboardCheck aria-hidden="true" size={18} strokeWidth={1.75} /> Registrar uso</button>
-        <button className="btn" type="button" onClick={onEdit}><Pencil aria-hidden="true" size={18} strokeWidth={1.75} /> Editar ficha</button>
+        <button className="btn btn-primary" type="button" data-testid="open-use" onClick={onUse}><ClipboardCheck aria-hidden="true" size={18} strokeWidth={1.75} /> {en ? 'Record use' : 'Registrar uso'}</button>
+        <button className="btn" type="button" onClick={onEdit}><Pencil aria-hidden="true" size={18} strokeWidth={1.75} /> {en ? 'Edit record' : 'Editar ficha'}</button>
       </div>
     </aside>
   )
 }
 
 function UseDialog({ open, resource, onClose }: { open: boolean; resource: Resource; onClose: () => void }) {
+  const { lang } = useLocale()
+  const en = lang === 'en'
   const { state, dispatch } = useApp()
   const [quantity, setQuantity] = useState('1')
   const [error, setError] = useState('')
   return (
-    <Modal open={open} title={`Usar ${resource.name}`} description={resource.kind === 'reusable' ? 'Este equipo no pierde unidades.' : 'El consumo se descuenta una sola vez.'} onClose={onClose}>
-      <Field id="use-quantity" label="Cantidad" error={error}>
+    <Modal open={open} title={`${en ? 'Use' : 'Usar'} ${resource.name}`} description={resource.kind === 'reusable' ? (en ? 'This equipment does not lose units.' : 'Este equipo no pierde unidades.') : (en ? 'Consumption is deducted once.' : 'El consumo se descuenta una sola vez.')} onClose={onClose}>
+      <Field id="use-quantity" label={en ? 'Quantity' : 'Cantidad'} error={error}>
         <input id="use-quantity" data-testid="use-quantity" inputMode="numeric" value={quantity} aria-invalid={Boolean(error)} aria-describedby={error ? 'use-quantity-error' : undefined} onChange={(event) => setQuantity(event.target.value)} />
       </Field>
       <button className="btn btn-primary" type="button" data-testid="save-use" onClick={() => {
         const parsed = Number(quantity)
-        if (!Number.isInteger(parsed) || parsed < 1) { setError('Indicá un entero mayor que cero.'); return }
+        if (!Number.isInteger(parsed) || parsed < 1) { setError(en ? 'Enter an integer greater than zero.' : 'Indicá un entero mayor que cero.'); return }
         dispatch({ type: 'useResource', resourceId: resource.id, quantity: parsed, idempotencyKey: `use-${resource.id}-${state.seq}-${parsed}`, note: '' })
         onClose()
-      }}>Confirmar uso</button>
+      }}>{en ? 'Confirm use' : 'Confirmar uso'}</button>
     </Modal>
   )
 }

@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { buildAnalysisContext } from '../ai/context'
-import { answerLocal, runLocalAnalysis } from './analysis'
+import { answerLocal, answerMissionLocal, runLocalAnalysis } from './analysis'
 import { advanceClock } from './clock'
 import { toCsv } from './exportData'
 import { canReadPrivateWellbeing } from './access'
@@ -94,6 +94,44 @@ describe('reloj y escenarios', () => {
     const count = state.measurements.length
     state = reduce(state, { type: 'tick', realDeltaMs: 60_000 })
     expect(state.measurements).toHaveLength(count)
+  })
+})
+
+describe('misión HELIOS', () => {
+  it('cambiar a posmisión no cierra episodios abiertos', () => {
+    let state = createInitialState('gradual-fatigue')
+    expect(state.episodes.some((item) => item.status !== 'closed')).toBe(true)
+    const openBefore = state.episodes.filter((item) => item.status !== 'closed').map((item) => item.id)
+    state = reduce(state, { type: 'setMissionStage', stage: 'posmision' })
+    expect(state.mission.stage).toBe('posmision')
+    expect(state.episodes.filter((item) => item.status !== 'closed').map((item) => item.id)).toEqual(openBefore)
+    expect(state.notice?.text.toLowerCase()).toContain('no los cierra')
+  })
+
+  it('reiniciar conserva la etapa y la lista de preparación', () => {
+    let state = createInitialState('gradual-fatigue')
+    state = reduce(state, { type: 'setMissionStage', stage: 'preembarque' })
+    state = reduce(state, { type: 'setPrepStatus', prepId: 'prep-sleep', status: 'aprobado' })
+    const reset = reduce(state, { type: 'resetSimulation' })
+    expect(reset.mission.stage).toBe('preembarque')
+    expect(reset.prepItems.find((item) => item.id === 'prep-sleep')?.status).toBe('aprobado')
+  })
+
+  it('el astronauta no cambia etapa ni preparación', () => {
+    let state = reduce(createInitialState('baseline'), { type: 'setRole', role: 'astronaut', sessionCrewId: 'elena-torres' })
+    state = reduce(state, { type: 'setMissionStage', stage: 'posmision' })
+    expect(state.mission.stage).toBe('a_bordo')
+    expect(state.notice?.tone).toBe('err')
+    state = reduce(state, { type: 'setPrepStatus', prepId: 'prep-sleep', status: 'aprobado' })
+    expect(state.prepItems.find((item) => item.id === 'prep-sleep')?.status).toBe('propuesto')
+  })
+
+  it('incluye preparación EVA y responde sobre esfuerzo metabólico', () => {
+    const state = createInitialState('baseline')
+    expect(state.prepItems.some((item) => item.id === 'prep-eva-metabolic')).toBe(true)
+    const answer = answerMissionLocal(state, '¿Qué dice la literatura sobre esfuerzo metabólico en EVA?')
+    expect(answer.toLowerCase()).toContain('btu')
+    expect(answer.toLowerCase()).toContain('no hay telemetría')
   })
 })
 

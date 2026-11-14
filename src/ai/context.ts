@@ -1,9 +1,10 @@
 import { DEMO_PROTOCOLS } from '../../shared/protocols'
+import { nasaSourceLines } from '../domain/scienceBrief'
 import type { AnalysisContextInput } from '../../shared/aiSchema'
 import type { AppState } from '../../shared/types'
 import { crewById } from '../domain/crew'
 
-export function buildAnalysisContext(state: AppState, episodeId: string, question?: string): AnalysisContextInput | null {
+export function buildAnalysisContext(state: AppState, episodeId: string, question?: string, locale?: 'es' | 'en'): AnalysisContextInput | null {
   const episode = state.episodes.find((item) => item.id === episodeId)
   if (!episode) return null
   const profile = crewById(episode.crewId)
@@ -30,8 +31,12 @@ export function buildAnalysisContext(state: AppState, episodeId: string, questio
     crewId: episode.crewId,
     crewName: profile.name,
     ...(question ? { question: question.slice(0, 1000) } : {}),
+    ...(locale ? { locale } : {}),
+    nasaBriefs: nasaSourceLines(state, episode.crewId).slice(0, 4),
     simulatedAt: state.clock.simulatedAt,
     link: state.link,
+    missionStage: state.mission.stage,
+    missionName: state.mission.name,
     baseline: {
       heartRateLpm: `${profile.baseline.hrMin}–${profile.baseline.hrMax} lpm`,
       sleepHours: `${profile.baseline.sleepMin}–${profile.baseline.sleepMax} h`,
