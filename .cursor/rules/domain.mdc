@@ -1,0 +1,19 @@
+---
+description: Dominio, reloj, escenarios e invariantes de VITALINK.
+globs:
+  - src/domain/**/*.ts
+  - shared/**/*.ts
+alwaysApply: false
+---
+
+# Dominio
+
+- Los ids de tripulante, escenario y protocolo son estables. Las unidades van en el tipo.
+- No uses `Math.random` ni `Date.now` para generar lecturas. La semilla y el reloj alcanzan.
+- `measuredAt`, `receivedAt` y `clock.simulatedAt` no se intercambian.
+- Si no hay una medición confiable reciente, el estado no es estable.
+- Un paquete alterado, repetido o fuera de orden no crea otra medición confiable.
+- Resolver un sensor no cierra el episodio ni borra síntomas.
+- Un consumible no queda negativo. Un reutilizable no descuenta unidades.
+- La comunicación solo avanza un estado. Enviado no llena `receivedAt`.
+- Agregá o actualizá la prueba en `src/domain/domain.test.ts` cuando cambie una invariante.

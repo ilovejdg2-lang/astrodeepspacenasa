@@ -1,0 +1,13 @@
+---
+description: Documentación de VITALINK. La carpeta mds es la fuente y debe coincidir con el código.
+globs: "**/*.md"
+alwaysApply: false
+---
+
+# Documentación
+
+- La fuente larga está en la carpeta hermana `mds`, no en este repo. El `README.md` del repo solo explica cómo ejecutarlo y apunta ahí.
+- Una tema, un documento. Enlazá con rutas relativas.
+- No documentes como disponible algo que el código no hace. Separá previsto de implementado.
+- Si cambia un comando o un escenario, actualizá `mds/README.md` y el doc específico.
+- No inventes métricas, certificaciones ni pruebas que no se ejecutaron. El resultado va en `mds/docs/TEST_REPORT.md`.

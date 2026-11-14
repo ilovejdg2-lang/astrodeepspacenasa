@@ -1,0 +1,14 @@
+---
+description: Arquitectura de VITALINK, límites del prototipo y criterio para dar un cambio por terminado.
+alwaysApply: true
+---
+
+# Arquitectura
+
+- TypeScript estricto. No uses `any` para pasar un chequeo.
+- UI en `src/pages` y `src/components`. Reglas de negocio en `src/domain`. IndexedDB solo en `src/persistence`. La clave de IA solo en `server`.
+- Las pantallas leen `useApp`. No copies datos de tripulación, inventario o alertas dentro de un componente.
+- No presentes una simulación como integración real. El motor local y el modelo llevan etiquetas distintas.
+- No marques una tarea como hecha sin el comando o la revisión que la demuestra.
+- No uses comandos destructivos de git ni borres datos que no hayas creado en la sesión.
+- Si algo queda pendiente, decilo con el límite concreto. La documentación larga está en la carpeta hermana `mds`.

@@ -1,0 +1,20 @@
+---
+description: Validación, roles simulados, auditoría y límites del análisis de IA.
+globs:
+  - server/**/*.ts
+  - src/ai/**/*.ts
+  - shared/aiSchema.ts
+  - shared/mac.ts
+alwaysApply: false
+---
+
+# Seguridad y análisis
+
+- No leas ni escribas `AI_API_KEY` fuera de `server`. No la registres.
+- Validá la respuesta del modelo con Zod y comprobá que los ids existan en el contexto enviado.
+- `humanReviewRequired` tiene que ser el literal `true`.
+- El texto de síntomas va como dato, no como parte del prompt de sistema.
+- El modelo no tiene una acción que modifique inventario, alertas o mensajes.
+- El HMAC del enlace es una demostración. No lo describas como protección frente al usuario del navegador.
+- Los roles se rechazan en el reductor y siguen siendo simulados. No los llames autorización de servidor.
+- No deduzcas un ataque porque dos lecturas coincidan.

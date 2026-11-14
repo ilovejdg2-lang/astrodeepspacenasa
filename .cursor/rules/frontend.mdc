@@ -1,0 +1,19 @@
+---
+description: Interfaz, tokens, temas, responsive y accesibilidad de VITALINK.
+globs: src/**/*.{tsx,css}
+alwaysApply: false
+---
+
+# Frontend
+
+- Usá las variables de `src/index.css`. No agregues hex sueltos en un componente.
+- El texto de interfaz va en español. El cartel de simulación permanece visible.
+- Cada control muestra foco, y el estado no depende solo del color.
+- Alto mínimo de 44 px en botones y navegación. El scroll horizontal de una tabla vive en `.table-wrap`.
+- Comprobá el cambio en tema claro y oscuro. Los gráficos leen `--accent`.
+- Por debajo de 1024 px la navegación es el menú y la barra inferior, no una barra lateral comprimida.
+- No anuncies cada cambio del monitor con `aria-live`. El aviso de acciones sí puede ser educado.
+- `prefers-reduced-motion` no debe reintroducir animaciones decorativas.
+- Iconos de Lucide, trazo 1.75 y 18 px en acciones. Un botón solo de icono lleva nombre accesible.
+- El movimiento dura cerca de 180 ms y usa `transform` u `opacity`. No animes un estado que no cambió: el reloj en pausa no pulsa, y un aviso nuevo se enfatiza una sola vez.
+- El giro de “Guardando” o “Consultando” existe solo mientras esa operación está pendiente.

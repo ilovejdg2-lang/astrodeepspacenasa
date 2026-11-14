@@ -1,0 +1,16 @@
+---
+description: Pruebas de VITALINK y criterio para no debilitarlas.
+globs:
+  - "**/*.{test,spec}.ts"
+  - "**/*.{test,spec}.tsx"
+  - e2e/**/*.ts
+alwaysApply: false
+---
+
+# Pruebas
+
+- Probá el resultado observable: stock, estado, código HTTP, texto que no debe aparecer.
+- No borres un test para obtener verde. No desactives `strict`, ESLint ni un assert.
+- Las pruebas de IA de rutina usan un proveedor falso. Una llamada real se documenta aparte y solo si hubo clave.
+- Si una prueba e2e falla, conservá la traza. No ocultés el caso.
+- Datos de prueba aislados. No limpies IndexedDB que no haya creado esta sesión.
