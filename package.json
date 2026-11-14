@@ -4,9 +4,9 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "concurrently -n web,api -c cyan,magenta \"vite --host 127.0.0.1 --port 5173\" \"pnpm --dir ../NASA_SPACE_APP-BACKEND start:dev\"",
+    "dev": "concurrently -n web,api -c cyan,magenta \"npm run dev:web\" \"npm run dev:api\"",
     "dev:web": "vite --host 127.0.0.1 --port 5173",
-    "dev:api": "tsx server/index.ts",
+    "dev:api": "pnpm --dir ../NASA_SPACE_APP-BACKEND start:dev",
     "build": "tsc -b && vite build",
     "preview": "vite preview --host 127.0.0.1 --port 4173",
     "typecheck": "tsc -b --pretty false",

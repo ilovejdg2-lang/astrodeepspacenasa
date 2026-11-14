@@ -35,7 +35,7 @@ const LINKS = [
 const SPACE_LINK = { to: '/mi-espacio', label: 'Mi espacio', icon: Lock, end: false }
 
 export function Shell({ children }: { children: ReactNode }) {
-  const { state, persistenceError, saving, dispatch } = useApp()
+  const { state, persistenceError, backendMode, backendError, saving, dispatch } = useApp()
   const { choice, setChoice } = useTheme()
   const [open, setOpen] = useState(false)
   const [more, setMore] = useState(false)
@@ -110,6 +110,7 @@ export function Shell({ children }: { children: ReactNode }) {
               {state.link === 'down' ? <WifiOff aria-hidden="true" size={16} strokeWidth={1.75} className="tone-security" /> : <Wifi aria-hidden="true" size={16} strokeWidth={1.75} className="tone-comms" />}
               {linkLabel(state.link, state.linkDelayMin)}
             </p>
+            <p className="status-pill" data-testid="backend-mode">{backendMode === 'connected' ? 'NestJS conectado' : 'Simulador local'}</p>
             {saving ? <p className="status-pill"><RefreshCw aria-hidden="true" size={16} strokeWidth={1.75} className="is-busy" /> Guardando</p> : null}
           </div>
           <div className="top-actions">
@@ -127,6 +128,7 @@ export function Shell({ children }: { children: ReactNode }) {
             </div>
           </div>
         </header>
+        {backendError ? <div className="content" style={{ paddingBottom: 0 }}><p className="callout callout-amber" role="status">{backendError}</p></div> : null}
         {persistenceError ? <div className="content" style={{ paddingBottom: 0 }}><p className="callout callout-bad">{persistenceError}</p></div> : null}
         <div className="notice" aria-live="polite">{ai ? <div className="content" style={{ paddingBottom: 0 }}><p className={`callout callout-${ai.tone === 'err' ? 'bad' : ai.tone === 'ok' ? 'ok' : 'amber'}`} data-testid="notice">{ai.text}</p></div> : null}</div>
         <main id="contenido" className="content">

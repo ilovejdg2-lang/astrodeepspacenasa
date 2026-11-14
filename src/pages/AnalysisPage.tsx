@@ -2,7 +2,7 @@ import { CircleHelp, ClipboardList, ListChecks, Loader2, Package } from 'lucide-
 import { useEffect, useRef, useState } from 'react'
 import { DEMO_PROTOCOLS, findProtocol } from '../../shared/protocols'
 import type { AnalysisResult } from '../../shared/types'
-import { analysisIsStale, answerLocal, episodeFingerprint, runLocalAnalysis } from '../domain/analysis'
+import { analysisIsStale, episodeFingerprint, runLocalAnalysis } from '../domain/analysis'
 import { buildAnalysisContext } from '../ai/context'
 import { askModel, getAiHealth, type AiHealth } from '../ai/client'
 import { useApp } from '../state/store'
@@ -17,7 +17,7 @@ const QUESTIONS = [
 ]
 
 export function AnalysisPage() {
-  const { state, dispatch } = useApp()
+  const { state, dispatch, backendMode, analyzeEpisode } = useApp()
   const episode = state.episodes.find((item) => item.id === state.selectedEpisodeId) ?? state.episodes.find((item) => item.status !== 'closed')
   const [health, setHealth] = useState<AiHealth | null>(null)
   const [pending, setPending] = useState(false)
@@ -32,7 +32,31 @@ export function AnalysisPage() {
     return () => controller.abort()
   }, [])
 
-  const local = episode ? runLocalAnalysis(state, episode.id) : null
+  const [serverAnalysis, setServerAnalysis] = useState<{ key: string; result: AnalysisResult } | null>(null)
+  const [analysisError, setAnalysisError] = useState('')
+  const analysisKey = episode ? `${episode.id}|${episodeFingerprint(state, episode.id)}|${state.clock.simulatedAt}` : ''
+  useEffect(() => {
+    let active = true
+    if (backendMode !== 'connected' || !episode) return
+    void analyzeEpisode(episode.id)
+      .then(result => {
+        if (!active) return
+        setServerAnalysis({ key: analysisKey, result })
+        setAnalysisError('')
+      })
+      .catch(() => {
+        if (!active) return
+        setServerAnalysis(null)
+        setAnalysisError('No se pudo recuperar el análisis de NestJS.')
+      })
+    return () => { active = false }
+  }, [analysisKey, episode, backendMode, analyzeEpisode])
+  let local: AnalysisResult | null = null
+  if (backendMode === 'connected') {
+    if (serverAnalysis?.key === analysisKey) local = serverAnalysis.result
+  } else if (episode) {
+    local = runLocalAnalysis(state, episode.id)
+  }
   const saved = episode ? [...state.analyses].reverse().find((item) => item.episodeId === episode.id && item.source === 'model') : undefined
   const stale = saved && episode ? analysisIsStale(state, saved.fingerprint, episode.id) : false
   const chat = episode ? state.chats.filter((item) => item.episodeId === episode.id) : []
@@ -49,7 +73,15 @@ export function AnalysisPage() {
       message: { id: `${key}-user`, episodeId: episode.id, role: 'user', text: trimmed, source: 'user', at: state.clock.simulatedAt, idempotencyKey: `${key}-user`, result: null },
     })
     if (mode === 'local') {
-      const result = answerLocal(state, episode.id, trimmed)
+      setPending(true)
+      let result: AnalysisResult | null = null
+      try {
+        result = await analyzeEpisode(episode.id, trimmed)
+      } catch {
+        setModelError('No se pudo consultar el motor determinista.')
+      } finally {
+        setPending(false)
+      }
       if (result) {
         dispatch({
           type: 'appendChat',
@@ -107,8 +139,9 @@ export function AnalysisPage() {
         </div>
         <AiBadge health={health} />
       </header>
+      {analysisError ? <p className="callout callout-amber" role="status">{analysisError}</p> : null}
       {!episode || !local ? (
-        <p className="callout">No hay un episodio de salud abierto. Una alerta de sensor, por sí sola, no crea uno.</p>
+        <p className="callout">{episode ? 'Actualizando el análisis del episodio…' : 'No hay un episodio de salud abierto. Una alerta de sensor, por sí sola, no crea uno.'}</p>
       ) : (
         <>
           <section className="panel" data-testid="analysis-local">

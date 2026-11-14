@@ -1,5 +1,5 @@
 import { openDB } from 'idb'
-import { isAppState } from '../domain/guard'
+import { stateSchema } from '../../shared/stateSchema'
 import type { AppState } from '../../shared/types'
 
 async function database() {
@@ -13,7 +13,10 @@ async function database() {
 export async function loadState(): Promise<AppState | null> {
   const db = await database()
   const value: unknown = await db.get('kv', 'state')
-  return isAppState(value) ? value : null
+  if (value === undefined || value === null) return null
+  const parsed = stateSchema.safeParse(value)
+  if (!parsed.success) throw new Error('El estado local requiere recuperación. Se conserva la copia original.')
+  return parsed.data
 }
 
 export async function saveState(state: AppState): Promise<void> {

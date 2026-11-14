@@ -1,4 +1,4 @@
-import type { AnalysisContextInput } from '../../shared/aiSchema'
+import { analysisResultSchema, checkAnalysisRefs, type AnalysisContextInput } from '../../shared/aiSchema'
 import { spaceProposalSchema, type SpaceContextInput, type SpaceProposal } from '../../shared/spaceSchema'
 import type { AnalysisResult } from '../../shared/types'
 
@@ -43,7 +43,9 @@ export async function askModel(path: '/api/ai/analyze' | '/api/ai/chat', context
     if (!response.ok || !body?.result) {
       return { ok: false, code: body?.code ?? 'network', message: body?.message ?? 'El servicio de IA no respondió.' }
     }
-    return { ok: true, model: body.model ?? 'modelo', result: body.result }
+    const result = analysisResultSchema.safeParse(body.result)
+    if (!result.success || !checkAnalysisRefs(result.data, context).ok) return { ok: false, code: 'invalid_response', message: 'La respuesta de IA contiene datos o referencias inválidos.' }
+    return { ok: true, model: body.model ?? 'modelo', result: result.data }
   } catch (error) {
     if (error instanceof DOMException && error.name === 'AbortError') {
       return { ok: false, code: 'aborted', message: 'Se canceló la solicitud. No se guardó un análisis.' }
