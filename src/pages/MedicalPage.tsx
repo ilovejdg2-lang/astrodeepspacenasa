@@ -6,6 +6,7 @@ import { latestMeasurement } from '../domain/selectors'
 import { answerLocal } from '../domain/analysis'
 import { canManageComms } from '../domain/access'
 import { useApp } from '../state/store'
+import { SpaceRequests } from '../components/SpaceRequests'
 import { Badge, Field } from '../components/ui'
 
 const ORDER = ['draft', 'queued', 'sent', 'received'] as const
@@ -34,6 +35,7 @@ export function MedicalPage() {
         </div>
       </header>
       {!allowed ? <p className="callout callout-amber">Este rol simulado puede mirar la cola, pero no preparar ni entregar mensajes.</p> : null}
+      <SpaceRequests />
       <section className="panel">
         <h2>Preparar orientación</h2>
         <Field id="comm-subject" label="Asunto" error={error}>

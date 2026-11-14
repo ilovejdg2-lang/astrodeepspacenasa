@@ -14,6 +14,8 @@ const NAMES: Record<ScenarioId, string> = {
   'altered-message': '6. Mensaje alterado',
   'link-down': '7. Sin enlace',
   'stale-normal': '8. Síntomas con datos antiguos',
+  'unwell-normal': '9. Se siente mal con datos normales',
+  'pulse-escalation': '10. Escalada de pulso',
 }
 
 export function SimBar() {

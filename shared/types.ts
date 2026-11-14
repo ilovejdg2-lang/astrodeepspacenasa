@@ -1,4 +1,4 @@
-export const STATE_VERSION = 1 as const
+export const STATE_VERSION = 2 as const
 
 export const CREW_IDS = ['elena-torres', 'mateo-ruiz', 'sofia-chen', 'alex-morgan'] as const
 export type CrewId = (typeof CREW_IDS)[number]
@@ -12,6 +12,8 @@ export const SCENARIO_IDS = [
   'altered-message',
   'link-down',
   'stale-normal',
+  'unwell-normal',
+  'pulse-escalation',
 ] as const
 export type ScenarioId = (typeof SCENARIO_IDS)[number]
 
@@ -221,6 +223,16 @@ export interface RejectedPacket {
   detail: string
 }
 
+export type SharedRequestLevel = 'generica' | 'medico' | 'equipo'
+
+export interface SpaceRequest {
+  id: string
+  crewId: CrewId
+  level: SharedRequestLevel
+  line: string
+  sentAt: number
+}
+
 export interface Notice {
   tone: 'ok' | 'warn' | 'err'
   text: string
@@ -251,6 +263,7 @@ export interface AppState {
   resources: Resource[]
   movements: InventoryMovement[]
   communications: Communication[]
+  spaceRequests: SpaceRequest[]
   analyses: AnalysisRecord[]
   chats: ChatMessage[]
   audit: AuditEvent[]

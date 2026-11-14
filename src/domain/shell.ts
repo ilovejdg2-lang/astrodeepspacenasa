@@ -44,6 +44,7 @@ export function blankState(scenarioId: ScenarioId, seed = DEFAULT_SEED): AppStat
     resources: defaultResources(MISSION_EPOCH),
     movements: [],
     communications: [],
+    spaceRequests: [],
     analyses: [],
     chats: [],
     audit: [],

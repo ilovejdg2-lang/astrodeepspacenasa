@@ -1,4 +1,5 @@
 import type { AnalysisContextInput } from '../../shared/aiSchema'
+import { spaceProposalSchema, type SpaceContextInput, type SpaceProposal } from '../../shared/spaceSchema'
 import type { AnalysisResult } from '../../shared/types'
 
 export interface AiHealth {
@@ -46,6 +47,32 @@ export async function askModel(path: '/api/ai/analyze' | '/api/ai/chat', context
   } catch (error) {
     if (error instanceof DOMException && error.name === 'AbortError') {
       return { ok: false, code: 'aborted', message: 'Se canceló la solicitud. No se guardó un análisis.' }
+    }
+    return { ok: false, code: 'network', message: 'No hay conexión con el servicio de IA. El motor local sigue disponible.' }
+  }
+}
+
+export type SpaceModelResult =
+  | { ok: true; model: string; proposal: SpaceProposal }
+  | { ok: false; code: string; message: string }
+
+export async function askSpaceModel(context: SpaceContextInput, signal: AbortSignal): Promise<SpaceModelResult> {
+  try {
+    const response = await fetch('/api/ai/space', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(context),
+      signal,
+    })
+    const body = (await response.json().catch(() => null)) as { code?: string; message?: string; model?: string; result?: unknown } | null
+    const proposal = spaceProposalSchema.safeParse(body?.result)
+    if (!response.ok || !proposal.success) {
+      return { ok: false, code: body?.code ?? 'invalid_response', message: body?.message ?? 'La respuesta del modelo no se usa. El motor local sigue disponible.' }
+    }
+    return { ok: true, model: body?.model ?? 'modelo', proposal: proposal.data }
+  } catch (error) {
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      return { ok: false, code: 'aborted', message: 'Se canceló la consulta al modelo.' }
     }
     return { ok: false, code: 'network', message: 'No hay conexión con el servicio de IA. El motor local sigue disponible.' }
   }

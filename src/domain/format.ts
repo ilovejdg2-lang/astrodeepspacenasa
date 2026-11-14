@@ -1,4 +1,4 @@
-import type { AlertType, EpisodeStatus, Integrity, LinkStatus, MeasurementKind, MovementType } from '../../shared/types'
+import type { AlertType, EpisodeStatus, Integrity, LinkStatus, MeasurementKind, MovementType, SharedRequestLevel } from '../../shared/types'
 import { KIND_LABEL } from '../../shared/types'
 
 const mission = new Intl.DateTimeFormat('es', {
@@ -118,6 +118,8 @@ const AUDIT: Record<string, string> = {
   'comm-received': 'Recibido',
   'record-analysis': 'Análisis',
   'register-symptom': 'Síntomas',
+  'raise-space-alert': 'Contacto desde Mi espacio',
+  'send-space-request': 'Solicitud desde Mi espacio',
   'repeat-measurement': 'Medición repetida',
   'reject-duplicate': 'Mensaje repetido',
   'reject-altered': 'Mensaje alterado',
@@ -132,6 +134,16 @@ const ROLE: Record<string, string> = {
 
 export function auditActionLabel(action: string): string {
   return AUDIT[action] ?? action
+}
+
+const SHARE: Record<SharedRequestLevel, string> = {
+  generica: 'Genérica',
+  medico: 'Médico de vuelo',
+  equipo: 'Equipo',
+}
+
+export function shareLevelLabel(level: SharedRequestLevel): string {
+  return SHARE[level]
 }
 
 export function roleLabel(role: string): string {

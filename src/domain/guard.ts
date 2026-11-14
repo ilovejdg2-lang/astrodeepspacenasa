@@ -10,6 +10,7 @@ export function isAppState(value: unknown): value is AppState {
     Array.isArray(record.alerts) &&
     Array.isArray(record.symptoms) &&
     Array.isArray(record.communications) &&
+    Array.isArray(record.spaceRequests) &&
     typeof record.scenarioId === 'string' &&
     !!record.clock &&
     typeof record.clock.simulatedAt === 'number'

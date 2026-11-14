@@ -1,5 +1,5 @@
 import * as Tooltip from '@radix-ui/react-tooltip'
-import { Activity, Bell, Box, Brain, History, Menu, Moon, Monitor, RefreshCw, Stethoscope, Sun, Users, Volume2, VolumeX, Wifi, WifiOff, X } from 'lucide-react'
+import { Activity, Bell, Box, Brain, History, Lock, Menu, Moon, Monitor, RefreshCw, Stethoscope, Sun, Users, Volume2, VolumeX, Wifi, WifiOff, X } from 'lucide-react'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import { linkLabel } from '../domain/format'
@@ -32,6 +32,8 @@ const LINKS = [
   { to: '/medico', label: 'Equipo médico', icon: Stethoscope, end: false },
 ]
 
+const SPACE_LINK = { to: '/mi-espacio', label: 'Mi espacio', icon: Lock, end: false }
+
 export function Shell({ children }: { children: ReactNode }) {
   const { state, persistenceError, saving, dispatch } = useApp()
   const { choice, setChoice } = useTheme()
@@ -39,6 +41,7 @@ export function Shell({ children }: { children: ReactNode }) {
   const [more, setMore] = useState(false)
   const location = useLocation()
   const alerts = activeAlerts(state, 'active').length
+  const links = state.role === 'astronaut' ? [...LINKS.slice(0, 4), SPACE_LINK, ...LINKS.slice(4)] : LINKS
   const ai = state.notice
   const heard = useRef<Set<string> | null>(null)
   const [badgePop, setBadgePop] = useState(false)
@@ -85,7 +88,7 @@ export function Shell({ children }: { children: ReactNode }) {
           </div>
         </div>
         <nav className="nav" aria-label="Secciones">
-          {LINKS.map((link) => (
+          {links.map((link) => (
             <NavLink key={link.to} to={link.to} end={link.end} onClick={() => setOpen(false)}>
               <link.icon aria-hidden="true" size={18} strokeWidth={1.75} />
               {link.label}
@@ -131,7 +134,7 @@ export function Shell({ children }: { children: ReactNode }) {
         </main>
         <SimBar />
         <nav className="bottom-nav" aria-label="Secciones principales">
-          {LINKS.slice(0, 4).map((link) => (
+          {links.slice(0, 4).map((link) => (
             <NavLink key={link.to} to={link.to} end={link.end} onClick={() => setMore(false)}>
               <link.icon aria-hidden="true" size={18} strokeWidth={1.75} />
               {link.label}
@@ -141,7 +144,7 @@ export function Shell({ children }: { children: ReactNode }) {
         </nav>
         {more ? (
           <div className="more-menu">
-            {LINKS.slice(4).map((link) => (
+            {links.slice(4).map((link) => (
               <NavLink key={link.to} to={link.to} onClick={() => setMore(false)}>
                 <link.icon aria-hidden="true" size={18} strokeWidth={1.75} />
                 {link.label}
