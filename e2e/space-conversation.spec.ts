@@ -38,6 +38,30 @@ const answer = (text: string) => ({
   },
   toolsUsed: [{ name: 'getSupportOptions', status: 'ok' }],
 })
+
+test('mobile private conversation labels Gemini and shows only consulted evidence', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  await mockAccess(page)
+  await page.route('**/api/ai/space', (route) => route.fulfill({ json: {
+    ...answer('A controlled provider reply.'), model: 'gemini-3.8-flash',
+  } }))
+  await page.goto('/app/tripulacion')
+  await expect(page.getByTestId('backend-mode')).toHaveText('NestJS conectado')
+  const role = page.locator('input[name="simulated-role"][value="astronaut:elena-torres"]')
+  await role.click()
+  await expect(role).toBeChecked()
+  await page.goto('/app/mi-espacio')
+  await page.getByTestId('space-page-pin').fill('1001')
+  await page.getByRole('button', { name: 'Abrir sesión simulada' }).click()
+  await page.getByTestId('space-model-consent').check()
+  await page.getByTestId('space-draft').fill('Hello from a synthetic demo')
+  await page.getByRole('button', { name: /^(Talk|Conversar)$/ }).click()
+  await expect(page.getByText('Gemini · gemini-3.8-flash', { exact: true })).toBeVisible()
+  await page.getByText('Evidence consulted', { exact: true }).click()
+  await expect(page.getByText('getSupportOptions', { exact: true })).toBeVisible()
+  await expect(page.getByText('getRecentSleep', { exact: true })).toHaveCount(0)
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
+})
 test('model consent, short-term memory, levels and local continuity', async ({
   page,
 }) => {
@@ -85,6 +109,13 @@ test('model consent, short-term memory, levels and local continuity', async ({
     { role: 'assistant', content: 'I hear your loneliness.' },
   ])
   expect(bodies[1]?.selectedLevel).toBe('solo_yo')
+  await expect(page.getByText('getSupportOptions', { exact: true }).first()).toHaveCount(1)
+  await page.getByTestId('space-new-conversation').click()
+  await expect(page.locator('.bubble.user')).toHaveCount(0)
+  await page.getByTestId('space-draft').fill('A new conversation')
+  await page.getByRole('button', { name: /^(Talk|Conversar)$/ }).click()
+  await expect.poll(() => bodies.length).toBe(3)
+  expect(bodies[2]?.history).toEqual([])
   await page.getByTestId('space-model-consent').uncheck()
   await page.route('**/api/ai/**', (route) => route.abort())
   await page.getByTestId('space-draft').fill('I would rather not talk')

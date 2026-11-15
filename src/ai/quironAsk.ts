@@ -16,6 +16,7 @@ export interface QuironMessage {
   /** Honest label when answer is local/demo, not a live model */
   channel: 'model' | 'local' | 'demo' | 'error'
   contextLabel?: string
+  model?: string
 }
 
 export interface QuironAskResult {
@@ -154,7 +155,7 @@ export function formatServiceStatus(health: AiHealth | null, locale: QuironPubli
   }
   if (health.reachable && health.configured) {
     return {
-      label: locale === 'en' ? `Model ready · ${health.provider}` : `Modelo listo · ${health.provider}`,
+      label: locale === 'en' ? `Model configured · ${health.provider}` : `Modelo configurado · ${health.provider}`,
       ok: true,
     }
   }

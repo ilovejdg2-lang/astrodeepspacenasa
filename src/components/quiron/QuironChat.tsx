@@ -238,6 +238,7 @@ export function QuironChat({ mode, state = null }: { mode: QuironMode; state?: A
         sources: result.sources,
         channel: result.channel,
         contextLabel: result.contextLabel,
+        model: result.model,
       }
       setMessages((prev) => [...prev, bot])
       setAnnounce(result.text)
@@ -436,7 +437,7 @@ export function QuironChat({ mode, state = null }: { mode: QuironMode; state?: A
                       <div>
                         <div className="quiron-bubble">{formatQuironReply(msg.text)}</div>
                         <div className="quiron-meta">
-                          <span>{channelLabel(msg.channel)}</span>
+                          <span>{msg.channel === 'model' && msg.model?.startsWith('gemini-') ? `Gemini (${msg.model})` : channelLabel(msg.channel)}</span>
                           {msg.sources && msg.sources.length > 0 ? <span>· {msg.sources.slice(0, 2).join(' · ')}</span> : null}
                           <button type="button" className="quiron-copy" onClick={() => void copyText(msg.text)}>
                             {en ? 'Copy' : 'Copiar'}

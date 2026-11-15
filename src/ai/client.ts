@@ -24,6 +24,32 @@ export type ModelResult =
   | { ok: true; model: string; result: AnalysisResult }
   | { ok: false; code: string; message: string }
 
+function serviceFailure(status: number, body: unknown) {
+  const parsed = z.object({
+    code: z.string().optional(),
+    message: z.string().optional(),
+  }).safeParse(body)
+  const data = parsed.success ? parsed.data : undefined
+  const code = data?.code ?? ({
+    404: 'route_not_found',
+    429: 'rate_limit',
+    504: 'timeout',
+  } as Record<number, string>)[status] ?? 'network'
+  const messages: Record<string, string> = {
+    timeout: 'El proveedor de IA no respondió a tiempo. El motor local sigue disponible; puedes volver a intentarlo más tarde.',
+    route_not_found: 'No se encontró la ruta de IA en el backend. El motor local sigue disponible.',
+    rate_limit: 'Se alcanzó el límite de consultas de IA. Espera antes de volver a intentarlo; el motor local sigue disponible.',
+    authentication: 'El proveedor de IA rechazó la configuración de acceso del servidor. El motor local sigue disponible.',
+    model_unavailable: 'El modelo configurado no está disponible para esta cuenta. El motor local sigue disponible.',
+    network: 'No se pudo completar la consulta al servicio de IA. El motor local sigue disponible.',
+  }
+  return {
+    ok: false as const,
+    code,
+    message: messages[code] ?? data?.message ?? messages.network!,
+  }
+}
+
 export async function getAiHealth(signal?: AbortSignal): Promise<AiHealth> {
   try {
     const response = await fetch(apiUrl('/api/ai/health'), { signal })
@@ -59,7 +85,7 @@ export async function askModel(
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify(context),
-      signal,
+      signal: AbortSignal.any([signal, AbortSignal.timeout(40000)]),
     })
     const body = (await response.json().catch(() => null)) as {
       code?: string
@@ -67,7 +93,8 @@ export async function askModel(
       model?: string
       result?: AnalysisResult
     } | null
-    if (!response.ok || !body?.result) {
+    if (!response.ok) return serviceFailure(response.status, body)
+    if (!body?.result) {
       return {
         ok: false,
         code: body?.code ?? 'network',
@@ -81,8 +108,10 @@ export async function askModel(
         code: 'invalid_response',
         message: 'La respuesta de IA contiene datos o referencias invÃ¡lidos.',
       }
-    return { ok: true, model: body.model ?? 'modelo', result: result.data }
+    return { ok: true, model: z.string().max(120).catch('modelo').parse(body.model), result: result.data }
   } catch (error) {
+    if (error instanceof DOMException && error.name === 'TimeoutError')
+      return serviceFailure(504, null)
     if (error instanceof DOMException && error.name === 'AbortError') {
       return {
         ok: false,
@@ -136,7 +165,8 @@ export async function askSpaceModel(
       toolsUsed?: unknown
     } | null
     const proposal = spaceProposalSchema.safeParse(body?.result)
-    if (!response.ok || !proposal.success) {
+    if (!response.ok) return serviceFailure(response.status, body)
+    if (!proposal.success) {
       return {
         ok: false,
         code: body?.code ?? 'invalid_response',
@@ -147,7 +177,7 @@ export async function askSpaceModel(
     }
     return {
       ok: true,
-      model: body?.model ?? 'modelo',
+      model: z.string().max(120).catch('modelo').parse(body?.model),
       proposal: {
         ...proposal.data,
         nivel: context.selectedLevel ?? proposal.data.nivel,
@@ -161,6 +191,8 @@ export async function askSpaceModel(
         .parse(body?.toolsUsed),
     }
   } catch (error) {
+    if (error instanceof DOMException && error.name === 'TimeoutError')
+      return serviceFailure(504, null)
     if (error instanceof DOMException && error.name === 'AbortError') {
       return {
         ok: false,

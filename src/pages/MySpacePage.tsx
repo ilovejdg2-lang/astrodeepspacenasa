@@ -306,7 +306,7 @@ export function MySpacePage() {
         ...latest,
         messages: latest.messages.map((m) =>
           m.id === assistantId
-            ? { ...m, text: applied.text, source: applied.source }
+            ? { ...m, text: applied.text, source: applied.source, model: response.model, toolsUsed: response.toolsUsed }
             : m,
         ),
       })
@@ -548,12 +548,25 @@ export function MySpacePage() {
           </p>
           <section className="panel">
             <h2>{en ? 'How you feel' : 'Cómo te sientes'}</h2>
+            <button type="button" className="chip" data-testid="space-new-conversation" onClick={() => {
+              revokeConsent()
+              historyStart.current = 0
+              setDraft('')
+              const current = recordRef.current
+              if (current) void commit({ ...current, messages: [] })
+            }}>{en ? 'New conversation (clears this chat)' : 'Nueva conversación (borra este chat)'}</button>
             <div className="chat-log" aria-live="polite">
               {record.messages.length === 0 ? <p className="muted">{en ? 'There are no messages in your space yet.' : 'Todavía no hay mensajes en tu espacio.'}</p> : null}
               {record.messages.map((message) => (
                 <article key={message.id} className={message.role === 'user' ? 'bubble user' : 'bubble'}>
                   {message.role === 'assistant' ? <span className="muted">{message.source === 'model' ? (en ? 'Model' : 'Modelo') : (en ? 'Local engine' : 'Motor local')}</span> : null}
                   <p>{message.text}</p>
+                  {message.source === 'model' && message.model && <p className="muted">{message.model.startsWith('gemini-') ? 'Gemini' : (en ? 'Model' : 'Modelo')} · {message.model}</p>}
+                  {message.source === 'model' && message.toolsUsed?.some((t) => t.status === 'ok') && <details>
+                    <summary>{en ? 'Evidence consulted' : 'Evidencia consultada'}</summary>
+                    <ul>{message.toolsUsed.filter((t) => t.status === 'ok').map((t, i) => <li key={`${t.name}-${i}`}>{t.name}</li>)}</ul>
+                    <p className="muted">{en ? 'Authorized simulation data. No notification was sent.' : 'Datos de simulación autorizados. No se envió ninguna notificación.'}</p>
+                  </details>}
                 </article>
               ))}
             </div>

@@ -76,3 +76,7 @@ Límites por cliente, validación y cuerpos por ruta, errores seguros con reques
 Memoria reciente opcional, consentimiento independiente para el modelo, herramientas de solo lectura en Nest, cancelación y continuidad local. Se conserva el nivel de compartir elegido. Ver [contratos, archivos, pruebas y límites de seguridad](docs/MI-ESPACIO.md).
 
 El [plan maestro implementado](docs/PLAN-IMPLEMENTADO.md) documenta las siete herramientas, tendencias y calidad de evidencia, paridad React/Nest, trazabilidad NASA y demo guiada de siete pasos.
+
+## Gemini y Quiron AI
+
+[Configuracion, evidencia, pruebas y activacion en Render](docs/GEMINI.md). Las claves permanecen exclusivamente en Nest.

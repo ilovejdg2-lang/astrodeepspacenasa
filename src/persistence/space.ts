@@ -8,6 +8,8 @@ export interface SpaceMessage {
   text: string
   at: number
   source?: 'local_engine' | 'model'
+  model?: string
+  toolsUsed?: { name: string; status: string }[]
 }
 
 export interface SpaceDataUse {
@@ -83,6 +85,8 @@ function isMessage(value: unknown): value is SpaceMessage {
     message.source === 'model'
   return (
     sourceOk &&
+    (message.model === undefined || (typeof message.model === 'string' && message.model.length <= 120)) &&
+    (message.toolsUsed === undefined || (Array.isArray(message.toolsUsed) && message.toolsUsed.length <= 4 && message.toolsUsed.every((t) => t && typeof t === 'object' && typeof t.name === 'string' && t.name.length <= 80 && typeof t.status === 'string' && t.status.length <= 30))) &&
     typeof message.id === 'string' &&
     (message.role === 'user' || message.role === 'assistant') &&
     typeof message.text === 'string' &&
