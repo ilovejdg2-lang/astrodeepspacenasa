@@ -72,9 +72,9 @@ describe('reloj y escenarios', () => {
     expect(held.clock.simulatedAt).toBe(moved.clock.simulatedAt)
   })
 
-  it('reiniciar vuelve a un estado conocido y deja el reloj en pausa', () => {
+  it('reiniciar vuelve a un estado conocido y reanuda el reloj vivo', () => {
     let state = createInitialState('gradual-fatigue')
-    state = reduce(state, { type: 'setRunning', running: true })
+    state = reduce(state, { type: 'setRunning', running: false })
     state = reduce(state, {
       type: 'addSymptom',
       crewId: 'elena-torres',
@@ -84,7 +84,8 @@ describe('reloj y escenarios', () => {
     })
     const reset = reduce(state, { type: 'resetSimulation' })
     const fresh = createInitialState('gradual-fatigue')
-    expect(reset.clock.running).toBe(false)
+    expect(reset.clock.running).toBe(true)
+    expect(reset.clock.speed).toBe(10)
     expect(reset.symptoms.map((item) => item.id)).toEqual(fresh.symptoms.map((item) => item.id))
     expect(reset.measurements).toHaveLength(fresh.measurements.length)
   })
@@ -110,10 +111,16 @@ describe('misión HELIOS', () => {
 
   it('reiniciar conserva la etapa y la lista de preparación', () => {
     let state = createInitialState('gradual-fatigue')
-    state = reduce(state, { type: 'setMissionStage', stage: 'preembarque' })
+    // Partir de preembarque (el default demo puede estar a bordo y el checklist ya no se edita).
+    state = {
+      ...state,
+      mission: { ...state.mission, stage: 'preembarque' },
+    }
     state = reduce(state, { type: 'setPrepStatus', prepId: 'prep-sleep', status: 'aprobado' })
+    state = reduce(state, { type: 'setMissionStage', stage: 'a_bordo' })
+    state = reduce(state, { type: 'setMissionStage', stage: 'posmision' })
     const reset = reduce(state, { type: 'resetSimulation' })
-    expect(reset.mission.stage).toBe('preembarque')
+    expect(reset.mission.stage).toBe('posmision')
     expect(reset.prepItems.find((item) => item.id === 'prep-sleep')?.status).toBe('aprobado')
   })
 
@@ -468,6 +475,7 @@ describe('permisos y exportación', () => {
     expect(kept.source).toBe('local_engine')
     expect(kept.text).toContain('no debe quedarse solo entre tú y yo')
 
+    state = reduce(state, { type: 'setSpeed', speed: 1 })
     state = reduce(state, { type: 'setRunning', running: true })
     state = reduce(state, { type: 'tick', realDeltaMs: 60_000 })
     expect(latestReliable(state, 'elena-torres', 'heart_rate')?.value).toBe(160)

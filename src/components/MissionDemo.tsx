@@ -93,7 +93,7 @@ export function MissionDemoButton() {
     {(step !== null || error) && createPortal(<section className="mission-demo-controller panel" aria-label={en ? 'Guided mission demo' : 'Demo guiada de misión'} data-testid="mission-demo-controller" aria-busy={busy}>
       <div className="spread">
         <strong>{en ? 'Guided mission demo' : 'Demo guiada de misión'} · {(step ?? 0) + 1}/7</strong>
-        <button type="button" className="chip" disabled={busy} onClick={() => { setStep(null); setError('') }}>{en ? 'Close guide' : 'Cerrar guía'}</button>
+        <button type="button" className="chip" disabled={busy} onClick={() => { setStep(null); setError(''); void runActions([{ type: 'setRunning', running: true }, { type: 'setSpeed', speed: 10 }]) }}>{en ? 'Close guide' : 'Cerrar guía'}</button>
       </div>
       <p>{en ? 'Loads fictional scenarios and replaces the current simulation. Forward preserves the current messages. Restart or Previous rebuilds the scenario; no real person is notified.' : 'Carga escenarios ficticios y reemplaza la simulación actual. Avanzar conserva los mensajes; reiniciar o retroceder reconstruye el escenario. No se notifica a ninguna persona real.'}</p>
       <div className="chips" role="group" aria-label={en ? 'Demo steps' : 'Pasos del demo'}>

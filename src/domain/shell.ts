@@ -31,7 +31,7 @@ export function blankState(scenarioId: ScenarioId, seed = DEFAULT_SEED): AppStat
     stateVersion: STATE_VERSION,
     scenarioId,
     seed,
-    clock: { running: false, speed: 1, originAt: MISSION_EPOCH, simulatedAt: MISSION_EPOCH },
+    clock: { running: true, speed: 10, originAt: MISSION_EPOCH, simulatedAt: MISSION_EPOCH },
     link: 'up',
     linkDelayMin: 0,
     role: 'medical',
