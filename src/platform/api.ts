@@ -88,7 +88,6 @@ export const platformApi = {
       method: 'POST',
       body: JSON.stringify({ titles }),
     }),
-  startCheck: (id: string) => platformFetch<StartCheck>(`/api/platform/missions/${id}/start-check`),
   start: (id: string) =>
     platformFetch<MissionDetail & { evaluation: StartCheck }>(`/api/platform/missions/${id}/start`, {
       method: 'POST',
@@ -102,16 +101,15 @@ export const platformApi = {
     platformFetch(`/api/platform/missions/${id}/wake`, { method: 'POST', body: JSON.stringify(payload) }),
   addSleep: (id: string, body: { startAt: number; endAt: number; quality?: number; kind?: string }) =>
     platformFetch(`/api/platform/missions/${id}/sleep`, { method: 'POST', body: JSON.stringify(body) }),
-  listSleep: (id: string) => platformFetch<{ items: unknown[] }>(`/api/platform/missions/${id}/sleep`),
+  listSleep: (id: string, subjectId?: string) =>
+    platformFetch<{ items: unknown[] }>(
+      `/api/platform/missions/${id}/sleep${subjectId ? `?subjectId=${encodeURIComponent(subjectId)}` : ''}`,
+    ),
   addSymptom: (id: string, body: Record<string, unknown>) =>
     platformFetch(`/api/platform/missions/${id}/symptoms`, { method: 'POST', body: JSON.stringify(body) }),
   listSymptoms: (id: string, subjectId?: string) =>
     platformFetch<{ items: unknown[] }>(
       `/api/platform/missions/${id}/symptoms${subjectId ? `?subjectId=${encodeURIComponent(subjectId)}` : ''}`,
-    ),
-  listSleep: (id: string, subjectId?: string) =>
-    platformFetch<{ items: unknown[] }>(
-      `/api/platform/missions/${id}/sleep${subjectId ? `?subjectId=${encodeURIComponent(subjectId)}` : ''}`,
     ),
   grants: (id: string) => platformFetch<{ items: unknown[]; chief: { sharesWithChief: string[]; neverAutoShared: string[]; note: string } }>(`/api/platform/missions/${id}/grants`),
   grant: (id: string, body: Record<string, unknown>) =>
