@@ -57,8 +57,12 @@ export function DataNetwork({ reduced, label }: Props) {
       const dark = readThemeDark()
       ctx.clearRect(0, 0, w, h)
 
-      const bg = ctx.createRadialGradient(w * 0.5, h * 0.5, 0, w * 0.5, h * 0.5, Math.max(w, h) * 0.6)
-      bg.addColorStop(0, dark ? 'rgba(221,212,243,0.1)' : 'rgba(221,212,243,0.28)')
+      ctx.fillStyle = dark ? '#10131E' : '#141824'
+      ctx.fillRect(0, 0, w, h)
+
+      const bg = ctx.createRadialGradient(w * 0.5, h * 0.42, 0, w * 0.5, h * 0.42, Math.max(w, h) * 0.58)
+      bg.addColorStop(0, dark ? 'rgba(221,212,243,0.14)' : 'rgba(221,212,243,0.16)')
+      bg.addColorStop(0.55, 'rgba(245,0,79,0.08)')
       bg.addColorStop(1, 'transparent')
       ctx.fillStyle = bg
       ctx.fillRect(0, 0, w, h)
@@ -81,7 +85,7 @@ export function DataNetwork({ reduced, label }: Props) {
           const dy = a.y - b.y
           const d = Math.hypot(dx, dy)
           if (d < linkDist) {
-            ctx.strokeStyle = dark ? `rgba(255,255,255,${0.18 * (1 - d / linkDist)})` : `rgba(24,32,38,${0.16 * (1 - d / linkDist)})`
+            ctx.strokeStyle = `rgba(255,255,255,${(dark ? 0.2 : 0.16) * (1 - d / linkDist)})`
             ctx.lineWidth = 1
             ctx.beginPath()
             ctx.moveTo(a.x, a.y)

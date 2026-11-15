@@ -187,13 +187,19 @@ export function HomePage() {
           <h2 id="team-home-title">{en ? 'Meet the team' : 'Conocé al equipo'}</h2>
           <p className="pub-lead">
             {en
-              ? 'Large profiles with orbital frames. Full biographies live on individual pages.'
-              : 'Perfiles grandes con marcos orbitales. Las biografías completas viven en páginas individuales.'}
+              ? 'Swipe the crew carousel, then open any profile for the full biography.'
+              : 'Deslizá el carrusel del equipo y abrí cualquier perfil para la biografía completa.'}
           </p>
         </div>
-        <div className="team-gallery">
+        <div className="team-gallery" role="list" aria-label={en ? 'Team carousel' : 'Carrusel del equipo'}>
           {team.map((member, index) => (
-            <Link key={member.id} className="team-gallery-card" to={`/nosotros/${member.slug}`} style={{ animationDelay: `${index * 60}ms` }}>
+            <Link
+              key={member.id}
+              className="team-gallery-card"
+              to={`/nosotros/${member.slug}`}
+              style={{ animationDelay: `${index * 60}ms` }}
+              role="listitem"
+            >
               <figure className="team-gallery-photo">
                 <span className="team-orbit-mark" aria-hidden="true" />
                 <TeamPhoto member={member} />
@@ -205,6 +211,9 @@ export function HomePage() {
             </Link>
           ))}
         </div>
+        <p className="team-gallery-hint" aria-hidden="true">
+          {en ? 'Swipe to see more →' : 'Deslizá para ver más →'}
+        </p>
         <Link className="pub-btn-ghost" to="/nosotros">
           {en ? 'About us' : 'Acerca de nosotros'} <ArrowRight size={16} aria-hidden="true" />
         </Link>

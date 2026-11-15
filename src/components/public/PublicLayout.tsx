@@ -145,7 +145,11 @@ export function PublicLayout() {
           <div className="pub-footer-grid">
             <div>
               <p className="pub-kicker">HELIOS</p>
-              <p className="pub-footer-title">Health Evaluation &amp; Life Indicators Observation System</p>
+              <p className="pub-footer-title">
+                {en
+                  ? 'Health Evaluation & Life Indicators Observation System'
+                  : 'Sistema de observación de indicadores de salud y de vida'}
+              </p>
               <p className="pub-muted">{en ? 'Independent prototype for space-health support. It is not an official NASA product.' : 'Prototipo independiente de acompañamiento en salud espacial. No es un producto oficial de NASA.'}</p>
             </div>
             <nav aria-label={en ? 'Footer' : 'Pie de página'}>

@@ -86,12 +86,14 @@ function ChartTip({
   unit,
 }: {
   active?: boolean
-  payload?: Array<{ value?: number | null; payload?: Point }>
+  // Recharts tipa `value` como ValueType (number | string); normalizamos abajo.
+  payload?: ReadonlyArray<{ value?: unknown; payload?: Point }>
   unit: string
 }) {
   const point = payload?.[0]?.payload
-  const value = payload?.[0]?.value
-  if (!active || !point || value === null || value === undefined) return null
+  const raw = payload?.[0]?.value
+  const value = typeof raw === 'number' ? raw : Number(raw)
+  if (!active || !point || !Number.isFinite(value)) return null
   const people = point.people && point.people > 1 ? ` · media de ${point.people} personas` : ''
   return (
     <div className="hist-tip" role="status">
