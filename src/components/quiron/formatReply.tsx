@@ -7,7 +7,8 @@ export function formatQuironReply(text: string): ReactNode {
     const lines = block.split('\n')
     const listLines = lines.filter((line) => /^[-*•]\s+/.test(line.trim()) || /^\d+\.\s+/.test(line.trim()))
     if (listLines.length === lines.length && lines.length > 1) {
-      const ordered = /^\d+\.\s+/.test(lines[0].trim())
+      const first = lines[0] ?? ''
+      const ordered = /^\d+\.\s+/.test(first.trim())
       const Tag = ordered ? 'ol' : 'ul'
       return (
         <Tag key={index} className="quiron-md-list">

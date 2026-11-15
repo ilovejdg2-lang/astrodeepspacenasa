@@ -16,7 +16,7 @@ describe('answerPublicLocal', () => {
 
   it('answers feature questions in English', () => {
     const answer = answerPublicLocal('What can I do in HELIOS?', 'en')
-    expect(answer.channel ?? 'demo').toBeTruthy()
+    expect(answer.demo).toBe(true)
     expect(answer.text).toMatch(/mission|dashboard|prototype/i)
   })
 })
