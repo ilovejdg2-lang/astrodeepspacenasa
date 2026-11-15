@@ -1,6 +1,12 @@
-import { useEffect } from 'react'
+import { lazy, Suspense, useEffect } from 'react'
+import { useOutletContext } from 'react-router-dom'
 import { Reveal } from '../../components/public/Reveal'
-import { QUIRON_PRINCIPLES, QUIRON_QUESTIONS, STAGES } from '../../content/landing'
+import { publicCapabilities, publicPrinciples, publicQuestions, publicStages } from '../../content/publicCopy'
+import { useLocale } from '../../i18n'
+
+const OrbitalMission = lazy(() =>
+  import('../../components/public/scenes/OrbitalMission').then((m) => ({ default: m.OrbitalMission })),
+)
 
 const CAPABILITIES = [
   {
@@ -35,45 +41,45 @@ const CAPABILITIES = [
   },
 ]
 
+type Ctx = { reduced: boolean }
+
 export function ComoFuncionaPage() {
+  const { reduced } = useOutletContext<Ctx>()
+  const { lang } = useLocale()
+  const en = lang === 'en'
+  const stages = publicStages(lang)
+  const questions = publicQuestions(lang)
+  const principles = publicPrinciples(lang)
+  const capabilities = en ? publicCapabilities(lang) : CAPABILITIES
   useEffect(() => {
-    document.title = 'Cómo funciona · HELIOS'
-  }, [])
+    document.title = en ? 'How it works · HELIOS' : 'Cómo funciona · HELIOS'
+  }, [en])
 
   return (
     <>
       <header className="pub-page-hero">
-        <p className="pub-kicker">Cómo funciona</p>
-        <h1>Un ciclo continuo de acompañamiento</h1>
+        <p className="pub-kicker">{en ? 'How it works' : 'Cómo funciona'}</p>
+        <h1>{en ? 'A continuous cycle of support' : 'Un ciclo continuo de acompañamiento'}</h1>
         <p className="pub-lead">
-          De la preparación al regreso: cada etapa tiene su escena, sus ejemplos y su vínculo con el resto de la misión.
+          {en
+            ? 'From preparation to return: each stage has its own scene, examples, and link to the rest of the mission.'
+            : 'De la preparación al regreso: cada etapa tiene su escena, sus ejemplos y su vínculo con el resto de la misión.'}
         </p>
       </header>
 
-      <div className="stage-rail" aria-label="Etapas de la misión">
-        {STAGES.map((stage, index) => (
-          <Reveal key={stage.id} as="article" className="stage-card" delay={index * 0.06}>
-            <p className="pub-kicker">Etapa {index + 1}</p>
-            <h2>{stage.title}</h2>
-            <p className="pub-muted">{stage.lead}</p>
-            <ul>
-              {stage.items.map((item) => (
-                <li key={item}>{item}</li>
-              ))}
-            </ul>
-          </Reveal>
-        ))}
-      </div>
+      <Suspense fallback={<div className="orbital-static scene-block" aria-hidden="true" />}>
+        <OrbitalMission stages={stages} reduced={reduced} lang={lang} />
+      </Suspense>
 
       <Reveal className="editorial-block space">
-        <h2>Quirón Bot · preguntas de ejemplo</h2>
+        <h2>{en ? 'Quirón Bot · example questions' : 'Quirón Bot · preguntas de ejemplo'}</h2>
         <ul className="feature-list">
-          {QUIRON_QUESTIONS.map((q) => (
+          {questions.map((q) => (
             <li key={q}>{q}</li>
           ))}
         </ul>
         <div className="highlight-grid" style={{ marginTop: 18 }}>
-          {QUIRON_PRINCIPLES.map((item) => (
+          {principles.map((item) => (
             <div key={item.title} className="highlight-item" style={{ background: 'rgba(255,255,255,0.06)', color: '#f4f2f8' }}>
               <strong>{item.title}</strong>
               <p style={{ margin: '6px 0 0', fontWeight: 500 }}>{item.text}</p>
@@ -82,7 +88,7 @@ export function ComoFuncionaPage() {
         </div>
       </Reveal>
 
-      {CAPABILITIES.map((item, index) => (
+      {capabilities.map((item, index) => (
         <Reveal key={item.title} className={`editorial-block ${item.tone}`} delay={index * 0.04}>
           <h2>{item.title}</h2>
           <p>{item.text}</p>

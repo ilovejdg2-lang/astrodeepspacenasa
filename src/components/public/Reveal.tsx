@@ -20,8 +20,10 @@ export function Reveal({
   ...rest
 }: RevealProps) {
   const prefersReduced = useReducedMotion()
+  const manualReduced = typeof document !== 'undefined' && document.documentElement.dataset.reduceMotion === '1'
+  const quiet = Boolean(prefersReduced || manualReduced)
 
-  if (prefersReduced) {
+  if (quiet) {
     const Tag = as
     return (
       <Tag className={className} style={style} {...rest}>
