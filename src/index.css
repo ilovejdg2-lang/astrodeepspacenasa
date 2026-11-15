@@ -269,6 +269,20 @@ a.brand-mark:hover { background: color-mix(in srgb, var(--accent) 8%, transparen
 }
 .helios-pill.down { color: var(--bad); }
 .demo-pill { cursor: pointer; }
+.sim-clock { display: inline-flex; align-items: center; gap: 6px; }
+.sim-clock-toggle { gap: 8px; cursor: pointer; }
+.shell.is-running .sim-clock-toggle { background: color-mix(in srgb, var(--accent) 18%, var(--surface)); color: var(--accent); }
+.sim-clock-speed {
+  gap: 6px; padding-right: 10px; cursor: pointer;
+}
+.sim-clock-speed select {
+  border: 0; background: transparent; color: inherit; font: inherit; font-weight: 750;
+  cursor: pointer; padding: 0; margin: 0;
+}
+.sim-clock-time {
+  font-variant-numeric: tabular-nums; min-width: 4.5rem; justify-content: center; padding: 0 12px;
+  opacity: 0.92;
+}
 .lang-switch { display: inline-flex; border-radius: 999px; overflow: hidden; border: 1px solid var(--line); }
 .lang-switch button {
   min-height: 42px; min-width: 44px; border: 0; background: var(--surface); color: var(--ink); font-weight: 750;
@@ -624,12 +638,15 @@ tr[aria-selected="true"] { background: var(--accent-soft); }
     font-size: 0.75rem; font-weight: 750;
   }
   .top-actions > .helios-pill:not(.demo-pill) { display: none; }
+  .sim-clock-time { display: none; }
+  .sim-clock-speed { padding: 0 8px; }
   .mobile-brand { flex-shrink: 0; max-width: 38%; }
   .mobile-brand .helios-wordmark { font-size: 1.35rem; }
   .helios-pill {
     min-height: 36px; padding: 0 10px; font-size: 0.74rem; border-radius: 999px;
     max-width: min(36vw, 148px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
+  .sim-clock .helios-pill { max-width: none; }
   .demo-pill,
   .topbar [data-testid="sim-pill"] { display: none; }
   .ecg-backdrop {

@@ -261,14 +261,22 @@ function applyMinute(state: AppState, minute: number): AppState {
       minute,
       state.seed,
     );
-    if (value === null) return state;
-    return appendLiveSample(
-      state,
-      'elena-torres',
-      'heart_rate',
-      value,
-      `live-elena-${minute}`,
-    );
+    let next = state;
+    if (value !== null) {
+      next = appendLiveSample(
+        next,
+        'elena-torres',
+        'heart_rate',
+        value,
+        `live-elena-${minute}`,
+      );
+    }
+    for (const crewId of ['mateo-ruiz', 'sofia-chen', 'alex-morgan'] as const) {
+      const hr = latentHeartRate('baseline', crewId, minute, state.seed);
+      if (hr === null) continue;
+      next = appendLiveSample(next, crewId, 'heart_rate', hr, `live-${crewId}-${minute}`);
+    }
+    return next;
   }
   if (state.scenarioId === 'frozen-sensor') {
     return appendLiveSample(
@@ -336,7 +344,7 @@ function swapScenario(state: AppState, scenarioId: ScenarioId): AppState {
     prepItems: state.prepItems,
     notice: {
       tone: 'ok',
-      text: 'La simulación volvió a su estado inicial. El reloj está en pausa. La etapa de la misión se conservó.',
+      text: 'La simulación volvió a su estado inicial. El reloj sigue en marcha. La etapa de la misión se conservó.',
     },
   };
 }

@@ -153,6 +153,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
         /* Sin banner visual: se continúa con demo sin interrumpir la maqueta HELIOS. */
         if (active) setPersistenceError(null)
       }
+      // Sesiones antiguas quedaban en pausa: las métricas no avanzaban. Arrancar vivo.
+      if (!initial.clock.running || initial.clock.speed < 2) {
+        initial = {
+          ...initial,
+          clock: {
+            ...initial.clock,
+            running: true,
+            speed: initial.clock.speed < 2 ? 10 : initial.clock.speed,
+          },
+        }
+      }
       if (!active) return
       let sessionId: string = crypto.randomUUID()
       try {

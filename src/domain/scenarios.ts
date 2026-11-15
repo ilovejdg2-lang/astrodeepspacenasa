@@ -334,7 +334,8 @@ export function latentHeartRate(scenarioId: ScenarioId, crewId: CrewId, minute: 
   if (scenarioId === 'frozen-sensor' && crewId === 'elena-torres') return 81
   if (scenarioId === 'gradual-fatigue' && crewId === 'elena-torres') return Math.round(Math.min(112, 104 + Math.max(0, minute) * 0.2))
   if (scenarioId === 'stale-normal' && crewId === 'elena-torres') return 98
-  if (scenarioId === 'pulse-escalation' && crewId === 'elena-torres') return 160
+  // Micro-variación para no disparar la detección de sensor congelado en ticks rápidos.
+  if (scenarioId === 'pulse-escalation' && crewId === 'elena-torres') return 159 + (Math.abs(minute) % 3)
   const random = mulberry32(seed + minute + crew.name.length)()
   const mid = (crew.baseline.hrMin + crew.baseline.hrMax) / 2
   return clamp(Math.round(mid + (random - 0.5) * 4), crew.baseline.hrMin, crew.baseline.hrMax)

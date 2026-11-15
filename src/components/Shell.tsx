@@ -16,6 +16,7 @@ import { HeliosLogo } from './HeliosLogo'
 import { Hint } from './Hint'
 import { MissionDemoButton } from './MissionDemo'
 import { PageEnter } from './PageEnter'
+import { SimClockControls } from './SimClockControls'
 
 const EcgBackdrop = lazy(() => import('./EcgBackdrop').then((m) => ({ default: m.EcgBackdrop })))
 const CrewBackdrop = lazy(() => import('./CrewBackdrop').then((m) => ({ default: m.CrewBackdrop })))
@@ -299,6 +300,7 @@ export function Shell({ children }: { children: ReactNode }) {
             {getStoredProfile() ? <RoleSwitcher /> : null}
           </div>
           <div className="top-actions">
+            <SimClockControls />
             <MissionDemoButton />
             <Link className="helios-pill" to="/misiones/evidencia" title={en ? 'Evidence hub' : 'Hub de evidencia'}>
               {en ? 'Defense' : 'Defensa'}
