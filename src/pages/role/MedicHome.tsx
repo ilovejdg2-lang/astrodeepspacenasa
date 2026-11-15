@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { SharedCareSummaries } from '../../components/quiron/SharedCareSummaries'
 import { Link } from 'react-router-dom'
 import { useLocale } from '../../i18n'
 import { profileDisplayName } from '../../platform/copy'
@@ -147,6 +148,7 @@ export function MedicHome() {
         </section>
       </div>
 
+      <SharedCareSummaries />
       <section className="rd-card">
         <h2>{en ? 'Requests & follow-ups' : 'Solicitudes y seguimientos'}</h2>
         <div className="rd-actions">
