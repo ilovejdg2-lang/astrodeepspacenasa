@@ -1,7 +1,11 @@
 import * as Tooltip from '@radix-ui/react-tooltip'
-import { Activity, AlertTriangle, Box, Brain, BookOpen, History, Lock, Menu, Moon, Rocket, Stethoscope, Sun, X } from 'lucide-react'
+import { Activity, AlertTriangle, Box, Brain, BookOpen, Heart, History, Lock, Menu, Moon, Rocket, Stethoscope, Sun, X } from 'lucide-react'
 import { useEffect, useRef, useState, type ReactNode, type SVGProps } from 'react'
 import { Link, NavLink, useLocation } from 'react-router-dom'
+import { profileTitle, roleLabel } from '../platform/copy'
+import { getStoredProfile } from '../platform/session'
+import { useWorkspaceRole } from '../platform/workspace'
+import { RoleSwitcher } from './role/RoleSwitcher'
 import { activeAlerts } from '../domain/selectors'
 import { useApp } from '../state/store'
 import { useTheme } from '../theme'
@@ -10,7 +14,6 @@ import { AnalysisBackdrop } from './AnalysisBackdrop'
 import { HistoryBackdrop } from './HistoryBackdrop'
 import { ResourcesBackdrop } from './ResourcesBackdrop'
 import { CrewBackdrop } from './CrewBackdrop'
-import { MissionDemoButton } from './MissionDemo'
 import { useLocale } from '../i18n'
 import { noticeText } from '../noticeLocale'
 import { EcgBackdrop } from './EcgBackdrop'
@@ -46,34 +49,49 @@ function HelmetIcon({ size = 20, strokeWidth = 2, ...props }: SVGProps<SVGSVGEle
 const NAV_ICON = 20
 const NAV_STROKE = 2
 
-function earthPill(link: 'up' | 'delayed' | 'down', delayMin: number, shell: { linkDown: string; linkDelayed: (minutes: number) => string; linkUp: string }) {
-  if (link === 'down') return shell.linkDown
-  if (link === 'delayed') return shell.linkDelayed(delayMin)
-  return shell.linkUp
-}
-
 function moreIsCurrent(pathname: string, primary: { to: string }[], narrow: boolean, astronaut: boolean): boolean {
   const overflow = primary.slice(narrow ? 4 : 5).some((link) => pathname === link.to || pathname.startsWith(`${link.to}/`))
   return overflow || pathname.startsWith('/app/mision') || pathname.startsWith('/app/riesgos') || (astronaut && pathname.startsWith('/app/mi-espacio'))
 }
 
 export function Shell({ children }: { children: ReactNode }) {
-  const { state, persistenceError, backendMode, backendError } = useApp()
+  const { state, persistenceError, backendError } = useApp()
   const { resolved, setChoice, toggle } = useTheme()
   const { lang, setLang, copy } = useLocale()
   const shell = copy.shell
-  const primaryLinks = [
-    { to: '/app', label: shell.monitor, icon: Activity, end: true },
-    { to: '/app/tripulacion', label: shell.crew, icon: HelmetIcon, end: false },
-    { to: '/app/alertas', label: shell.alerts, icon: AlertTriangle, end: false },
-    { to: '/app/recursos', label: shell.resources, icon: Box, end: false },
-    { to: '/app/historial', label: shell.history, icon: History, end: false },
-    { to: '/app/analisis', label: shell.analysis, icon: Brain, end: false },
-    { to: '/app/medico', label: shell.medical, icon: Stethoscope, end: false },
-  ]
+  const workspaceRole = useWorkspaceRole()
+  const en = lang === 'en'
+  const homeLabel =
+    workspaceRole === 'chief'
+      ? (en ? 'Mission center' : 'Centro')
+      : workspaceRole === 'medic'
+        ? (en ? 'Care' : 'Atención')
+        : workspaceRole === 'psychologist'
+          ? (en ? 'Wellbeing' : 'Bienestar')
+          : (en ? 'My day' : 'Mi día')
+  const homeLink = { to: '/app', label: homeLabel, icon: Activity, end: true }
+  const healthLink = { to: '/app/mi-salud', label: en ? 'My health' : 'Mi salud', icon: Heart, end: false }
+  const monitorLink = { to: '/app/monitor', label: shell.monitor, icon: Activity, end: false }
+  const crewLink = { to: '/app/tripulacion', label: shell.crew, icon: HelmetIcon, end: false }
+  const alertsLink = { to: '/app/alertas', label: shell.alerts, icon: AlertTriangle, end: false }
+  const resourcesLink = { to: '/app/recursos', label: shell.resources, icon: Box, end: false }
+  const historyLink = { to: '/app/historial', label: shell.history, icon: History, end: false }
+  const analysisLink = { to: '/app/analisis', label: shell.analysis, icon: Brain, end: false }
+  const medicalLink = { to: '/app/medico', label: shell.medical, icon: Stethoscope, end: false }
+  const primaryLinks =
+    workspaceRole === 'crew'
+      ? [homeLink, healthLink, monitorLink, alertsLink, resourcesLink]
+      : workspaceRole === 'medic'
+        ? [homeLink, medicalLink, healthLink, resourcesLink, historyLink, analysisLink]
+        : workspaceRole === 'psychologist'
+          ? [homeLink, healthLink, historyLink, resourcesLink, alertsLink]
+          : workspaceRole === 'chief'
+            ? [homeLink, healthLink, crewLink, alertsLink, resourcesLink, historyLink, analysisLink, medicalLink]
+            : [homeLink, crewLink, alertsLink, resourcesLink, historyLink, analysisLink, medicalLink]
   const extraLinks = [
     { to: '/app/mision', label: shell.mission, icon: Rocket, end: false },
     { to: '/app/riesgos', label: shell.risks, icon: BookOpen, end: false },
+    ...(workspaceRole === 'chief' || workspaceRole === 'medic' ? [monitorLink] : []),
   ]
   const spaceLink = { to: '/app/mi-espacio', label: shell.space, icon: Lock, end: false }
   const [open, setOpen] = useState(false)
@@ -83,39 +101,43 @@ export function Shell({ children }: { children: ReactNode }) {
   const morePanel = useRef<HTMLDivElement>(null)
   const location = useLocation()
   const alerts = activeAlerts(state, 'active').length
-  const primary = state.role === 'astronaut'
-    ? [...primaryLinks.slice(0, 4), spaceLink, ...primaryLinks.slice(4)]
+  const primary = state.role === 'astronaut' || workspaceRole === 'crew'
+    ? [...primaryLinks.slice(0, Math.min(4, primaryLinks.length)), spaceLink, ...primaryLinks.slice(Math.min(4, primaryLinks.length))]
     : primaryLinks
   const ai = state.notice
   const heard = useRef<Set<string> | null>(null)
   const [badgePop, setBadgePop] = useState(false)
   const previousAlerts = useRef(alerts)
-  const isMonitor = location.pathname === '/app' || location.pathname === '/app/'
+  const isHome = location.pathname === '/app' || location.pathname === '/app/'
+  const isMyHealth = location.pathname.startsWith('/app/mi-salud')
+  const isMonitor = location.pathname.startsWith('/app/monitor')
   const isCrew = location.pathname.startsWith('/app/tripulacion')
   const isAlerts = location.pathname.startsWith('/app/alertas')
   const isResources = location.pathname.startsWith('/app/recursos')
   const isHistory = location.pathname.startsWith('/app/historial')
   const isAnalysis = location.pathname.startsWith('/app/analisis')
   const isMedical = location.pathname.startsWith('/app/medico')
-  const section = isMonitor
-    ? 'is-monitor'
-    : isCrew
-      ? 'is-crew'
-      : isAlerts
-        ? 'is-alerts'
-        : location.pathname.startsWith('/app/recursos')
-          ? 'is-resources'
-          : location.pathname.startsWith('/app/historial')
-            ? 'is-history'
-            : location.pathname.startsWith('/app/analisis')
-              ? 'is-analysis'
-              : location.pathname.startsWith('/app/medico')
-                ? 'is-medical'
-                : location.pathname.startsWith('/app/mision')
-                  ? 'is-mission'
-                  : location.pathname.startsWith('/app/riesgos')
-                    ? 'is-risks'
-                    : 'is-space'
+  const section = isHome || isMyHealth
+    ? (workspaceRole === 'medic' ? 'is-medical' : workspaceRole === 'psychologist' ? 'is-analysis' : workspaceRole === 'chief' ? 'is-monitor' : 'is-monitor')
+    : isMonitor
+      ? 'is-monitor'
+      : isCrew
+        ? 'is-crew'
+        : isAlerts
+          ? 'is-alerts'
+          : isResources
+            ? 'is-resources'
+            : isHistory
+              ? 'is-history'
+              : isAnalysis
+                ? 'is-analysis'
+                : isMedical
+                  ? 'is-medical'
+                  : location.pathname.startsWith('/app/mision')
+                    ? 'is-mission'
+                    : location.pathname.startsWith('/app/riesgos')
+                      ? 'is-risks'
+                      : 'is-space'
 
   useEffect(() => {
     const query = window.matchMedia('(max-width: 359px)')
@@ -212,8 +234,8 @@ export function Shell({ children }: { children: ReactNode }) {
           </p>
         </div>
       </aside>
-      <div className={isMonitor ? 'workspace workspace-monitor' : isCrew ? 'workspace workspace-crew' : isAlerts ? 'workspace workspace-alerts' : isResources ? 'workspace workspace-resources' : isHistory ? 'workspace workspace-history' : isAnalysis ? 'workspace workspace-analysis' : isMedical ? 'workspace workspace-medical' : 'workspace'}>
-        {isMonitor ? <EcgBackdrop /> : null}
+      <div className={(isMonitor || (isHome && workspaceRole === 'chief')) ? 'workspace workspace-monitor' : isCrew ? 'workspace workspace-crew' : isAlerts ? 'workspace workspace-alerts' : isResources ? 'workspace workspace-resources' : isHistory ? 'workspace workspace-history' : isAnalysis ? 'workspace workspace-analysis' : isMedical ? 'workspace workspace-medical' : 'workspace'}>
+        {(isMonitor || (isHome && workspaceRole === 'chief')) ? <EcgBackdrop /> : null}
         {isCrew ? <CrewBackdrop /> : null}
         {isAlerts ? <AlertsBackdrop /> : null}
         {isResources ? <ResourcesBackdrop /> : null}
@@ -230,14 +252,17 @@ export function Shell({ children }: { children: ReactNode }) {
                 {open ? <X aria-hidden="true" size={18} strokeWidth={1.75} /> : <Menu aria-hidden="true" size={18} strokeWidth={1.75} />}
               </button>
             </Hint>
-            <p className="helios-pill" data-testid="sim-pill">{shell.simulation}</p>
-            <MissionDemoButton />
-            <p className={`helios-pill ${state.link === 'down' ? 'down' : ''}`} key={state.link}>
-              {(isResources || isHistory || isAnalysis || isMedical || isCrew || isMonitor) && state.link === 'delayed'
-                ? (lang === 'en' ? `Earth link: delayed ${state.linkDelayMin}min` : `Enlace Tierra: con demora ${state.linkDelayMin}min`)
-                : earthPill(state.link, state.linkDelayMin, shell)}
-            </p>
-            <span className="helios-pill" data-testid="backend-mode">{backendMode === 'connected' ? 'NestJS conectado' : 'Simulador local'}</span>
+            {getStoredProfile() ? (
+              <Link
+                className="helios-pill"
+                to="/misiones"
+                title={profileTitle(getStoredProfile()!, lang === 'en')}
+              >
+                {getStoredProfile()?.displayName}
+                {workspaceRole ? ` · ${roleLabel(workspaceRole, en)}` : ''}
+              </Link>
+            ) : null}
+            {getStoredProfile() ? <RoleSwitcher /> : null}
           </div>
           <div className="top-actions">
             <div className="lang-switch" role="group" aria-label={shell.language}>
@@ -257,13 +282,15 @@ export function Shell({ children }: { children: ReactNode }) {
             <button type="button" className="sr-only" data-testid="theme-dark" tabIndex={-1} onClick={() => setChoice('dark')}>{lang === 'en' ? 'Dark' : 'Oscuro'}</button>
           </div>
         </header>
-        <div className="connection-notices" aria-live="polite">
-          {backendError ? <p role="status">{backendError}</p> : null}
-          {persistenceError ? <p>{persistenceError}</p> : null}
-        </div>
+        {backendError || persistenceError ? (
+          <div className="connection-notices" aria-live="polite">
+            {backendError ? <p role="status">{backendError}</p> : null}
+            {persistenceError ? <p>{persistenceError}</p> : null}
+          </div>
+        ) : null}
         <div className="notice" aria-live="polite">{ai ? <div className="content notice-float" style={{ paddingBottom: 0 }}><p className={`callout callout-${ai.tone === 'err' ? 'bad' : ai.tone === 'ok' ? 'ok' : 'amber'}`} data-testid="notice">{noticeText(ai.text, lang)}</p></div> : null}</div>
         <main id="contenido" className="content">
-          <PageEnter key={`${location.pathname}:${lang}`}>{children}</PageEnter>
+          <PageEnter key={location.pathname}>{children}</PageEnter>
         </main>
         <nav className="bottom-nav" aria-label={shell.mainSections}>
           {primaryLinks.slice(0, narrowPhone ? 4 : 5).map((link) => (

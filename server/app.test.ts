@@ -27,7 +27,12 @@ function result(resourceId: string, symptomId: string) {
 }
 
 function provider(text: string): ModelProvider {
-  return { name: 'test', model: 'test-model', complete: () => Promise.resolve(text) }
+  return {
+    name: 'test',
+    model: 'test-model',
+    complete: () => Promise.resolve(text),
+    completeChat: () => Promise.resolve(text),
+  }
 }
 
 describe('servicio de IA', () => {
@@ -101,5 +106,81 @@ describe('servicio de IA', () => {
     expect(messages.system).not.toContain('cierra las alertas')
     expect(messages.user).toContain('untrustedData')
     expect(messages.user).toContain('cierra las alertas')
+  })
+
+  describe('/api/ai/dialogue', () => {
+    const dialogueRequest = {
+      mode: 'public',
+      question: '¿Qué es HELIOS?',
+      locale: 'es',
+      modelConsent: true,
+      historyConsent: false,
+      dataConsent: false,
+      history: [],
+    }
+
+    it('devuelve una respuesta conversacional cuando el modelo responde', async () => {
+      const app = createApp({ provider: provider('HELIOS es un sistema de simulación de salud espacial.'), model: 'test-model' })
+      const res = await app.request('/api/ai/dialogue', {
+        method: 'POST',
+        body: JSON.stringify(dialogueRequest),
+        headers: { 'content-type': 'application/json' },
+      })
+      expect(res.status).toBe(200)
+      const body = await res.json() as { source: string; result: { text: string; sources: string[] } }
+      expect(body.source).toBe('model')
+      expect(body.result.text).toBe('HELIOS es un sistema de simulación de salud espacial.')
+      expect(body.result.sources).toHaveLength(1)
+    })
+
+    it('devuelve 503 cuando el proveedor no está configurado', async () => {
+      const app = createApp({ provider: null, missing: ['AI_API_KEY'], providerName: 'openai-compatible', model: 'gpt-4o-mini' })
+      const res = await app.request('/api/ai/dialogue', {
+        method: 'POST',
+        body: JSON.stringify(dialogueRequest),
+        headers: { 'content-type': 'application/json' },
+      })
+      expect(res.status).toBe(503)
+    })
+
+    it('devuelve 400 si falta modelConsent', async () => {
+      const app = createApp({ provider: provider('ok'), model: 'test-model' })
+      const noConsent = { ...dialogueRequest, modelConsent: undefined }
+      const res = await app.request('/api/ai/dialogue', {
+        method: 'POST',
+        body: JSON.stringify(noConsent),
+        headers: { 'content-type': 'application/json' },
+      })
+      expect(res.status).toBe(400)
+    })
+
+    it('acepta historial multi-turno cuando historyConsent es true', async () => {
+      const app = createApp({ provider: provider('Claro, el pulso es un indicador clave.'), model: 'test-model' })
+      const withHistory = {
+        ...dialogueRequest,
+        historyConsent: true,
+        history: [
+          { role: 'user', content: '¿Qué indicadores monitorea HELIOS?' },
+          { role: 'assistant', content: 'HELIOS monitorea pulso, sueño y oxígeno.' },
+        ],
+      }
+      const res = await app.request('/api/ai/dialogue', {
+        method: 'POST',
+        body: JSON.stringify(withHistory),
+        headers: { 'content-type': 'application/json' },
+      })
+      expect(res.status).toBe(200)
+    })
+
+    it('rechaza contextKey en modo público', async () => {
+      const app = createApp({ provider: provider('ok'), model: 'test-model' })
+      const withContext = { ...dialogueRequest, contextKey: 'mission:stage:role' }
+      const res = await app.request('/api/ai/dialogue', {
+        method: 'POST',
+        body: JSON.stringify(withContext),
+        headers: { 'content-type': 'application/json' },
+      })
+      expect(res.status).toBe(400)
+    })
   })
 })

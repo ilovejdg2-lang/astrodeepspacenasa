@@ -1,10 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { DEMO_PROTOCOLS, type DemoProtocol } from '../../shared/protocols'
 import type { Resource } from '../../shared/types'
+import { PrepAiPanel } from '../components/resources/PrepAiPanel'
 import { Empty, Field, Modal } from '../components/ui'
 import { planResourceUse } from '../domain/inventory'
 import { formatMission, movementLabel, roleLabel } from '../domain/format'
 import { useLocale } from '../i18n'
+import { platformApi } from '../platform/api'
+import { getActiveMissionId } from '../platform/session'
 import { useApp } from '../state/store'
 
 type Tab = 'equipment' | 'supply' | 'protocol'
@@ -30,6 +33,8 @@ export function ResourcesPage() {
   const [addOpen, setAddOpen] = useState(false)
   const [editOpen, setEditOpen] = useState(false)
   const [consult, setConsult] = useState<DemoProtocol | null>(null)
+  const [missionStage, setMissionStage] = useState<string | undefined>()
+  const [rosterLocked, setRosterLocked] = useState(false)
   const rows = useMemo(
     () => state.resources.filter((item) => (tab === 'protocol' ? false : item.category === tab)),
     [state.resources, tab],
@@ -43,6 +48,20 @@ export function ResourcesPage() {
     setSelected(rows[0]?.id ?? '')
   }, [rows, selected, tab])
 
+  useEffect(() => {
+    const missionId = getActiveMissionId()
+    if (!missionId) return
+    let alive = true
+    platformApi.mission(missionId)
+      .then((data) => {
+        if (!alive) return
+        setMissionStage(data.mission.stage)
+        setRosterLocked(Boolean(data.mission.rosterLocked))
+      })
+      .catch(() => undefined)
+    return () => { alive = false }
+  }, [])
+
   const registered = state.resources.length
   const review = state.resources.filter((item) => item.status === 'review').length
   const movements = state.movements.length
@@ -50,8 +69,17 @@ export function ResourcesPage() {
   return (
     <div className="inv-page">
       <header className="inv-head">
-        <p className="inv-kicker">{en ? 'Resources' : 'Recursos'}</p>
-        <h1>{en ? 'Ship inventory' : 'Inventario de la nave'}</h1>
+        <div className="inv-head-row">
+          <div>
+            <p className="inv-kicker">{en ? 'Resources' : 'Recursos'}</p>
+            <h1>{en ? 'Ship inventory' : 'Inventario de la nave'}</h1>
+          </div>
+          {tab !== 'protocol' ? (
+            <button className="inv-add-btn" type="button" onClick={() => setAddOpen(true)}>
+              {en ? 'Add' : 'Añadir'}
+            </button>
+          ) : null}
+        </div>
         <p className="inv-lede">
           {en ? 'Reusable equipment is not deducted when used. A supply cannot go below zero.' : 'El equipo reutilizable no se descuenta al usarlo. Un suministro no puede quedar'}
           <br />
@@ -67,6 +95,11 @@ export function ResourcesPage() {
           <button key={id} type="button" role="tab" aria-selected={tab === id} onClick={() => setTab(id)}>{label}</button>
         ))}
       </div>
+      <PrepAiPanel
+        stage={missionStage}
+        rosterLocked={rosterLocked}
+        onLocked={() => setRosterLocked(true)}
+      />
       <dl className="inv-metrics">
         <div><dt>{en ? 'Registered' : 'Registrados'}</dt><dd>{registered}</dd></div>
         <div><dt>{en ? 'To review' : 'Por revisar'}</dt><dd>{review}</dd></div>
@@ -160,7 +193,6 @@ export function ResourcesPage() {
           </ul>
         )}
       </section>
-      <button className="inv-add" type="button" onClick={() => setAddOpen(true)}>{en ? 'Add resource' : 'Añadir recurso'}</button>
       {resource ? <UseDialog open={useOpen} resource={resource} onClose={() => setUseOpen(false)} /> : null}
       <AddDialog open={addOpen} onClose={() => setAddOpen(false)} />
       {resource ? <EditDialog open={editOpen} resource={resource} onClose={() => setEditOpen(false)} /> : null}

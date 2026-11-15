@@ -12,6 +12,8 @@ export interface ModelProvider {
   name: string
   model: string
   complete(input: { system: string; user: string; signal: AbortSignal }): Promise<string>
+  /** Multi-turn conversational call. Implementations may fall back to flattening history. */
+  completeChat(input: { messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }>; signal: AbortSignal }): Promise<string>
 }
 
 interface ResolvedProvider {
@@ -37,60 +39,78 @@ export function resolveProvider(env: NodeJS.ProcessEnv = process.env): ResolvedP
 }
 
 function openAiCompatibleProvider(key: string, baseUrl: string, model: string, timeoutMs: number): ModelProvider {
+  async function callChat(
+    messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }>,
+    signal: AbortSignal,
+  ): Promise<string> {
+    const timeout = AbortSignal.timeout(timeoutMs)
+    const response = await fetch(`${baseUrl.replace(/\/$/, '')}/chat/completions`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model, temperature: 0.7, messages }),
+      signal: AbortSignal.any([signal, timeout]),
+    }).catch((error: unknown) => {
+      throw mapFetchError(error, signal)
+    })
+    if (response.status === 429) throw new ProviderError('rate_limit', 'El proveedor limitó las solicitudes.')
+    if (!response.ok) throw new ProviderError('network', `El proveedor respondió ${response.status}.`)
+    const body = (await response.json()) as { choices?: { message?: { content?: string } }[] }
+    const content = body.choices?.[0]?.message?.content
+    if (!content) throw new ProviderError('invalid_response', 'El proveedor no devolvió contenido.')
+    return content
+  }
+
   return {
     name: 'openai-compatible',
     model,
     async complete({ system, user, signal }) {
-      const timeout = AbortSignal.timeout(timeoutMs)
-      const response = await fetch(`${baseUrl.replace(/\/$/, '')}/chat/completions`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model,
-          temperature: 0.2,
-          messages: [
-            { role: 'system', content: system },
-            { role: 'user', content: user },
-          ],
-        }),
-        signal: AbortSignal.any([signal, timeout]),
-      }).catch((error: unknown) => {
-        throw mapFetchError(error, signal)
-      })
-      if (response.status === 429) throw new ProviderError('rate_limit', 'El proveedor limitó las solicitudes.')
-      if (!response.ok) throw new ProviderError('network', `El proveedor respondió ${response.status}.`)
-      const body = (await response.json()) as { choices?: { message?: { content?: string } }[] }
-      const content = body.choices?.[0]?.message?.content
-      if (!content) throw new ProviderError('invalid_response', 'El proveedor no devolvió contenido.')
-      return content
+      return callChat([{ role: 'system', content: system }, { role: 'user', content: user }], signal)
+    },
+    async completeChat({ messages, signal }) {
+      return callChat(messages, signal)
     },
   }
 }
 
 function anthropicProvider(key: string, model: string, timeoutMs: number): ModelProvider {
+  async function callMessages(
+    system: string,
+    messages: Array<{ role: 'user' | 'assistant'; content: string }>,
+    signal: AbortSignal,
+  ): Promise<string> {
+    const timeout = AbortSignal.timeout(timeoutMs)
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'x-api-key': key,
+        'anthropic-version': '2023-06-01',
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({ model, max_tokens: 1200, temperature: 0.7, system, messages }),
+      signal: AbortSignal.any([signal, timeout]),
+    }).catch((error: unknown) => {
+      throw mapFetchError(error, signal)
+    })
+    if (response.status === 429) throw new ProviderError('rate_limit', 'El proveedor limitó las solicitudes.')
+    if (!response.ok) throw new ProviderError('network', `El proveedor respondió ${response.status}.`)
+    const body = (await response.json()) as { content?: { text?: string }[] }
+    const content = body.content?.map((item) => item.text ?? '').join('')
+    if (!content) throw new ProviderError('invalid_response', 'El proveedor no devolvió contenido.')
+    return content
+  }
+
   return {
     name: 'anthropic',
     model,
     async complete({ system, user, signal }) {
-      const timeout = AbortSignal.timeout(timeoutMs)
-      const response = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'x-api-key': key,
-          'anthropic-version': '2023-06-01',
-          'content-type': 'application/json',
-        },
-        body: JSON.stringify({ model, max_tokens: 1200, temperature: 0.2, system, messages: [{ role: 'user', content: user }] }),
-        signal: AbortSignal.any([signal, timeout]),
-      }).catch((error: unknown) => {
-        throw mapFetchError(error, signal)
-      })
-      if (response.status === 429) throw new ProviderError('rate_limit', 'El proveedor limitó las solicitudes.')
-      if (!response.ok) throw new ProviderError('network', `El proveedor respondió ${response.status}.`)
-      const body = (await response.json()) as { content?: { text?: string }[] }
-      const content = body.content?.map((item) => item.text ?? '').join('')
-      if (!content) throw new ProviderError('invalid_response', 'El proveedor no devolvió contenido.')
-      return content
+      return callMessages(system, [{ role: 'user', content: user }], signal)
+    },
+    async completeChat({ messages, signal }) {
+      // Anthropic separates system from user/assistant turns
+      const systemMsg = messages.find((m) => m.role === 'system')?.content ?? ''
+      const turns = messages
+        .filter((m): m is { role: 'user' | 'assistant'; content: string } => m.role !== 'system')
+      return callMessages(systemMsg, turns, signal)
     },
   }
 }

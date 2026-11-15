@@ -8,16 +8,17 @@ import { useLocale } from '../../i18n'
 import { useMotionPref } from '../../hooks/useMotionPref'
 import { useTheme } from '../../theme'
 import { HeliosLogo } from '../HeliosLogo'
+import { QuironChat } from '../quiron/QuironChat'
 import { Starfield } from './Starfield'
 import '../../public.css'
 
-function PublicPageTransition({ reduced, lang }: { reduced: boolean; lang: string }) {
+function PublicPageTransition({ reduced }: { reduced: boolean }) {
   const location = useLocation()
   const outlet = useOutlet({ reduced })
 
   return (
     <motion.div
-      key={`${location.pathname}:${lang}`}
+      key={location.pathname}
       initial={reduced ? false : { opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
@@ -138,7 +139,7 @@ export function PublicLayout() {
         </AnimatePresence>
 
         <main className="pub-main">
-          <PublicPageTransition reduced={reduced} lang={lang} />
+          <PublicPageTransition reduced={reduced} />
         </main>
 
         <footer className="pub-footer">
@@ -167,6 +168,7 @@ export function PublicLayout() {
           </p>
         </footer>
       </div>
+      <QuironChat mode="public" />
     </div>
   )
 }

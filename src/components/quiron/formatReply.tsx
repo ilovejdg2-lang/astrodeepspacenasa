@@ -37,33 +37,34 @@ function inline(raw: string): ReactNode[] {
   let last = 0
   let match: RegExpExecArray | null
   let key = 0
+  const pushText = (value: string) => {
+    if (!value) return
+    // Span wrapper: keeps a stable element if auto-translate rewrites the text node.
+    nodes.push(<span key={`t${key++}`}>{value}</span>)
+  }
   while ((match = pattern.exec(raw))) {
-    if (match.index > last) nodes.push(escapeText(raw.slice(last, match.index)))
+    if (match.index > last) pushText(raw.slice(last, match.index))
     const token = match[0]
     if (token.startsWith('**')) {
-      nodes.push(<strong key={key++}>{escapeText(token.slice(2, -2))}</strong>)
+      nodes.push(<strong key={key++}>{token.slice(2, -2)}</strong>)
     } else if (token.startsWith('`')) {
-      nodes.push(<code key={key++}>{escapeText(token.slice(1, -1))}</code>)
+      nodes.push(<code key={key++}>{token.slice(1, -1)}</code>)
     } else {
       const href = sanitizeUrl(token)
       if (href) {
         nodes.push(
           <a key={key++} href={href} target="_blank" rel="noopener noreferrer">
-            {escapeText(token)}
+            {token}
           </a>,
         )
       } else {
-        nodes.push(escapeText(token))
+        pushText(token)
       }
     }
     last = match.index + token.length
   }
-  if (last < raw.length) nodes.push(escapeText(raw.slice(last)))
+  if (last < raw.length) pushText(raw.slice(last))
   return nodes
-}
-
-function escapeText(value: string) {
-  return value
 }
 
 function sanitizeUrl(url: string): string | null {
