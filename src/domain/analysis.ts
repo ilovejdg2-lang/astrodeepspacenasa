@@ -4,7 +4,7 @@ import { nasaSourceLines } from './scienceBrief';
 import { DEMO_PROTOCOLS } from '../../shared/protocols';
 import { NASA_RISKS, RISK_CATEGORY_LABEL } from '../../shared/risks';
 import type { AnalysisResult, AppState, Measurement } from '../../shared/types';
-import { uiLang } from '../locale';
+import { uiLang, type Lang } from '../locale';
 import { crewById } from './crew';
 import { integrityLabel, kindLabel } from './format';
 import { djb2 } from './hash';
@@ -36,8 +36,8 @@ const STAGE_EN = {
   posmision: 'Post-mission',
 } as const;
 
-function stageName(stage: keyof typeof STAGE_EN): string {
-  return uiLang() === 'en' ? STAGE_EN[stage] : MISSION_STAGE_LABEL[stage];
+function stageName(stage: keyof typeof STAGE_EN, locale: Lang = uiLang()): string {
+  return locale === 'en' ? STAGE_EN[stage] : MISSION_STAGE_LABEL[stage];
 }
 
 const SYMPTOM_EN: Record<string, string> = {
@@ -48,8 +48,8 @@ const SYMPTOM_EN: Record<string, string> = {
   otro: 'other',
 };
 
-function symptomWords(ids: string[]): string {
-  if (uiLang() !== 'en') return ids.join(', ');
+function symptomWords(ids: string[], locale: Lang = uiLang()): string {
+  if (locale !== 'en') return ids.join(', ');
   return ids.map((id) => SYMPTOM_EN[id] ?? id).join(', ');
 }
 
@@ -58,20 +58,21 @@ export function episodeFingerprint(state: AppState, episodeId: string): string {
   const crewId = episode?.crewId;
   const parts = [
     state.link,
+    JSON.stringify(state.mission),
     ...state.measurements
       .filter((item) => item.crewId === crewId)
       .map(
         (item) =>
-          `${item.id}:${item.value}:${item.integrity}:${item.measuredAt}`,
+          JSON.stringify(item),
       ),
     ...state.symptoms
       .filter((item) => item.episodeId === episodeId)
-      .map((item) => `${item.id}:${item.symptoms.join(',')}`),
+      .map((item) => JSON.stringify(item)),
     ...state.alerts
       .filter((item) => item.episodeId === episodeId || item.crewId === crewId)
-      .map((item) => `${item.id}:${item.status}`),
+      .map((item) => JSON.stringify(item)),
     ...state.resources.map(
-      (item) => `${item.id}:${item.quantity}:${item.status}:${item.location}`,
+      (item) => JSON.stringify(item),
     ),
   ];
   return djb2(parts.join('|'));
@@ -80,11 +81,12 @@ export function episodeFingerprint(state: AppState, episodeId: string): string {
 export function runLocalAnalysis(
   state: AppState,
   episodeId: string,
+  locale: Lang = uiLang(),
 ): AnalysisResult | null {
   const episode = state.episodes.find((item) => item.id === episodeId);
   if (!episode) return null;
   const profile = crewById(episode.crewId);
-  const posture = crewPosture(state, episode.crewId);
+  const posture = crewPosture(state, episode.crewId, locale);
   const symptoms = state.symptoms.filter(
     (item) => item.episodeId === episodeId,
   );
@@ -105,7 +107,7 @@ export function runLocalAnalysis(
   const hasStale = measurementsFor(state, episode.crewId).some(
     (item) => item.integrity === 'stale',
   );
-  const english = uiLang() === 'en';
+  const english = locale === 'en';
   const missing = [
     posture.evidence !== 'actualizada'
       ? english
@@ -124,7 +126,7 @@ export function runLocalAnalysis(
       : '',
   ].filter(Boolean);
 
-  const reported = symptomWords(symptoms.flatMap((item) => item.symptoms));
+  const reported = symptomWords(symptoms.flatMap((item) => item.symptoms), locale);
   const trend = vitalTrends(state, episode.crewId);
   const quality = measurementQuality(state, episode.crewId);
   const sleep = latestReliable(state, episode.crewId, 'sleep_hours');
@@ -198,13 +200,14 @@ export function answerLocal(
   state: AppState,
   episodeId: string,
   question: string,
+  locale: Lang = uiLang(),
 ): AnalysisResult | null {
-  const base = runLocalAnalysis(state, episodeId);
+  const base = runLocalAnalysis(state, episodeId, locale);
   if (!base) return null;
   const episode = state.episodes.find((item) => item.id === episodeId);
   if (!episode) return null;
   const normalized = question.toLowerCase();
-  const english = uiLang() === 'en';
+  const english = locale === 'en';
   const resources = state.resources.filter((item) => item.quantity > 0);
   const alerts = state.alerts.filter(
     (item) => item.episodeId === episodeId || item.crewId === episode.crewId,
@@ -255,7 +258,7 @@ export function answerLocal(
   ) {
     const open = state.episodes.filter((item) => item.status !== 'closed');
     summary = english
-      ? `Post-mission. Current stage: ${stageName(state.mission.stage)}. Episodes still open: ${open.length}. Changing stage does not close a pending follow-up. Recovery decisions belong to authorized staff.`
+      ? `Post-mission. Current stage: ${stageName(state.mission.stage, locale)}. Episodes still open: ${open.length}. Changing stage does not close a pending follow-up. Recovery decisions belong to authorized staff.`
       : `Posmisión. Etapa actual: ${MISSION_STAGE_LABEL[state.mission.stage]}. Episodios aún abiertos: ${open.length}. Cambiar de etapa no cierra un seguimiento pendiente. Las decisiones de recuperación corresponden al personal autorizado.`;
   } else if (
     normalized.includes('riesgo') ||
@@ -281,8 +284,8 @@ export function answerLocal(
   ) {
     summary = resources.length
       ? english
-        ? `Recorded equipment: ${resources.map((item) => `${item.name} (${item.quantity} ${item.unitLabel}, ${item.location})`).join('; ')}. Availability does not mean it should be used.`
-        : `Equipo registrado: ${resources.map((item) => `${item.name} (${item.quantity} ${item.unitLabel}, ${item.location})`).join('; ')}. La disponibilidad no indica que deba usarse.`
+        ? `Recorded equipment: ${resources.map((item) => `${item.name} (${item.quantity} ${english ? (item.quantity === 1 ? 'unit' : 'units') : item.unitLabel}, ${item.location})`).join('; ')}. Availability does not mean it should be used.`
+        : `Equipo registrado: ${resources.map((item) => `${item.name} (${item.quantity} ${english ? (item.quantity === 1 ? 'unit' : 'units') : item.unitLabel}, ${item.location})`).join('; ')}. La disponibilidad no indica que deba usarse.`
       : english
         ? 'No resources with stock are loaded in the inventory.'
         : 'No hay recursos con existencias en el inventario cargado.';
@@ -318,9 +321,9 @@ export function answerLocal(
     normalized.includes('summary') ||
     normalized.includes('specialist')
   ) {
-    const posture = crewPosture(state, episode.crewId);
+    const posture = crewPosture(state, episode.crewId, locale);
     summary = english
-      ? `Summary for human review (${stageName(state.mission.stage)}). ${posture.summary} ${posture.evidenceDetail} Link: ${state.link}. This is not a closed medical instruction.`
+      ? `Summary for human review (${stageName(state.mission.stage, locale)}). ${posture.summary} ${posture.evidenceDetail} Link: ${state.link}. This is not a closed medical instruction.`
       : `Resumen para revisión humana (${MISSION_STAGE_LABEL[state.mission.stage]}). ${posture.summary} ${posture.evidenceDetail} Enlace: ${state.link}. No es una orientación médica cerrada.`;
   } else if (
     normalized.includes('cambi') ||
@@ -353,9 +356,9 @@ export function analysisIsStale(
 }
 
 /** Respuestas de Quirón Bot sobre misión y preparación, sin exigir un episodio abierto. */
-export function answerMissionLocal(state: AppState, question: string): string {
+export function answerMissionLocal(state: AppState, question: string, locale: Lang = uiLang()): string {
   const normalized = question.toLowerCase();
-  const english = uiLang() === 'en';
+  const english = locale === 'en';
   const pending = state.prepItems.filter(
     (item) =>
       item.status === 'propuesto' ||
@@ -374,7 +377,7 @@ export function answerMissionLocal(state: AppState, question: string): string {
         .map((item) => `${item.title} (${PREP_STATUS_LABEL[item.status]})`)
         .join('; ') || (english ? 'none' : 'ninguno');
     return english
-      ? `Before boarding (${stageName(state.mission.stage)}): ${pending.length} item(s) still open — ${list}. HELIOS does not decide medication per crew member.`
+      ? `Before boarding (${stageName(state.mission.stage, locale)}): ${pending.length} item(s) still open — ${list}. HELIOS does not decide medication per crew member.`
       : `Antes de abordar (${MISSION_STAGE_LABEL[state.mission.stage]}): ${pending.length} ítem(s) por resolver — ${list}. HELIOS no decide medicamentos por tripulante.`;
   }
   if (
@@ -403,7 +406,7 @@ export function answerMissionLocal(state: AppState, question: string): string {
     normalized.includes('follow-up')
   ) {
     return english
-      ? `Later follow-up: stage ${stageName(state.mission.stage)}. Open episodes: ${open.length}. Finishing or changing stage does not automatically close a pending episode.`
+      ? `Later follow-up: stage ${stageName(state.mission.stage, locale)}. Open episodes: ${open.length}. Finishing or changing stage does not automatically close a pending episode.`
       : `Seguimiento posterior: etapa ${MISSION_STAGE_LABEL[state.mission.stage]}. Episodios abiertos: ${open.length}. Finalizar o cambiar de etapa no cierra automáticamente un episodio pendiente.`;
   }
   if (
@@ -444,6 +447,6 @@ export function answerMissionLocal(state: AppState, question: string): string {
     );
   }
   return english
-    ? `Mission ${state.mission.name}. Destination ${state.mission.destination}, ${state.mission.durationDays} days, ${state.mission.crewCount} crew. Stage: ${stageName(state.mission.stage)}.`
+    ? `Mission ${state.mission.name}. Destination ${state.mission.destination}, ${state.mission.durationDays} days, ${state.mission.crewCount} crew. Stage: ${stageName(state.mission.stage, locale)}.`
     : `Misión ${state.mission.name}. Destino ${state.mission.destination}, ${state.mission.durationDays} días, ${state.mission.crewCount} tripulantes. Etapa: ${MISSION_STAGE_LABEL[state.mission.stage]}.`;
 }

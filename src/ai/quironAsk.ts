@@ -1,3 +1,4 @@
+import { systemText } from '../systemText'
 import { answerLocal, answerMissionLocal } from '../domain/analysis'
 import { answerPublicLocal, type QuironPublicLocale } from '../domain/quironPublic'
 import { askDialogue, getAiHealth, type AiHealth } from './client'
@@ -174,9 +175,9 @@ export async function askQuiron(options: {
       trimmed,
     )
   ) {
-    const local = answerLocal(state, episode.id, trimmed)
+    const local = answerLocal(state, episode.id, trimmed, locale)
     if (local) {
-      return { text: local.summary, sources: local.sources, channel: 'local', contextLabel: label, ...fallback }
+      return { text: systemText(local.summary, locale), sources: local.sources, channel: 'local', contextLabel: label, ...fallback }
     }
   }
 
@@ -184,7 +185,7 @@ export async function askQuiron(options: {
   const indicators = mode === 'dashboard' && state
     ? dashboardIndicatorAnswer(state, trimmed, locale === 'en') : undefined
   if (indicators) return {
-    text: indicators, sources: ['HELIOS · motor determinista local'], channel: 'local', contextLabel: label, ...fallback,
+    text: indicators, sources: [locale === 'en' ? 'HELIOS · local deterministic engine' : 'HELIOS · motor determinista local'], channel: 'local', contextLabel: label, ...fallback,
   }
 
   if (mode === 'public') {
@@ -196,7 +197,7 @@ export async function askQuiron(options: {
   const general = answerPublicLocal(trimmed, locale, options.historyConsent ? options.history : [])
   const mission =
     state && /mision|misión|mission|destino|destination|enlace|comunic|link|communicat|inventar|recurso|resource|prepar/i.test(trimmed)
-      ? answerMissionLocal(state, trimmed)
+      ? systemText(answerMissionLocal(state, trimmed, locale), locale)
       : general.text
   return {
     text: mission,

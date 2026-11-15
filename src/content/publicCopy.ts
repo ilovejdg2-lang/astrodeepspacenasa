@@ -166,7 +166,7 @@ const SOURCES_EN: Record<string, Pick<DataSource, 'name' | 'type' | 'description
     name: 'DONKI',
     type: 'Live API',
     description: 'Space-weather event database (flares and related events).',
-    useInHelios: 'Dashboard · environmental alerts and Risks (radiation). Nest /api/nasa/donki.',
+    useInHelios: 'Mission · space-weather context. Nest /api/nasa/donki/events.',
     versionNote: 'Consulted · 15 Nov 2026',
     terms: 'Public NASA CCMC data.',
     limitations: 'Space weather, not a crew member’s personal dose.',

@@ -1,8 +1,9 @@
+import { systemText } from '../systemText'
 import { useEffect, useMemo, useState } from 'react'
 import { CREW } from '../domain/crew'
 import { filterHistory, historyRows, type HistoryRow } from '../domain/exportData'
 import { episodeStatusLabel, formatMission } from '../domain/format'
-import { dailyTrends, exportDocument, exportRecords, pulseAxis, recordsToCsv, sleepAxis, type TrendPoint } from '../domain/historySeries'
+import { dailyTrends, exportRecords, pulseAxis, recordsToCsv, sleepAxis, type TrendPoint } from '../domain/historySeries'
 import { useLocale } from '../i18n'
 import { getActiveMissionId } from '../platform/session'
 import { useApp } from '../state/store'
@@ -16,15 +17,14 @@ const TIMELINE_PAGE_SIZE = 8
 export function HistoryPage() {
   const { lang } = useLocale()
   const en = lang === 'en'
-  const { state, backendMode, listHistoryEvents } = useApp()
+  const { state } = useApp()
   const [crewId, setCrewId] = useState<CrewId | 'all'>('all')
   const [type, setType] = useState<HistoryRow['type'] | 'all'>('all')
   const [selected, setSelected] = useState<string | null>(state.selectedEpisodeId)
-  const [exporting, setExporting] = useState<'json' | 'csv' | null>(null)
+  const [exporting, setExporting] = useState(false)
   const [exportError, setExportError] = useState<string | null>(null)
-  const [nestEvents, setNestEvents] = useState<number | null>(null)
   const [timelinePage, setTimelinePage] = useState(0)
-  const rows = useMemo(() => filterHistory(historyRows(state), { crewId, type }), [state, crewId, type])
+  const rows = useMemo(() => filterHistory(historyRows(state, lang), { crewId, type }), [state, crewId, type, lang])
   const timelinePages = Math.max(1, Math.ceil(rows.length / TIMELINE_PAGE_SIZE))
   const safeTimelinePage = Math.min(timelinePage, timelinePages - 1)
   const timelineRows = useMemo(
@@ -36,24 +36,10 @@ export function HistoryPage() {
     setTimelinePage(0)
   }, [crewId, type])
 
-  useEffect(() => {
-    if (backendMode !== 'connected') {
-      setNestEvents(null)
-      return
-    }
-    let alive = true
-    void listHistoryEvents({
-      crewId: crewId === 'all' ? undefined : crewId,
-      type: type === 'all' ? undefined : type,
-    }).then((events) => {
-      if (alive) setNestEvents(events?.length ?? null)
-    })
-    return () => { alive = false }
-  }, [backendMode, listHistoryEvents, crewId, type])
   const chartsOn = type === 'all' || type === 'measurement'
   const trends = useMemo(
-    () => (chartsOn ? dailyTrends(state.measurements, crewId) : { pulse: [] as TrendPoint[], sleep: [] as TrendPoint[] }),
-    [chartsOn, state.measurements, crewId],
+    () => (chartsOn ? dailyTrends(state.measurements, crewId, lang) : { pulse: [] as TrendPoint[], sleep: [] as TrendPoint[] }),
+    [chartsOn, state.measurements, crewId, lang],
   )
   const episode = state.episodes.find((item) => item.id === selected) ?? state.episodes[0]
   const personLabel = crewId === 'all' ? (en ? 'Whole crew' : 'Toda la tripulación') : CREW.find((crew) => crew.id === crewId)?.name ?? crewId
@@ -67,20 +53,17 @@ export function HistoryPage() {
       : 'Con toda la tripulación, cada punto de pulso es la media de las personas con registro ese día. El descanso usa el último registro de cada persona y después la media entre personas. No se suman las horas.')
     : (en ? `Series for ${personLabel}.` : `Serie de ${personLabel}.`)
 
-  async function runExport(kind: 'json' | 'csv') {
-    setExporting(kind)
+  async function runExport() {
+    if (exporting) return
+    setExporting(true)
     setExportError(null)
     try {
       await new Promise((resolve) => window.setTimeout(resolve, 120))
-      if (kind === 'json') {
-        download('helios-historial.json', exportDocument(state, { person: personLabel, type: typeLabel }, rows, trends.pulse, trends.sleep), 'application/json;charset=utf-8')
-      } else {
-        download('helios-historial.csv', recordsToCsv(exportRecords(state, rows)), 'text/csv;charset=utf-8', true)
-      }
+      download('helios-historial.csv', recordsToCsv(exportRecords(state, rows)), 'text/csv;charset=utf-8', true)
     } catch (error) {
       setExportError(error instanceof Error ? error.message : (en ? 'The export could not be created.' : 'No se pudo crear la exportación.'))
     } finally {
-      setExporting(null)
+      setExporting(false)
     }
   }
 
@@ -106,19 +89,12 @@ export function HistoryPage() {
             {en
               ? 'Pulse and sleep use separate charts: they do not share an axis because the units are not comparable.'
               : 'El pulso y el descanso van en gráficos separados: no comparten eje porque las unidades no son comparables.'}
-            {nestEvents != null
-              ? (en
-                ? ` Nest /api/history reports ${nestEvents} events for this filter.`
-                : ` Nest /api/history reporta ${nestEvents} eventos para este filtro.`)
-              : ''}
+
           </p>
         </div>
         <div className="hist-exports no-print">
-          <button className="hist-export" type="button" disabled={exporting !== null} onClick={() => void runExport('json')}>
-            {exporting === 'json' ? (en ? 'Exporting…' : 'Exportando…') : (en ? 'Export JSON' : 'Exportar JSON')}
-          </button>
-          <button className="hist-export" type="button" disabled={exporting !== null} onClick={() => void runExport('csv')}>
-            {exporting === 'csv' ? (en ? 'Exporting…' : 'Exportando…') : (en ? 'Export CSV' : 'Exportar CSV')}
+          <button className="hist-export" type="button" disabled={exporting} onClick={() => void runExport()}>
+            {exporting ? (en ? 'Exporting…' : 'Exportando…') : (en ? 'Export CSV' : 'Exportar CSV')}
           </button>
           <button className="hist-export" type="button" onClick={() => window.print()}>{en ? 'Print view' : 'Vista imprimible'}</button>
         </div>
@@ -181,7 +157,7 @@ export function HistoryPage() {
           </p>
         </section>
       </div>
-      <div className="no-print" style={{ margin: '18px 0 28px' }}>
+      <div className="hist-platform-charts no-print">
         <PlatformIndicatorCharts missionId={getActiveMissionId()} />
       </div>
       <table className="hist-table">
@@ -196,7 +172,7 @@ export function HistoryPage() {
         <tbody>
           {mergeDays(trends.pulse, trends.sleep).map((row) => (
             <tr key={row.day}>
-              <td>{row.title}</td>
+              <td>{systemText(row.title)}</td>
               <td>{row.pulse === null ? (en ? 'No record' : 'Sin registro') : row.pulse}</td>
               <td>{row.sleep === null ? (en ? 'No record' : 'Sin registro') : row.sleep}</td>
             </tr>
@@ -223,7 +199,7 @@ export function HistoryPage() {
                     <span className="dot" aria-hidden="true" />
                     <button type="button" className="btn btn-ghost" onClick={() => row.type === 'symptom' || row.type === 'alert' ? setSelected(state.episodes.find((item) => item.crewId === row.crewId)?.id ?? selected) : undefined}>
                       <strong>{formatMission(row.at)} · {label(row.type)}</strong>
-                      <span className="muted"> {row.detail}</span>
+                      <span className="muted"> {systemText(row.detail)}</span>
                     </button>
                   </li>
                 ))}
@@ -268,7 +244,7 @@ export function HistoryPage() {
           <h2>{en ? 'Episode' : 'Episodio'}</h2>
           {episode ? (
             <>
-              <p>{episode.title}</p>
+              <p>{systemText(episode.title)}</p>
               <p className="muted">{CREW.find((crew) => crew.id === episode.crewId)?.name} · {episodeStatusLabel(episode.status)} · {formatMission(episode.openedAt)}</p>
             </>
           ) : <p>{en ? 'No episode is selected.' : 'No hay un episodio seleccionado.'}</p>}
@@ -280,7 +256,7 @@ export function HistoryPage() {
 
 function label(type: HistoryRow['type']): string {
   const names = { measurement: 'Medición', symptom: 'Síntoma', alert: 'Alerta', inventory: 'Inventario', communication: 'Comunicación', analysis: 'Análisis' }
-  return names[type]
+  return systemText(names[type])
 }
 
 /** Ventana corta de números para no saturar el pager. */

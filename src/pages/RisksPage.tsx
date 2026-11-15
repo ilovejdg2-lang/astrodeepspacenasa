@@ -1,3 +1,4 @@
+import { systemText } from '../systemText'
 import { RadiationPanel } from '../components/NasaEnvironment'
 import { AlertTriangle, ExternalLink } from 'lucide-react'
 import { useMemo, useState } from 'react'
@@ -134,10 +135,10 @@ export function RisksPage() {
                 {priorityRisks.map((risk) => (
                   <li key={risk.id} data-testid={`risk-${risk.id}`}>
                     <div className="spread">
-                      <h3>{risk.title}</h3>
-                      <span className="badge">{RISK_CATEGORY_LABEL[risk.category]}</span>
+                      <h3>{systemText(risk.title)}</h3>
+                      <span className="badge">{systemText(RISK_CATEGORY_LABEL[risk.category])}</span>
                     </div>
-                    <p>{risk.summary}</p>
+                    <p>{systemText(risk.summary)}</p>
                     <a href={risk.sourceUrl} target="_blank" rel="noreferrer">
                       {risk.sourceTitle}
                     </a>
@@ -175,7 +176,7 @@ export function RisksPage() {
             </button>
             {CATEGORIES.map((id) => (
               <button key={id} type="button" aria-pressed={category === id} onClick={() => setCategory(id)}>
-                {RISK_CATEGORY_LABEL[id]}
+                {systemText(RISK_CATEGORY_LABEL[id])}
               </button>
             ))}
           </div>
@@ -183,13 +184,13 @@ export function RisksPage() {
             {NASA_RISKS.filter((r) => category === 'all' || r.category === category).map((risk) => (
               <li key={risk.id} data-testid={`risk-${risk.id}`}>
                 <div className="spread">
-                  <h3>{risk.title}</h3>
-                  <span className="badge">{RISK_CATEGORY_LABEL[risk.category]}</span>
+                  <h3>{systemText(risk.title)}</h3>
+                  <span className="badge">{systemText(RISK_CATEGORY_LABEL[risk.category])}</span>
                 </div>
-                <p>{risk.summary}</p>
-                <p className="risks-brief-meta">{risk.useInSystem}</p>
+                <p>{systemText(risk.summary)}</p>
+                <p className="risks-brief-meta">{systemText(risk.useInSystem)}</p>
                 <a href={risk.sourceUrl} target="_blank" rel="noreferrer">
-                  {risk.sourceTitle} · {risk.sourceDate}
+                  {risk.sourceTitle} · {systemText(risk.sourceDate)}
                 </a>
               </li>
             ))}

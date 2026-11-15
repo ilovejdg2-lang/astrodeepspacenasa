@@ -3,21 +3,20 @@ import { Link } from 'react-router-dom'
 import { UserPlus } from 'lucide-react'
 import { MissionProcessStrip } from '../../components/platform/MissionProcessStrip'
 import { AboardCheckInBoard } from '../../components/role/AboardCheckInBoard'
-import { ChiefLaunchPanel } from '../../components/role/ChiefLaunchPanel'
 import { useLocale } from '../../i18n'
 import { platformApi } from '../../platform/api'
 import { profileDisplayName, roleLabel, stageBlurb } from '../../platform/copy'
 import { getActiveMissionId } from '../../platform/session'
-import { MonitorPage } from '../MonitorPage'
+import { MissionCrewOverview } from '../../components/role/MissionCrewOverview'
 import { RoleContextBar } from './RoleContextBar'
 import { useMissionWorkspace } from './useMissionWorkspace'
 import '../../platform/role-dash.css'
 
-/** Centro del jefe = monitor original (cascos) + código de misión + solicitudes reales. */
+/** Mission overview, preparation and crew access. */
 export function ChiefHome() {
   const { lang } = useLocale()
   const en = lang === 'en'
-  const { detail, role, mode, loading, missionId, refresh, prep, percent, error: workspaceError } = useMissionWorkspace()
+  const { detail, role, mode, loading, missionId, refresh, percent, error: workspaceError } = useMissionWorkspace()
   const activeMissionId = missionId || getActiveMissionId()
   const rosterLocked = Boolean(detail?.mission.rosterLocked)
   const stage = detail?.mission.stage
@@ -80,7 +79,7 @@ export function ChiefHome() {
     <div className="page monitor-page chief-center">
       <div className="chief-center-bar">
         <div>
-          <p className="monitor-kicker">{en ? 'Mission center' : 'Centro de misión'}</p>
+          <h1 className="chief-center-title">{en ? 'Mission center' : 'Centro de misión'}</h1>
           <RoleContextBar
             missionName={detail?.mission.name}
             stage={stage}
@@ -207,21 +206,15 @@ export function ChiefHome() {
         <AboardCheckInBoard missionId={activeMissionId} en={en} />
       ) : null}
 
-      {activeMissionId ? (
-        <ChiefLaunchPanel
-          missionId={activeMissionId}
-          stage={stage}
-          plannedCrewCount={detail?.mission.plannedCrewCount}
-          teamSize={crewSeatCount || 4}
-          durationDays={detail?.mission.durationDays}
-          prep={prep}
-          percent={percent}
-          analysisStale={analysisStale}
-          onChanged={() => refresh({ silent: true })}
-        />
-      ) : null}
+      <section className="panel mission-prep-access" aria-label={en ? 'Preparation quick access' : 'Acceso rápido a preparación'}>
+        <div>
+          <h2>{en ? 'Resources & checklist' : 'Recursos y checklist'}</h2>
+          <p className="muted">{en ? 'Preparation is managed in Resources.' : 'La preparación se gestiona en Recursos.'} {percent}% {en ? 'complete' : 'completo'}.</p>
+        </div>
+        <Link className="btn btn-primary" to="/app/recursos?tab=checklist" data-testid="open-mission-checklist">{en ? 'Open checklist' : 'Abrir checklist'}</Link>
+      </section>
 
-      <MonitorPage embedded />
+      <MissionCrewOverview />
     </div>
   )
 }

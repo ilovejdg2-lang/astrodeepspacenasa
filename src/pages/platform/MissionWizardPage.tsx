@@ -1,8 +1,9 @@
+import { systemText } from '../../systemText'
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { HeliosLogo } from '../../components/HeliosLogo'
 import { useLocale } from '../../i18n'
-import { platformApi, type MissionEnvironment, type PrepItem, type PrepSuggestion, type StartCheck } from '../../platform/api'
+import { platformApi, type MissionEnvironment } from '../../platform/api'
 import { getSessionToken, getStoredProfile, setActiveMissionId } from '../../platform/session'
 import '../../platform/platform.css'
 
@@ -22,13 +23,8 @@ export function MissionWizardPage() {
   /** Default = 4 personas del monitor (Elena, Mateo, Sofía, Alex). */
   const [plannedCrewCount, setPlannedCrewCount] = useState(4)
   const [activities, setActivities] = useState(en ? 'Operations, exercise, demo EVA' : 'Operaciones, ejercicio, EVA demo')
-  const [prep, setPrep] = useState<PrepItem[]>([])
-  const [percent, setPercent] = useState(0)
-  const [suggestions, setSuggestions] = useState<PrepSuggestion[]>([])
-  const [startCheck, setStartCheck] = useState<StartCheck | null>(null)
-
   const steps = useMemo(
-    () => (en ? ['Data', 'Crew', 'Prep', 'Review'] : ['Datos', 'Tripulación', 'Preparación', 'Revisión']),
+    () => (en ? ['Data', 'Crew'] : ['Datos', 'Tripulación']),
     [en],
   )
 
@@ -62,60 +58,9 @@ export function MissionWizardPage() {
       })
       setMissionId(created.mission.id)
       setActiveMissionId(created.mission.id)
-      setPrep(created.prepItems)
-      setPercent(created.prepPercent)
       setStep(2)
     } catch (err) {
       setError(err instanceof Error ? err.message : (en ? 'Could not create mission' : 'No se pudo crear'))
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  async function loadPrep() {
-    if (!missionId) return
-    const data = await platformApi.prep(missionId)
-    setPrep(data.items)
-    setPercent(data.percent)
-  }
-
-  async function askQuironPrep() {
-    if (!missionId) return
-    setBusy(true)
-    try {
-      const data = await platformApi.suggestPrep(missionId)
-      setSuggestions(data.suggestions)
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  async function verifyItem(item: PrepItem) {
-    if (!missionId) return
-    await platformApi.upsertPrep(missionId, {
-      ...item,
-      status: 'cargado_verificado',
-      evidence: item.evidence || (en ? 'Verified in assistant' : 'Verificado en asistente'),
-      qtyAvailable: item.qtyAvailable ?? item.qtyRequired ?? 1,
-    })
-    await loadPrep()
-  }
-
-  async function refreshStart() {
-    if (!missionId) return
-    setStartCheck(await platformApi.startCheck(missionId))
-  }
-
-  async function startMission() {
-    if (!missionId) return
-    setError('')
-    setBusy(true)
-    try {
-      await platformApi.start(missionId)
-      navigate('/app')
-    } catch (err) {
-      setError(err instanceof Error ? err.message : (en ? 'Could not start' : 'No se pudo iniciar'))
-      await refreshStart()
     } finally {
       setBusy(false)
     }
@@ -149,7 +94,7 @@ export function MissionWizardPage() {
             </button>
           ))}
         </div>
-        {error ? <p className="plat-error">{error}</p> : null}
+        {error ? <p className="plat-error">{systemText(error)}</p> : null}
 
         {step === 1 ? (
           <section className="plat-panel">
@@ -209,107 +154,13 @@ export function MissionWizardPage() {
                 : 'Código disponible en el hub tras crear. Participantes ficticios deben marcarse como demo.'}
             </p>
             <div className="plat-actions">
-              <button type="button" className="plat-btn" onClick={() => setStep(3)}>
-                {en ? 'Continue to prep' : 'Continuar a preparación'}
-              </button>
+              <Link className="plat-btn" to="/app/recursos?tab=checklist">
+                {en ? 'Open checklist in Resources' : 'Abrir checklist en Recursos'}
+              </Link>
             </div>
           </section>
         ) : null}
 
-        {step === 3 ? (
-          <section className="plat-panel">
-            <h2>{en ? 'Step 3 · Preparation' : 'Paso 3 · Preparación'}</h2>
-            <p>
-              {en ? 'Current prep:' : 'Preparación actual:'} <strong>{percent}%</strong>{' '}
-              ({en ? 'completed = verified; a suggestion does not count' : 'completado = verificado; una sugerencia no cuenta'}).
-            </p>
-            <div className="plat-actions">
-              <button type="button" className="plat-btn" onClick={() => void askQuironPrep()}>
-                {en ? 'Ask Quirón to help prepare resources' : 'Quiero que Quirón me ayude a preparar los recursos'}
-              </button>
-              <button type="button" className="plat-btn ghost" onClick={() => void loadPrep()}>
-                {en ? 'Refresh list' : 'Actualizar lista'}
-              </button>
-            </div>
-            {suggestions.length ? (
-              <div className="plat-list" style={{ marginTop: 12 }}>
-                {suggestions.map((item) => (
-                  <div className="plat-row" key={item.title}>
-                    <div>
-                      <strong>{item.title}</strong>
-                      <div>{item.reason}</div>
-                      <div>{item.source} · {item.assumptions}</div>
-                    </div>
-                    <span className="plat-chip">{item.qty ?? (en ? 'n/a' : 'n/d')}</span>
-                  </div>
-                ))}
-              </div>
-            ) : null}
-            <div className="plat-list" style={{ marginTop: 16 }}>
-              {prep.map((item) => (
-                <div className="plat-row" key={item.id}>
-                  <div>
-                    <strong>{item.title}</strong>
-                    <div>{item.status}{item.critical ? (en ? ' · critical' : ' · crítico') : ''}</div>
-                    <div>{item.source}</div>
-                  </div>
-                  <button
-                    type="button"
-                    className="plat-btn ghost"
-                    disabled={item.status === 'cargado_verificado'}
-                    onClick={() => void verifyItem(item)}
-                  >
-                    {en ? 'Verify' : 'Verificar'}
-                  </button>
-                </div>
-              ))}
-            </div>
-            <button
-              type="button"
-              className="plat-btn"
-              style={{ marginTop: 12 }}
-              onClick={() => {
-                void refreshStart()
-                setStep(4)
-              }}
-            >
-              {en ? 'Go to review' : 'Ir a revisión'}
-            </button>
-          </section>
-        ) : null}
-
-        {step === 4 ? (
-          <section className="plat-panel">
-            <h2>{en ? 'Step 4 · Review and start' : 'Paso 4 · Revisión y comienzo'}</h2>
-            <p>
-              {en
-                ? 'The 80% rule is a HELIOS simulation rule; it is not medical certification or a NASA requirement.'
-                : 'El 80% es regla HELIOS de simulación; no es certificación médica ni requisito NASA.'}
-            </p>
-            <button type="button" className="plat-btn ghost" onClick={() => void refreshStart()}>
-              {en ? 'Recalculate conditions' : 'Recalcular condiciones'}
-            </button>
-            {startCheck ? (
-              <div style={{ marginTop: 12 }}>
-                <p>{en ? 'Prep:' : 'Preparación:'} {startCheck.percent}%</p>
-                {startCheck.blockers.length ? (
-                  <ul>{startCheck.blockers.map((item) => <li key={item}>{item}</li>)}</ul>
-                ) : (
-                  <p className="plat-ok">{en ? 'Conditions met.' : 'Condiciones cumplidas.'}</p>
-                )}
-                <p>{startCheck.disclaimer}</p>
-              </div>
-            ) : null}
-            <div className="plat-actions">
-              <button type="button" className="plat-btn" disabled={!startCheck?.ok || busy} onClick={() => void startMission()}>
-                {en ? 'Start simulated mission' : 'Iniciar misión simulada'}
-              </button>
-              <button type="button" className="plat-btn ghost" onClick={() => navigate('/app')}>
-                {en ? 'Enter planning (pre-flight)' : 'Entrar a planificación (preembarque)'}
-              </button>
-            </div>
-          </section>
-        ) : null}
       </div>
     </div>
   )

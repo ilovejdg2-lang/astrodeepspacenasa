@@ -1,3 +1,4 @@
+import { useLocale } from '../i18n'
 import { createContext, useContext, useEffect, useMemo, useRef, useState, useCallback, type ReactNode } from 'react'
 import type { AppState, CrewId, AnalysisResult } from '../../shared/types'
 import { ApiError, SimulationClient } from '../api/simulation'
@@ -37,6 +38,7 @@ interface StoreValue {
 const StoreContext = createContext<StoreValue | null>(null)
 
 export function AppProvider({ children }: { children: ReactNode }) {
+  const { lang } = useLocale()
   const [state, setState] = useState<AppState | null>(null)
   const [persistenceError, setPersistenceError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
@@ -51,6 +53,20 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const actionFailure = useRef<string | null>(null)
   const tickPending = useRef(false)
   const ready = useRef(false)
+  const leavingPage = useRef(false)
+
+  useEffect(() => {
+    const leaving = () => { leavingPage.current = true }
+    const returned = () => { leavingPage.current = false }
+    window.addEventListener('beforeunload', leaving)
+    window.addEventListener('pagehide', leaving)
+    window.addEventListener('pageshow', returned)
+    return () => {
+      window.removeEventListener('beforeunload', leaving)
+      window.removeEventListener('pagehide', leaving)
+      window.removeEventListener('pageshow', returned)
+    }
+  }, [])
 
   const apply = useCallback((next: AppState) => {
     stateRef.current = next
@@ -96,6 +112,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
             apply(snapshot.state)
             setBackendError(null)
           } catch (error) {
+            // A reload aborts in-flight requests. Keep the existing backend
+            // session so its saved records can be restored on the next load.
+            if (leavingPage.current) return
             if (error instanceof ApiError && error.status < 500) {
               if (error.status === 409) {
                 try {
@@ -297,11 +316,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
   if (!value) {
     return (
       <div className="boot">
-        <p className="sim-pill">Simulación · datos ficticios</p>
+        <p className="sim-pill">{lang === 'en' ? 'Simulation · fictional data' : 'Simulación · datos ficticios'}</p>
         <h1 className="sr-only">HELIOS</h1>
         <HeliosLogo variant="wordmark" />
         <p className="tagline">Health evaluation &amp; Life indicators observation system</p>
-        <p>Cargando registros locales…</p>
+        <p>{lang === 'en' ? 'Loading local records…' : 'Cargando registros locales…'}</p>
         <div className="skeleton-grid" aria-hidden="true">
           <span className="skeleton" style={{ height: 72 }} />
           <span className="skeleton" />

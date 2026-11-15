@@ -281,7 +281,7 @@ export function HealthIndicatorsPanel({
                 </p>
                 <p className="rd-muted">
                   {latest
-                    ? `${new Date(latest.measuredAt).toLocaleString()} · ${latest.origin} · ${latest.quality}`
+                    ? `${new Date(latest.measuredAt).toLocaleString(en ? 'en-US' : 'es-CR')} · ${latest.origin} · ${latest.quality}`
                     : (en ? 'Unit: ' : 'Unidad: ') + entry.unit}
                 </p>
                 <p className="rd-muted">{en ? evalState.reason.en : evalState.reason.es}</p>
@@ -315,7 +315,7 @@ export function HealthIndicatorsPanel({
                 {' · '}
                 {formatIndicatorValue(item, en)}
                 {' · '}
-                {new Date(item.measuredAt).toLocaleString()}
+                {new Date(item.measuredAt).toLocaleString(en ? 'en-US' : 'es-CR')}
                 {' · '}
                 {item.origin}/{item.quality}
                 {item.notes ? ` · ${item.notes}` : ''}

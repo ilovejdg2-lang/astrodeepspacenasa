@@ -110,7 +110,7 @@ export function Shell({ children }: { children: ReactNode }) {
   const historyLink = { to: '/app/historial', label: shell.history, icon: History, end: false }
   const analysisLink = { to: '/app/analisis', label: shell.analysis, icon: Brain, end: false }
   const medicalLink = { to: '/app/medico', label: shell.medical, icon: Stethoscope, end: false }
-  // Chief already has Mission center (embeds the monitor). Keep Monitor only for other roles.
+  // Crew records contain individual monitoring; the chief home shows the mission overview.
   const primaryLinks = workspaceRole === 'chief'
     ? [homeLink, alertsLink, crewLink]
     : [alertsLink, monitorLink, crewLink]
@@ -141,7 +141,7 @@ export function Shell({ children }: { children: ReactNode }) {
   const previousAlerts = useRef(alerts)
   const isHome = location.pathname === '/app' || location.pathname === '/app/' || location.pathname.startsWith('/app/centro')
   const isMyHealth = location.pathname.startsWith('/app/mi-salud')
-  const isMonitor = location.pathname.startsWith('/app/monitor')
+  const isMonitor = location.pathname.startsWith('/app/monitor') || /^\/app\/tripulacion\/[^/]+/.test(location.pathname)
   const isCrew = location.pathname.startsWith('/app/tripulacion')
   const isAlerts = location.pathname.startsWith('/app/alertas')
   const isResources = location.pathname.startsWith('/app/recursos')
@@ -233,6 +233,11 @@ export function Shell({ children }: { children: ReactNode }) {
             title={workspaceRole === 'chief' ? homeLabel : (en ? 'Emergency monitor' : 'Monitor de emergencia')}
           >
             <HeliosLogo variant="mark" size={112} />
+            <span className="brand-stack">
+              Health evaluation<br />
+              &amp; life indicators<br />
+              observation system
+            </span>
           </Link>
           <div className="sidebar-navs">
             <nav className="nav" aria-label={shell.sections}>
@@ -256,7 +261,6 @@ export function Shell({ children }: { children: ReactNode }) {
         </div>
         <div className="sidebar-foot">
           <MissionDemoButton />
-          <HeliosLogo variant="wordmark" />
         </div>
       </aside>
       <div className={(isMonitor || (isHome && workspaceRole === 'chief')) ? 'workspace workspace-monitor' : isCrew ? 'workspace workspace-crew' : isAlerts ? 'workspace workspace-alerts' : isResources ? 'workspace workspace-resources' : isHistory ? 'workspace workspace-history' : isAnalysis ? 'workspace workspace-analysis' : isMedical ? 'workspace workspace-medical' : 'workspace'}>

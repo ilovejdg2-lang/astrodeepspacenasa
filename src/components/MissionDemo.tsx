@@ -75,7 +75,7 @@ export function MissionDemoButton() {
       setStep(target)
       navigate(target < 2 || target === 5 ? '/app' : target === 2 ? '/app/alertas' : target === 3 ? '/app/analisis' : '/app/medico')
       if (target === 3) window.dispatchEvent(new CustomEvent('helios:quiron-demo', {
-        detail: { question: en ? 'Explain the change and measurement quality' : 'Explica el cambio y la calidad de medición' },
+        detail: { question: 'Explain the change and measurement quality' },
       }))
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : (en ? 'Demo could not continue.' : 'No se pudo continuar el demo.'))

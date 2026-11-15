@@ -17,7 +17,7 @@ export function buildAnalysisContext(state: AppState, episodeId: string, questio
       id: item.id,
       kind: item.kind,
       value: item.value,
-      unit: item.unit,
+      unit: locale === 'en' && item.unit === 'lpm' ? 'bpm' : item.unit,
       measuredAt: item.measuredAt,
       receivedAt: item.receivedAt,
       signalQuality: item.signalQuality,
@@ -38,12 +38,13 @@ export function buildAnalysisContext(state: AppState, episodeId: string, questio
     missionStage: state.mission.stage,
     missionName: state.mission.name,
     baseline: {
-      heartRateLpm: `${profile.baseline.hrMin}–${profile.baseline.hrMax} lpm`,
+      heartRateLpm: `${profile.baseline.hrMin}–${profile.baseline.hrMax} ${locale === 'en' ? 'bpm' : 'lpm'}`,
       sleepHours: `${profile.baseline.sleepMin}–${profile.baseline.sleepMax} h`,
     },
     measurements,
     symptoms: state.symptoms
       .filter((item) => item.episodeId === episodeId)
+      .sort((a, b) => b.reportedAt - a.reportedAt)
       .slice(0, 10)
       .map((item) => ({ id: item.id, symptoms: item.symptoms, note: item.note.slice(0, 2000), reportedAt: item.reportedAt })),
     alerts: state.alerts

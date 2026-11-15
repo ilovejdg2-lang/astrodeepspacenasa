@@ -47,7 +47,7 @@ export function OfflineSyncBar() {
       </p>
       {listOfflineOps().slice(0, 4).map((op) => (
         <p key={op.id} className="rd-muted" style={{ margin: '4px 0 0' }}>
-          {op.type} · {new Date(op.createdAt).toLocaleString()}
+          {op.type} · {new Date(op.createdAt).toLocaleString(en ? 'en-US' : 'es-CR')}
           {op.status === 'failed' && op.lastError ? ` · ${op.lastError}` : ''}
         </p>
       ))}

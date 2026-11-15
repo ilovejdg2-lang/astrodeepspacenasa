@@ -1,3 +1,4 @@
+import { uiLang } from '../locale'
 export function roleLabel(role: string, en: boolean): string {
   const map: Record<string, [string, string]> = {
     chief: ['Chief', 'Jefe'],
@@ -20,7 +21,7 @@ const PROFILE_NAMES: Record<string, string> = {
 }
 
 export function profileDisplayName(profileId: string): string {
-  return PROFILE_NAMES[profileId] || profileId
+  return profileId === 'ops-desk' && uiLang() === 'en' ? 'Operations desk' : PROFILE_NAMES[profileId] || profileId
 }
 
 export function profileTitle(profile: { id: string; title: string }, en: boolean): string {

@@ -1,3 +1,4 @@
+import { systemText } from '../../systemText'
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useLocale } from '../../i18n'
@@ -54,7 +55,7 @@ export function DailyCarePanel({
   const [symptom, setSymptom] = useState('')
 
   const incomplete = !wakeNote || /incomplete|sin completar|pending/i.test(wakeNote)
-  const dayStatus = wakeNote || (en ? 'Incomplete' : 'Sin completar')
+  const dayStatus = systemText(wakeNote) || (en ? 'Incomplete' : 'Sin completar')
 
   useEffect(() => {
     setOk('')
@@ -230,7 +231,7 @@ export function DailyCarePanel({
 
   const feedback = (
     <>
-      {error ? <p className="rd-error" role="alert">{error}</p> : null}
+      {error ? <p className="rd-error" role="alert">{systemText(error)}</p> : null}
       {ok ? <p className="rd-ok">{ok}</p> : null}
       {busy ? <p className="rd-muted" aria-live="polite">{en ? 'Saving…' : 'Guardando…'}</p> : null}
     </>

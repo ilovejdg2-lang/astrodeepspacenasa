@@ -419,28 +419,6 @@
 .health-explain dt { font-weight: 750; margin-top: 6px; }
 .health-explain dd { margin: 0; color: color-mix(in srgb, currentColor 72%, transparent); }
 .health-mini-list { margin: 0; padding-left: 1.1rem; display: grid; gap: 6px; }
-.health-body-layout {
-  display: grid;
-  gap: 16px;
-  grid-template-columns: minmax(140px, 200px) minmax(0, 1fr);
-  align-items: start;
-}
-.health-body-svg { width: 100%; height: auto; max-height: 360px; }
-.health-body-region {
-  fill: color-mix(in srgb, currentColor 10%, transparent);
-  stroke: color-mix(in srgb, currentColor 35%, transparent);
-  stroke-width: 2;
-  cursor: pointer;
-  outline: none;
-}
-.health-body-region:hover,
-.health-body-region:focus-visible { fill: color-mix(in srgb, #f5004f 22%, transparent); stroke: #f5004f; }
-.health-body-region.is-on { fill: color-mix(in srgb, #f5004f 28%, transparent); stroke: #f5004f; }
-.health-body-side { min-width: 0; display: grid; gap: 10px; }
-@media (max-width: 720px) {
-  .health-body-layout { grid-template-columns: 1fr; }
-  .health-body-svg { max-width: 180px; margin: 0 auto; }
-}
 
 /* —— Chief launch / prepare & take off —— */
 .chief-launch {
