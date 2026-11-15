@@ -54,6 +54,7 @@ export function ChiefHome() {
   const crewSeatCount = (detail?.members || []).filter(
     (member) => member.status === 'active' && member.role !== 'ops',
   ).length
+  const plannedCrew = detail?.mission.plannedCrewCount
 
   async function decide(membershipId: string, accept: boolean) {
     if (!activeMissionId || (accept && crewAddsBlocked)) return
@@ -86,6 +87,11 @@ export function ChiefHome() {
             role={role}
             mode={mode}
           />
+          <p className="muted chief-invite-note" data-testid="crew-seat-count">
+            {en
+              ? `Active members: ${crewSeatCount || 0} / planned ${plannedCrew ?? '—'}`
+              : `Integrantes activos: ${crewSeatCount || 0} / previstos ${plannedCrew ?? '—'}`}
+          </p>
           {stage ? (
             <>
               <p className="muted chief-invite-note">{stageBlurb(stage, en)}</p>

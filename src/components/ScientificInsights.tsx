@@ -5,7 +5,8 @@ import {
   type OsdrStudyResponse,
 } from '../api/nasa'
 import { useLocale } from '../i18n'
-export function ScientificInsights() {
+
+export function ScientificInsights({ compact = false }: { compact?: boolean }) {
   const { lang } = useLocale()
   const en = lang === 'en'
   const [studies, setStudies] = useState<OsdrStudyResponse[]>([])
@@ -40,32 +41,58 @@ export function ScientificInsights() {
   const cachedCount = studies.filter((s) => s.cached).length
   return (
     <section className="panel" data-testid="nasa-osdr-provenance">
-      <h2>Scientific Health Insights · OSDR</h2>
+      <h2>{compact ? 'OSDR' : 'Scientific Health Insights · OSDR'}</h2>
       <p className="badge">
         {en
-          ? `Provenance · Nest GET /api/nasa/osdr · live ${liveCount}/${OSDR_DEMO_STUDIES.length}${cachedCount ? ` · cached ${cachedCount}` : ''}`
-          : `Procedencia · Nest GET /api/nasa/osdr · en vivo ${liveCount}/${OSDR_DEMO_STUDIES.length}${cachedCount ? ` · caché ${cachedCount}` : ''}`}
+          ? `OSDR · live ${liveCount}/${OSDR_DEMO_STUDIES.length}${cachedCount ? ` · cached ${cachedCount}` : ''}`
+          : `OSDR · vivo ${liveCount}/${OSDR_DEMO_STUDIES.length}${cachedCount ? ` · caché ${cachedCount}` : ''}`}
       </p>
-      <p>
-        {en
-          ? 'Research metadata for educational context. Data are courtesy of the NASA Open Science Data Repository.'
-          : 'Metadatos de investigación para contexto educativo. Datos cortesía de NASA Open Science Data Repository.'}
-      </p>
-      <p className="callout callout-amber">
-        {en
-          ? 'Animal results do not establish clinical conclusions for humans. Metadata alone cannot support causal claims or medical recommendations. This is not personal astronaut telemetry.'
-          : 'Los resultados en animales no establecen conclusiones clínicas para humanos. Los metadatos por sí solos no fundamentan causalidad ni recomendaciones médicas. No es telemetría personal del astronauta.'}
-      </p>
-      <button
-        className="chip"
-        type="button"
-        onClick={() => setAttempt((a) => a + 1)}
-      >
+      {!compact ? (
+        <>
+          <p>
+            {en
+              ? 'Research metadata for educational context. Data are courtesy of the NASA Open Science Data Repository.'
+              : 'Metadatos de investigación para contexto educativo. Datos cortesía de NASA Open Science Data Repository.'}
+          </p>
+          <p className="callout callout-amber">
+            {en
+              ? 'Animal results do not establish clinical conclusions for humans. Metadata alone cannot support causal claims or medical recommendations. This is not personal astronaut telemetry.'
+              : 'Los resultados en animales no establecen conclusiones clínicas para humanos. Los metadatos por sí solos no fundamentan causalidad ni recomendaciones médicas. No es telemetría personal del astronauta.'}
+          </p>
+        </>
+      ) : (
+        <p className="muted">
+          {en
+            ? 'Research metadata · not clinical · not personal telemetry'
+            : 'Metadatos de investigación · no clínico · no telemetría personal'}
+        </p>
+      )}
+      <button className="chip" type="button" onClick={() => setAttempt((a) => a + 1)}>
         {en ? 'Refresh' : 'Actualizar'}
       </button>
       <div aria-live="polite" aria-busy={loading}>
         {loading ? (
           <p>{en ? 'Loading OSDR…' : 'Consultando OSDR…'}</p>
+        ) : compact ? (
+          <ul className="risks-brief-list" style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: 6 }}>
+            {studies.map((study) => (
+              <li key={study.studyId} data-testid={`osdr-${study.studyId}`} style={{ padding: '8px 10px', borderRadius: 12, border: '1px solid color-mix(in srgb, currentColor 12%, transparent)' }}>
+                <strong style={{ display: 'block', fontSize: '0.9rem' }}>{study.metadata?.title ?? study.studyId}</strong>
+                {study.message ? (
+                  <span className="muted">{en ? 'Unavailable' : 'No disponible'}</span>
+                ) : (
+                  <span className="muted">
+                    {study.cached ? (en ? 'Cached' : 'Caché') : (en ? 'NASA fetch' : 'Consulta NASA')}
+                    {study.fetchedAt ? ` · ${study.fetchedAt}` : ''}
+                  </span>
+                )}
+                {' · '}
+                <a href={study.repoUrl} target="_blank" rel="noreferrer">
+                  {study.studyId}
+                </a>
+              </li>
+            ))}
+          </ul>
         ) : (
           <div className="nasa-events">
             {studies.map((study) => (

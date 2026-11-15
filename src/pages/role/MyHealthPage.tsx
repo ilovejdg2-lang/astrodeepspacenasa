@@ -91,6 +91,7 @@ export function MyHealthPage() {
   const medicId = detail?.members.find((m) => m.role === 'medic' && m.status === 'active')?.profileId
   const psychId = detail?.members.find((m) => m.role === 'psychologist' && m.status === 'active')?.profileId
   const env = detail?.mission.environment || 'space_station'
+  const activeGrants = (grants as GrantRow[]).filter(isActiveGrant)
 
   return (
     <div className="rd rd-crew">
@@ -119,6 +120,23 @@ export function MyHealthPage() {
 
       {loading ? <p className="rd-muted">{en ? 'Loading…' : 'Cargando…'}</p> : null}
 
+      <OfflineSyncBar />
+      <MissionRemindersPanel missionId={missionId} />
+
+      <section className="rd-card">
+        <h2>{en ? 'Demo review protocol' : 'Protocolo de revisión demo'}</h2>
+        <p className="rd-muted">{en ? DEMO_REVIEW_PROTOCOL.disclaimer.en : DEMO_REVIEW_PROTOCOL.disclaimer.es}</p>
+        <ul className="health-mini-list">
+          {DEMO_REVIEW_PROTOCOL.rules.map((rule) => (
+            <li key={rule.id}>
+              <strong>{rule.id}</strong>
+              {' · '}
+              {en ? rule.summary.en : rule.summary.es}
+            </li>
+          ))}
+        </ul>
+      </section>
+
       <section className="rd-card">
         <h2>{en ? 'Mission routine' : 'Rutina de misión'}</h2>
         <p className="rd-muted">
@@ -138,9 +156,11 @@ export function MyHealthPage() {
       </section>
 
       <DailyCarePanel
+        variant="hub"
         missionId={missionId}
         wakeNote={wakeNote}
         symptomCount={symptoms.length}
+        appointmentCount={appointments.length}
         onChanged={() => refresh({ silent: true })}
       />
 
@@ -157,12 +177,14 @@ export function MyHealthPage() {
         symptoms={symptoms as SymptomRow[]}
       />
 
-      <section className="rd-card">
+      <PlatformIndicatorCharts missionId={missionId} />
+
+      <section className="rd-card" data-testid="consent-demo">
         <h2>{en ? 'Act: appointments, grants & urgent help' : 'Actuar: citas, permisos y ayuda urgente'}</h2>
         <p className="rd-muted">
           {en
-            ? `Appointments: ${appointments.length} · Grants: ${grants.length}. Urgent cases are not resolved with a future appointment alone.`
-            : `Citas: ${appointments.length} · Permisos: ${grants.length}. Los casos urgentes no se resuelven solo con una cita futura.`}
+            ? `Judge path: Share vitals with medic → switch to Sofía (medic) → Revoke here → medic sees “Ask access”. Appointments: ${appointments.length} · Active grants: ${activeGrants.length}.`
+            : `Ruta jurado: Compartir vitales con médica → cambiar a Sofía (médica) → Revocar aquí → médica ve “Pedir acceso”. Citas: ${appointments.length} · Permisos activos: ${activeGrants.length}.`}
         </p>
         <div className="rd-actions">
           <button
@@ -174,14 +196,12 @@ export function MyHealthPage() {
               await platformApi.requestAppointment(missionId, {
                 specialty: 'medico',
                 reason: en ? 'Non-urgent follow-up' : 'Seguimiento no urgente',
-      <PlatformIndicatorCharts missionId={missionId} />
-
-      <section className="rd-card" data-testid="consent-demo">
-        <h2>{en ? 'Act: appointments, grants & urgent help' : 'Actuar: citas, permisos y ayuda urgente'}</h2>
-        <p className="rd-muted">
-          {en
-            ? `Judge path: Share vitals with medic → switch to Sofía (medic) → Revoke here → medic sees “Ask access”. Appointments: ${appointments.length} · Active grants: ${(grants as GrantRow[]).filter(isActiveGrant).length}.`
-            : `Ruta jurado: Compartir vitales con médica → cambiar a Sofía (médica) → Revocar aquí → médica ve “Pedir acceso”. Citas: ${appointments.length} · Permisos activos: ${(grants as GrantRow[]).filter(isActiveGrant).length}.`}
+                modality: 'aboard',
+              })
+              await refresh({ silent: true })
+            })()}
+          >
+            {en ? 'Request medic appointment' : 'Solicitar cita médica'}
           </button>
           <button
             type="button"
@@ -260,28 +280,12 @@ export function MyHealthPage() {
           </button>
         </div>
         {urgentNote ? <p className="rd-ok" role="status">{urgentNote}</p> : null}
-        <ul className="health-mini-list">
-          {(grants as GrantRow[]).filter((g) => !g.revokedAt).slice(0, 8).map((g) => (
-            <li key={g.id}>
-              {en ? 'Grant to' : 'Permiso a'} {g.granteeProfileId} · {(g.categories || []).join(', ')}
-              <button
-                type="button"
-                className="rd-btn ghost"
-                style={{ marginLeft: 8 }}
-                onClick={() => void platformApi.revokeGrant(g.id).then(() => refresh({ silent: true }))}
-              >
-                {en ? 'Revoke' : 'Revocar'}
-              </button>
-            </li>
-          ))}
-        </ul>
-      </section>
 
         <h3 style={{ margin: '14px 0 8px', fontSize: '0.95rem' }}>
           {en ? 'Active consents (you can revoke anytime)' : 'Consentimientos activos (podés revocar cuando quieras)'}
         </h3>
         <ul className="health-mini-list">
-          {(grants as GrantRow[]).filter(isActiveGrant).slice(0, 8).map((g) => (
+          {activeGrants.slice(0, 8).map((g) => (
             <li key={g.id}>
               <strong>{profileDisplayName(g.granteeProfileId)}</strong>
               {' · '}
@@ -298,13 +302,30 @@ export function MyHealthPage() {
               </button>
             </li>
           ))}
-          {(grants as GrantRow[]).filter(isActiveGrant).length === 0 ? (
+          {activeGrants.length === 0 ? (
             <li className="rd-muted">
               {en
                 ? 'No active shares. Medic and psychologist cannot read your indicators until you grant.'
                 : 'Sin compartidos activos. Médica y psicología no pueden leer tus indicadores hasta que concedás.'}
             </li>
           ) : null}
+        </ul>
+      </section>
+
+      <section className="rd-card">
+        <h2>{en ? 'Responsible progress (optional)' : 'Progreso responsable (opcional)'}</h2>
+        <p className="rd-muted">
+          {en
+            ? 'Counts preparation learning and logging only — never “better vitals” or hiding symptoms. You can turn this off.'
+            : 'Cuenta solo aprendizaje de preparación y registros — nunca “mejores vitales” ni ocultar síntomas. Podés desactivarlo.'}
+        </p>
+        <label className="rd-field" style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <input
+            type="checkbox"
+            checked={progressOptOut}
+            onChange={(e) => {
+              const next = e.target.checked
+              setProgressOptOut(next)
               try { localStorage.setItem('helios.progress.optout', next ? '1' : '0') } catch { /* ignore */ }
             }}
           />

@@ -451,7 +451,67 @@ a.brand-mark:hover { background: color-mix(in srgb, var(--accent) 8%, transparen
 .trust-metric dd { margin: 0; display: grid; gap: 2px; }
 .trust-metric strong { font-size: 1.55rem; font-weight: 800; letter-spacing: -0.02em; }
 .trust-metric span { font-size: 0.92rem; font-weight: 750; }
-.monitor-actions { margin-top: 4px; }
+.monitor-actions {
+  margin-top: 12px;
+  display: grid;
+  gap: 16px;
+  padding: 18px 20px;
+}
+.monitor-actions-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+.monitor-actions-head h2 {
+  margin: 0;
+  font-size: 1.15rem;
+}
+.monitor-actions-role {
+  margin: 6px 0 0;
+  font-size: 0.84rem;
+  color: var(--muted);
+}
+.monitor-next-steps {
+  margin: 0;
+  padding: 12px 12px 12px 1.4rem;
+  display: grid;
+  gap: 8px;
+  border-radius: 14px;
+  border: 1px solid color-mix(in srgb, var(--accent, #f5004f) 22%, transparent);
+  background: color-mix(in srgb, var(--accent, #f5004f) 6%, transparent);
+  font-size: 0.92rem;
+  line-height: 1.45;
+}
+.monitor-next-steps li::marker {
+  font-weight: 700;
+  color: var(--accent, #f5004f);
+}
+.monitor-action-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+}
+.monitor-action-grid .btn {
+  width: 100%;
+  justify-content: center;
+  min-height: 44px;
+}
+.monitor-symptom-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 8px;
+}
+.monitor-symptom-list li {
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
 .page-head { display: flex; justify-content: space-between; gap: 16px; align-items: flex-end; flex-wrap: wrap; }
 .kicker { margin: 0; color: var(--accent); font-size: 0.78rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; display: inline-flex; align-items: center; gap: 6px; }
 h1 { margin: 0; font-size: clamp(1.6rem, 2vw, 2.1rem); line-height: 1.15; font-weight: 750; letter-spacing: -0.02em; }
@@ -741,7 +801,7 @@ tr[aria-selected="true"] { background: var(--accent-soft); }
   .trust-metric { padding: 10px 8px; border-radius: 14px; min-width: 0; }
   .trust-metric strong { font-size: 1.15rem; overflow-wrap: anywhere; }
   .trust-metric span { font-size: 0.78rem; }
-  .monitor-actions .row { flex-direction: column; align-items: stretch; }
+  .monitor-action-grid { grid-template-columns: 1fr; }
   .monitor-actions .btn { width: 100%; }
   .alerts-back {
     display: inline-flex; align-items: center; min-height: 44px; margin: 0 0 10px;
@@ -1076,56 +1136,57 @@ html.tab-hidden .skeleton { animation: none; }
   align-items: start;
   min-width: 0;
 }
-.alerts-list { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.alerts-list { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
 .alert-card {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  gap: 8px 20px;
+  gap: 2px 12px;
   width: 100%;
   max-width: 100%;
   min-width: 0;
-  min-height: 278px;
-  padding: 30px 40px 26px;
+  min-height: 0;
+  padding: 10px 14px;
   border: 0;
-  border-radius: 44px;
+  border-radius: 14px;
   background: #ffffff;
   box-shadow: none;
   text-align: left;
   color: #1a1a1a;
 }
-.alert-card-copy { display: flex; flex-direction: column; min-height: 100%; }
+.alert-card-copy { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; min-height: 0; }
 .alert-card-name {
   display: block;
   color: #9aad74;
-  font-size: clamp(2.4rem, 2.9vw, 3.55rem);
+  font-size: 1rem;
   font-weight: 650;
-  letter-spacing: -0.035em;
-  line-height: 1.02;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
 }
 .alert-card-kind {
   display: block;
-  margin-top: 6px;
+  margin-top: 0;
   color: #1c1c1c;
-  font-size: clamp(1.25rem, 1.5vw, 1.7rem);
-  font-weight: 650;
-  letter-spacing: -0.02em;
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
 }
 .alert-card.is-muted .alert-card-name,
 .alert-card.is-muted .alert-card-kind,
 .alert-card.is-muted .alert-card-when { color: #979797; }
-.alert-card-when { color: #9aad74; text-align: right; font-weight: 650; line-height: 1.05; }
-.alert-card-when b { display: block; font-size: clamp(1.35rem, 1.6vw, 1.85rem); font-weight: 650; }
-.alert-card-when span { display: block; margin-top: 4px; font-size: 1.15rem; font-weight: 550; }
+.alert-card-when { color: #9aad74; text-align: right; font-weight: 650; line-height: 1.1; }
+.alert-card-when b { display: block; font-size: 0.82rem; font-weight: 650; }
+.alert-card-when span { display: block; margin-top: 2px; font-size: 0.75rem; font-weight: 550; }
 .alert-badge {
   display: inline-flex;
   align-items: center;
   width: fit-content;
-  min-height: 38px;
-  margin-top: auto;
-  padding: 0 14px;
-  border-radius: 8px;
+  min-height: 22px;
+  margin-top: 2px;
+  padding: 0 8px;
+  border-radius: 6px;
   color: #ffffff;
-  font-size: 0.95rem;
+  font-size: 0.72rem;
   font-weight: 700;
 }
 .alert-badge.is-missing { background: #e80046; }
@@ -1630,16 +1691,17 @@ html.tab-hidden .skeleton { animation: none; }
 @media (max-width: 1280px) {
   .alerts-layout { grid-template-columns: minmax(0, 1.4fr) minmax(260px, 0.9fr); gap: 16px; }
   .alerts-detail { min-height: 0; }
-  .alert-card { border-radius: 28px; padding: 22px; min-height: 0; }
+  .alert-card { border-radius: 14px; padding: 10px 12px; min-height: 0; }
 }
 @media (max-width: 1023px) {
   .shell.is-alerts .content { padding: 14px 14px 96px; }
   .alerts-layout { grid-template-columns: 1fr; }
   .alerts-head h1 { font-size: 2rem; }
-  .alert-card-name, .alerts-detail h2 { font-size: 2rem; }
+  .alert-card-name { font-size: 0.95rem; }
+  .alerts-detail h2 { font-size: 1.35rem; }
   .alerts-actions { grid-template-columns: 1fr; }
   .alerts-warn { width: 150%; right: -40%; opacity: 0.4; }
-  .alert-card-when b { font-size: 1.2rem; }
+  .alert-card-when b { font-size: 0.78rem; }
   .alert-card-name, .alerts-detail h2 { overflow-wrap: anywhere; }
 }
 
@@ -1991,6 +2053,32 @@ html.tab-hidden .skeleton { animation: none; }
   position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); border: 0;
 }
 .hist-log { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(240px, 0.7fr); gap: 16px; margin-top: 96px; }
+.hist-timeline-panel { min-width: 0; }
+.hist-timeline-head {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+  margin-bottom: 4px;
+}
+.hist-timeline-head h2 { margin: 0; color: var(--hist-amber, #e69500); }
+.hist-timeline-meta {
+  margin: 0; color: var(--hist-amber, #e69500); font-size: 0.92rem; font-weight: 650;
+}
+.hist-pager {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;
+  margin-top: 18px; padding-top: 14px; border-top: 1px solid color-mix(in srgb, var(--hist-amber, #e69500) 28%, transparent);
+}
+.hist-page-nums { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; flex: 1; }
+.hist-page-btn {
+  border: 0; background: var(--hist-amber, #e69500); color: #fff; border-radius: 14px;
+  min-height: 44px; min-width: 44px; padding: 0 16px; font: inherit; font-weight: 700; font-size: 0.95rem;
+  cursor: pointer;
+}
+.hist-page-btn.is-active {
+  background: #1a1a1a; color: #fff; box-shadow: inset 0 0 0 2px var(--hist-amber, #e69500);
+}
+.hist-page-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.hist-page-btn:focus-visible { outline: 3px solid #1a1a1a; outline-offset: 2px; }
+:root[data-theme="dark"] .hist-page-btn.is-active { background: #f6f1ea; color: #1a1a1a; }
+:root[data-theme="dark"] .hist-page-btn:focus-visible { outline-color: #f6f1ea; }
 :root[data-theme="dark"] .shell.is-history { --nav-active: #e69500; --hist-amber: #e69500; --hist-grid: #5c5148; }
 :root[data-theme="dark"] .workspace-history {
   background: linear-gradient(118deg, #2a211c 0%, #3a2c24 55%, #4a3420 100%);
@@ -2211,6 +2299,35 @@ html.tab-hidden .skeleton { animation: none; }
 .nasa-filters .field { min-width:150px; margin:0; }
 .nasa-events { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr)); gap:1rem; max-height:36rem; overflow:auto; }
 .nasa-event { border:1px solid var(--line, #536374); border-radius:12px; padding:1rem; overflow-wrap:anywhere; }
+.space-weather-brief { display:grid; gap:10px; }
+.space-weather-brief-head {
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+  align-items:flex-start;
+  justify-content:space-between;
+}
+.space-weather-brief-head h2 { margin:4px 0 0; font-size:1.05rem; }
+.space-weather-brief-meta { margin:6px 0 0; font-size:0.82rem; }
+.space-weather-brief-body { display:grid; gap:10px; }
+.space-weather-brief-note { margin:0; font-size:0.84rem; }
+.space-weather-brief-list {
+  grid-template-columns:1fr;
+  max-height:none;
+  gap:8px;
+}
+.space-weather-brief-list .nasa-event {
+  padding:10px 12px;
+}
+.space-weather-brief-list .nasa-event h3 {
+  margin:0;
+  font-size:0.95rem;
+}
+.space-weather-brief-list .nasa-event p {
+  margin:6px 0;
+  font-size:0.86rem;
+  line-height:1.35;
+}
 .nasa-panel { min-width:0; }
 
 .mission-demo-controller { position: fixed; z-index: 65; top: 5rem; left: max(1rem, calc(50% - 29rem)); width: min(58rem, calc(100vw - 2rem)); max-height: calc(100dvh - 7rem); overflow: auto; box-shadow: 0 1rem 3rem #0003; }
@@ -2240,7 +2357,16 @@ html.tab-hidden .skeleton { animation: none; }
 :root[data-theme="light"] .alert-card.is-muted .alert-card-when { color: #626262; }
 :root[data-theme="light"] .alerts-btn.is-line { color: #4b622f; }
 :root[data-theme="light"] .shell.is-history { --hist-amber: #8c5800; }
-.hist-export { background: #8c5800; color: #fff; }
+.hist-export,
+.hist-page-btn:not(.is-active) { background: #8c5800; color: #fff; }
+.hist-page-btn.is-active {
+  background: #1a1a1a; color: #fff; box-shadow: inset 0 0 0 2px #8c5800;
+}
+:root[data-theme="dark"] .hist-page-btn.is-active {
+  background: #f6f1ea; color: #1a1a1a; box-shadow: inset 0 0 0 2px #8c5800;
+}
+.hist-timeline-head h2,
+.hist-timeline-meta { color: #8c5800; }
 :root[data-theme="light"] .hist-card h2 { color: #8c5800; }
 :root[data-theme="light"] .kicker { color: #ac0036; }
 :root[data-theme="light"] .nav a:not([aria-current="page"]) { color: #ac0036; }

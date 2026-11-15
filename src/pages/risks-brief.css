@@ -1,0 +1,204 @@
+/* NASA Risks · emergency briefing layout */
+.risks-brief {
+  --rb-accent: #d4533a;
+  --rb-line: color-mix(in srgb, var(--rb-accent) 32%, transparent);
+  --rb-soft: color-mix(in srgb, var(--rb-accent) 10%, transparent);
+  display: grid;
+  gap: 14px;
+  max-width: 920px;
+}
+.risks-brief-head {
+  display: grid;
+  gap: 6px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid var(--rb-line);
+  background:
+    linear-gradient(120deg, var(--rb-soft), transparent 55%),
+    color-mix(in srgb, var(--surface, #1a1216) 94%, transparent);
+}
+.risks-brief-kicker {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 750;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--rb-accent);
+}
+.risks-brief-head h1 {
+  margin: 0;
+  font-size: clamp(1.15rem, 2.6vw, 1.45rem);
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+.risks-brief-head p {
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.4;
+  opacity: 0.88;
+}
+.risks-brief-head a {
+  color: var(--rb-accent);
+  font-weight: 650;
+  text-decoration: none;
+}
+.risks-brief-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.risks-brief-tabs button {
+  min-height: 40px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, currentColor 16%, transparent);
+  background: transparent;
+  color: inherit;
+  font-weight: 650;
+  font-size: 0.88rem;
+  cursor: pointer;
+}
+.risks-brief-tabs button[aria-pressed='true'] {
+  border-color: var(--rb-line);
+  background: var(--rb-soft);
+  color: var(--rb-accent);
+}
+.risks-brief-grid {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+}
+.risks-brief-hazard {
+  display: grid;
+  gap: 4px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, currentColor 12%, transparent);
+  background: color-mix(in srgb, #fff 4%, transparent);
+  text-align: left;
+  color: inherit;
+  cursor: pointer;
+  min-height: 44px;
+}
+.risks-brief-hazard.is-on {
+  border-color: var(--rb-line);
+  background: var(--rb-soft);
+}
+.risks-brief-hazard strong {
+  font-size: 0.9rem;
+  line-height: 1.25;
+}
+.risks-brief-hazard span {
+  font-size: 0.78rem;
+  line-height: 1.35;
+  opacity: 0.85;
+}
+.risks-brief-panel {
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid color-mix(in srgb, currentColor 12%, transparent);
+  background: color-mix(in srgb, #fff 3%, transparent);
+  display: grid;
+  gap: 10px;
+}
+.risks-brief-panel h2 {
+  margin: 0;
+  font-size: 1rem;
+}
+.risks-brief-meta {
+  margin: 0;
+  font-size: 0.78rem;
+  opacity: 0.8;
+}
+.risks-brief-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+.risks-brief-list li {
+  display: grid;
+  gap: 2px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, currentColor 10%, transparent);
+}
+.risks-brief-list .spread {
+  align-items: baseline;
+  gap: 8px;
+}
+.risks-brief-list h3 {
+  margin: 0;
+  font-size: 0.92rem;
+  line-height: 1.3;
+}
+.risks-brief-list p {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.35;
+  opacity: 0.88;
+}
+.risks-brief-list a {
+  font-size: 0.8rem;
+  font-weight: 650;
+  color: var(--rb-accent);
+}
+.risks-brief-chiprow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.risks-brief-chiprow button {
+  min-height: 36px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, currentColor 14%, transparent);
+  background: transparent;
+  color: inherit;
+  font-size: 0.8rem;
+  font-weight: 650;
+  cursor: pointer;
+}
+.risks-brief-chiprow button[aria-pressed='true'] {
+  border-color: var(--rb-line);
+  background: var(--rb-soft);
+}
+.risks-brief .nasa-panel,
+.risks-brief .panel[data-testid='nasa-osdr-provenance'] {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 14px;
+}
+.risks-brief .nasa-filters {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 8px;
+  align-items: end;
+}
+.risks-brief .nasa-panel h2,
+.risks-brief [data-testid='nasa-osdr-provenance'] h2 {
+  font-size: 1rem;
+  margin: 0 0 6px;
+}
+.risks-brief .nasa-event {
+  padding: 8px 10px;
+}
+.risks-brief .nasa-event h3 {
+  font-size: 0.9rem;
+  margin: 4px 0;
+}
+.risks-brief .nasa-event dl,
+.risks-brief .nasa-event .callout {
+  display: none;
+}
+@media (max-width: 640px) {
+  .risks-brief-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+@media (max-width: 420px) {
+  .risks-brief-grid {
+    grid-template-columns: 1fr;
+  }
+}
