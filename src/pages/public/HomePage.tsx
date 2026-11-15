@@ -5,9 +5,10 @@ import { Link, useOutletContext } from 'react-router-dom'
 import { HeroStage } from '../../components/public/HeroStage'
 import { MagneticButton } from '../../components/public/MagneticButton'
 import { Reveal } from '../../components/public/Reveal'
+import { SimConsole } from '../../components/public/SimConsole'
 import { TeamPhoto } from '../../components/public/TeamPhoto'
-import { DASHBOARD_PATH, HERO_MEDIA } from '../../content/landing'
-import { publicStages, publicTeam } from '../../content/publicCopy'
+import { DASHBOARD_PATH } from '../../content/landing'
+import { publicQuestions, publicStages, publicTeam } from '../../content/publicCopy'
 import { useLocale } from '../../i18n'
 
 type Ctx = { reduced: boolean }
@@ -18,6 +19,7 @@ export function HomePage() {
   const en = lang === 'en'
   const stages = publicStages(lang)
   const team = publicTeam(lang)
+  const questions = publicQuestions(lang).slice(0, 3)
 
   useEffect(() => {
     document.title = en ? 'HELIOS · Human care beyond Earth' : 'HELIOS · Cuidado humano más allá de la Tierra'
@@ -25,24 +27,26 @@ export function HomePage() {
 
   return (
     <>
-      <section className="home-hero" aria-labelledby="home-title">
-        <div>
+      <section className="home-hero home-hero-v2" aria-labelledby="home-title">
+        <div className="home-hero-copy">
+          <p className="sec-tag">00 / {en ? 'ENTRY' : 'ENTRADA'}</p>
           <p className="home-badge">{en ? 'HELIOS · Space-health prototype' : 'HELIOS · Prototipo de salud espacial'}</p>
           <h1 id="home-title">
             <motion.span
               className="line-1"
-              initial={reduced ? false : { opacity: 0, y: 24 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.55, delay: 0.05 }}
+              initial={reduced ? false : { opacity: 0, y: 28, filter: 'blur(8px)' }}
+              animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+              transition={{ duration: 0.6, delay: 0.04 }}
             >
               {en ? 'Human care' : 'El cuidado humano'}
             </motion.span>
             <motion.span
               className="line-2"
-              initial={reduced ? false : { opacity: 0, y: 24 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.55, delay: 0.18 }}
+              initial={reduced ? false : { opacity: 0, y: 28, filter: 'blur(8px)' }}
+              animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+              transition={{ duration: 0.65, delay: 0.16 }}
             >
+              <span className="title-glow" aria-hidden="true" />
               {en ? 'beyond Earth.' : 'más allá de la Tierra.'}
             </motion.span>
           </h1>
@@ -52,7 +56,9 @@ export function HomePage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.28 }}
           >
-            {en ? 'HELIOS connects preparation, health, and follow-up to support the crew at every stage of the mission.' : 'HELIOS conecta preparación, salud y seguimiento para acompañar a la tripulación en cada etapa de su misión.'}
+            {en
+              ? 'HELIOS connects preparation, health, and follow-up to support the crew at every stage of the mission.'
+              : 'HELIOS conecta preparación, salud y seguimiento para acompañar a la tripulación en cada etapa de su misión.'}
           </motion.p>
           <motion.div
             className="home-actions"
@@ -60,14 +66,13 @@ export function HomePage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.45, delay: 0.36 }}
           >
-            <MagneticButton className="pub-btn" to="/proyecto" reduced={reduced}>
-              {en ? 'Explore the project' : 'Explorar el proyecto'}
+            <MagneticButton className="pub-btn pub-btn-glow" to="/proyecto" reduced={reduced}>
+              {en ? 'Explore HELIOS' : 'Explorar HELIOS'}
             </MagneticButton>
             <MagneticButton className="pub-btn-ghost" to={DASHBOARD_PATH} reduced={reduced}>
-              {en ? 'Enter the system' : 'Acceder al sistema'}
+              {en ? 'Enter the simulation' : 'Entrar a la simulación'}
             </MagneticButton>
           </motion.div>
-          <p className="pub-muted" style={{ margin: 0, fontSize: '0.86rem' }}>{en ? 'Provisional animated scene · simulated telemetry' : HERO_MEDIA.credit}</p>
           <p className="home-scroll">
             <span className="home-scroll-dot" aria-hidden="true" />
             {en ? 'Keep exploring' : 'Continuar explorando'}
@@ -77,71 +82,155 @@ export function HomePage() {
         <HeroStage reduced={reduced} />
       </section>
 
-      <Reveal as="section" className="home-section" aria-labelledby="stages-title">
-        <p className="pub-kicker">{en ? 'Path' : 'Trayectoria'}</p>
-        <h2 id="stages-title">{en ? 'One mission, three stages' : 'Una misión, tres etapas'}</h2>
-        <p className="pub-lead">{en ? 'Preparation, support on board, and continuity after return.' : 'Preparación, acompañamiento a bordo y continuidad después del regreso.'}</p>
-        <div className="orbit-stages">
-          {stages.map((stage, index) => (
-            <article key={stage.id} className="orbit-stage">
-              <div className="orbit-index" aria-hidden="true">{index + 1}</div>
-              <h3>{stage.title}</h3>
-              <p>{stage.lead}</p>
-              <Link className="pub-btn-ghost" to="/como-funciona">{en ? 'How it works' : 'Cómo funciona'} <ArrowRight size={16} aria-hidden="true" /></Link>
-            </article>
-          ))}
+      <Reveal as="section" className="home-section mission-block" aria-labelledby="stages-title">
+        <div className="section-head">
+          <p className="sec-tag">01 / {en ? 'MISSION' : 'MISIÓN'}</p>
+          <h2 id="stages-title">{en ? 'One mission, three stages' : 'Una misión, tres etapas'}</h2>
+          <p className="pub-lead">
+            {en
+              ? 'Preparation, support on board, and continuity after return — drawn as a conceptual trajectory.'
+              : 'Preparación, acompañamiento a bordo y continuidad después del regreso — trazados como trayectoria conceptual.'}
+          </p>
+        </div>
+
+        <div className="mission-path" aria-hidden={!reduced}>
+          <svg className="mission-path-svg" viewBox="0 0 960 220" preserveAspectRatio="none">
+            <path
+              className={reduced ? undefined : 'path-draw'}
+              d="M40 160 C 180 40, 300 40, 320 110 S 480 210, 520 120 S 700 20, 780 90 S 880 160, 920 120"
+              fill="none"
+              stroke="url(#missionGrad)"
+              strokeWidth="3"
+              strokeLinecap="round"
+            />
+            <defs>
+              <linearGradient id="missionGrad" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stopColor="#CDEBDD" />
+                <stop offset="50%" stopColor="#DDD4F3" />
+                <stop offset="100%" stopColor="#F5004F" />
+              </linearGradient>
+            </defs>
+            <circle className="path-node" cx="80" cy="145" r="10" />
+            <circle className="path-node" cx="480" cy="150" r="10" />
+            <circle className="path-node" cx="860" cy="125" r="10" />
+          </svg>
+          <div className="mission-nodes">
+            {stages.map((stage, index) => (
+              <article key={stage.id} className="mission-node-card">
+                <div className="mission-illus" data-stage={index + 1} aria-hidden="true">
+                  <span />
+                </div>
+                <p className="sec-tag">0{index + 1}</p>
+                <h3>{stage.title}</h3>
+                <p>{stage.lead}</p>
+                <Link className="pub-btn-ghost" to="/como-funciona">
+                  {en ? 'How it works' : 'Cómo funciona'} <ArrowRight size={16} aria-hidden="true" />
+                </Link>
+              </article>
+            ))}
+          </div>
         </div>
       </Reveal>
 
-      <Reveal as="section" className="home-section" aria-labelledby="tech-title">
-        <div className="split-tech">
-          <div className="split-visual" aria-hidden="true">
-            <div className="split-visual-inner">
-              <strong>Quirón Bot</strong>
-              <span>{en ? 'Monitoring with context · Follow-up that continues' : 'Monitoreo con contexto · Continuidad del seguimiento'}</span>
+      <Reveal as="section" className="home-section quiron-block" aria-labelledby="quiron-title">
+        <div className="quiron-layout">
+          <div className="quiron-core" aria-hidden="true">
+            <div className="quiron-orb" />
+            <div className="quiron-ring" />
+            <div className="quiron-wave">
+              <span /><span /><span /><span /><span />
             </div>
+            <strong>Quirón Bot</strong>
+            <p>{en ? 'Assistance demo' : 'Demo de asistencia'}</p>
           </div>
           <div>
-            <p className="pub-kicker">{en ? 'Technology' : 'Tecnología'}</p>
-            <h2 id="tech-title">{en ? 'Technology in service of the crew' : 'Tecnología al servicio de la tripulación'}</h2>
+            <p className="sec-tag">02 / {en ? 'ASSIST' : 'ASISTENCIA'}</p>
+            <h2 id="quiron-title">{en ? 'Guidance with visible sources' : 'Orientación con fuentes visibles'}</h2>
             <p className="pub-lead">
-              {en ? 'HELIOS organizes indicators, inventory, and specialized support in a continuous cycle, with consent and data quality in view.' : 'HELIOS organiza indicadores, inventario y apoyo especializado en un ciclo continuo, con consentimiento y calidad de datos visibles.'}
+              {en
+                ? 'A visual interface for consultation: evidence, resources, and follow-up. Demonstration only — not a live clinical chat.'
+                : 'Una interfaz visual de consulta: evidencia, recursos y seguimiento. Solo demostración — no es un chat clínico en vivo.'}
             </p>
-            <Link className="pub-btn" to="/proyecto">{en ? 'The project' : 'El proyecto'} <ArrowRight size={16} aria-hidden="true" /></Link>
+            <ul className="quiron-questions">
+              {questions.map((q) => (
+                <li key={q}>{q}</li>
+              ))}
+            </ul>
+            <div className="quiron-links">
+              <span>{en ? 'Evidence' : 'Evidencia'}</span>
+              <span>{en ? 'Resources' : 'Recursos'}</span>
+              <span>{en ? 'Follow-up' : 'Seguimiento'}</span>
+            </div>
+            <Link className="pub-btn" to="/como-funciona">
+              {en ? 'See how it works' : 'Ver cómo funciona'} <ArrowRight size={16} aria-hidden="true" />
+            </Link>
           </div>
         </div>
       </Reveal>
 
-      <Reveal as="section" className="home-section" aria-labelledby="team-home-title">
-        <p className="pub-kicker">{en ? 'Team' : 'Equipo'}</p>
-        <h2 id="team-home-title">{en ? 'Meet the team' : 'Conocé al equipo'}</h2>
-        <p className="pub-lead">{en ? 'Five profiles, each with their own place. Full biographies live on individual pages.' : 'Cinco perfiles con protagonismo propio. Las biografías completas viven en páginas individuales.'}</p>
-        <div className="team-preview">
-          {team.map((member) => (
-            <figure key={member.id}>
-              <TeamPhoto member={member} />
-            </figure>
-          ))}
+      <Reveal as="section" className="home-section dash-preview-block" aria-labelledby="dash-title">
+        <div className="section-head">
+          <p className="sec-tag">03 / {en ? 'SYSTEM' : 'SISTEMA'}</p>
+          <h2 id="dash-title">{en ? 'Step into the simulation' : 'Entrá a la simulación'}</h2>
+          <p className="pub-lead">
+            {en
+              ? 'Play with the console: modules react to you, vitals tick, and each door opens a live HELIOS screen.'
+              : 'Jugá con la consola: los módulos reaccionan, los vitales laten y cada puerta abre una pantalla real de HELIOS.'}
+          </p>
         </div>
-        <Link className="pub-btn-ghost" to="/nosotros">{en ? 'About us' : 'Acerca de nosotros'} <ArrowRight size={16} aria-hidden="true" /></Link>
+        <SimConsole reduced={reduced} en={en} />
       </Reveal>
 
-      <Reveal as="section" className="home-section" aria-labelledby="explore-title">
-        <p className="pub-kicker">{en ? 'Explore' : 'Exploración'}</p>
-        <h2 id="explore-title">{en ? 'Explore HELIOS' : 'Explorá HELIOS'}</h2>
-        <div className="explore-grid">
-          <Link className="explore-card video" to="/video">
-            <h3>Video</h3>
-            <p>{en ? 'Audiovisual presentation of the prototype.' : 'Presentación audiovisual del prototipo.'}</p>
-          </Link>
-          <Link className="explore-card docs" to="/documentos">
-            <h3>{en ? 'Documents' : 'Documentos'}</h3>
-            <p>{en ? 'Library of materials and references.' : 'Biblioteca de materiales y referencias.'}</p>
-          </Link>
-          <Link className="explore-card data" to="/datos">
-            <h3>{en ? 'Data' : 'Datos'}</h3>
-            <p>{en ? 'Sources, simulation, and clear limits.' : 'Fuentes, simulación y límites claros.'}</p>
-          </Link>
+      <Reveal as="section" className="home-section team-block" aria-labelledby="team-home-title">
+        <div className="section-head">
+          <p className="sec-tag">04 / {en ? 'CREW' : 'EQUIPO'}</p>
+          <h2 id="team-home-title">{en ? 'Meet the team' : 'Conocé al equipo'}</h2>
+          <p className="pub-lead">
+            {en
+              ? 'Large profiles with orbital frames. Full biographies live on individual pages.'
+              : 'Perfiles grandes con marcos orbitales. Las biografías completas viven en páginas individuales.'}
+          </p>
+        </div>
+        <div className="team-gallery">
+          {team.map((member, index) => (
+            <Link key={member.id} className="team-gallery-card" to={`/nosotros/${member.slug}`} style={{ animationDelay: `${index * 60}ms` }}>
+              <figure className="team-gallery-photo">
+                <span className="team-orbit-mark" aria-hidden="true" />
+                <TeamPhoto member={member} />
+              </figure>
+              <div>
+                <h3>{member.name}</h3>
+                <p>{member.title}</p>
+              </div>
+            </Link>
+          ))}
+        </div>
+        <Link className="pub-btn-ghost" to="/nosotros">
+          {en ? 'About us' : 'Acerca de nosotros'} <ArrowRight size={16} aria-hidden="true" />
+        </Link>
+      </Reveal>
+
+      <Reveal as="section" className="home-section close-block" aria-labelledby="close-title">
+        <div className="close-horizon" aria-hidden="true">
+          <div className="close-planet" />
+          <div className="close-halo" />
+        </div>
+        <div className="close-copy">
+          <p className="sec-tag">05 / {en ? 'NEXT' : 'SIGUIENTE'}</p>
+          <h2 id="close-title">{en ? 'Enter the HELIOS system' : 'Entrá al sistema HELIOS'}</h2>
+          <p className="pub-lead">
+            {en
+              ? 'Explore the project narrative or jump into the simulated mission environment.'
+              : 'Explorá la narrativa del proyecto o saltá al entorno de misión simulado.'}
+          </p>
+          <div className="home-actions">
+            <Link className="pub-btn pub-btn-glow" to={DASHBOARD_PATH}>
+              {en ? 'Enter the simulation' : 'Entrar a la simulación'}
+            </Link>
+            <Link className="pub-btn-ghost" to="/proyecto">
+              {en ? 'The project' : 'El proyecto'}
+            </Link>
+          </div>
         </div>
       </Reveal>
     </>

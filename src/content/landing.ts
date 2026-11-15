@@ -326,7 +326,7 @@ export const DATA_SOURCES: DataSource[] = [
   {
     id: 'simulation',
     name: 'Escenarios y perfiles de simulación HELIOS',
-    institution: 'Equipo HELIOS',
+    institution: 'Equipo Astro Deep Space',
     type: 'Datos de simulación',
     description: 'Mediciones, perfiles y semillas ficticias creadas para demostrar el prototipo.',
     useInHelios: 'Alimentan el monitor, alertas, inventarios y escenarios reproducibles del dashboard.',

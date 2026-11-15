@@ -48,7 +48,7 @@ export function BlackHoleScene({ reduced, caption }: Props) {
       canvas.style.height = `${h}px`
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
       dust.length = 0
-      const count = Math.floor(220 * densityForWidth(w))
+      const count = Math.floor(320 * densityForWidth(w))
       for (let i = 0; i < count; i += 1) {
         dust.push({
           angle: Math.random() * Math.PI * 2,

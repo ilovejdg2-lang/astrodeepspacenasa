@@ -23,6 +23,7 @@ export function ProyectoPage() {
   return (
     <>
       <header className="pub-page-hero">
+        <p className="sec-tag">01 / {en ? 'PROJECT' : 'PROYECTO'}</p>
         <p className="pub-kicker">{en ? 'The project' : 'El proyecto'}</p>
         <h1>{en ? 'Continuous care for a human mission' : 'Cuidado continuo para una misión humana'}</h1>
         <p className="pub-lead">

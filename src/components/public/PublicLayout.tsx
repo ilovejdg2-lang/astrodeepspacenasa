@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from 'motion/react'
-import { Menu, Moon, Sparkles, Sun, X } from 'lucide-react'
+import { Menu, Moon, Sun, X } from 'lucide-react'
 import { useEffect, useId, useState } from 'react'
 import { Link, NavLink, useLocation, useOutlet } from 'react-router-dom'
 import { DASHBOARD_PATH } from '../../content/landing'
@@ -32,7 +32,7 @@ export function PublicLayout() {
   const en = lang === 'en'
   const nav = publicNav(lang)
   const { resolved, toggle } = useTheme()
-  const { reduced, toggle: toggleMotion } = useMotionPref()
+  const { reduced } = useMotionPref()
   const [menuOpen, setMenuOpen] = useState(false)
   const menuId = useId()
   const location = useLocation()
@@ -85,17 +85,6 @@ export function PublicLayout() {
             </div>
             <button
               type="button"
-              className="pub-chip"
-              aria-pressed={reduced}
-              aria-label={reduced ? (en ? 'Turn animations on' : 'Activar animaciones') : (en ? 'Reduce motion' : 'Reducir animaciones')}
-              onClick={toggleMotion}
-              title={en ? 'Reduce motion' : 'Reducir animaciones'}
-            >
-              <Sparkles size={16} aria-hidden="true" />
-              <span className="long">{reduced ? (en ? 'Animate' : 'Animar') : (en ? 'Less motion' : 'Menos movimiento')}</span>
-            </button>
-            <button
-              type="button"
               className="theme-toggle pub-theme"
               data-testid="theme-toggle"
               aria-label={resolved === 'dark' ? (en ? 'Switch to light mode' : 'Activar modo claro') : (en ? 'Switch to dark mode' : 'Activar modo oscuro')}
@@ -105,10 +94,6 @@ export function PublicLayout() {
                 {resolved === 'dark' ? <Moon aria-hidden="true" size={18} /> : <Sun aria-hidden="true" size={18} />}
               </span>
             </button>
-            <Link className="pub-cta" to={DASHBOARD_PATH}>
-              <span className="long">{en ? 'Enter the system' : 'Acceder al sistema'}</span>
-              <span className="short">{en ? 'Enter' : 'Entrar'}</span>
-            </Link>
             <button
               type="button"
               className="btn icon-btn pub-menu-btn"
@@ -119,6 +104,10 @@ export function PublicLayout() {
             >
               {menuOpen ? <X aria-hidden="true" size={18} /> : <Menu aria-hidden="true" size={18} />}
             </button>
+            <Link className="pub-cta" to={DASHBOARD_PATH}>
+              <span className="long">{en ? 'Enter the system' : 'Acceder al sistema'}</span>
+              <span className="short">{en ? 'Enter' : 'Entrar'}</span>
+            </Link>
           </div>
         </header>
 
@@ -166,7 +155,12 @@ export function PublicLayout() {
               <Link to={DASHBOARD_PATH}>{en ? 'System' : 'Sistema'}</Link>
             </nav>
           </div>
-          <p className="pub-footer-note">© {new Date().getFullYear()} {en ? 'HELIOS team · Academic prototype' : 'Equipo HELIOS · Prototipo académico'}</p>
+          <p className="pub-footer-note">
+            © {new Date().getFullYear()}{' '}
+            {en
+              ? 'Astro Deep Space Team · NASA Space Apps Challenge Costa Rica 🇨🇷'
+              : 'Equipo Astro Deep Space · NASA Space Apps Challenge Costa Rica 🇨🇷'}
+          </p>
         </footer>
       </div>
     </div>
