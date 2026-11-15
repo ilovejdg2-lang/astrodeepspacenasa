@@ -29,9 +29,10 @@ export function CareAiControls({ conversationId, messageCount, locale, state: _s
   useEffect(() => {
     setOptions(AI_CARE)
     onChange(AI_CARE)
+    const consentGrant = grant.current
     return () => {
       request.current?.abort()
-      if (grant.current) void revokeSpaceModel(grant.current)
+      if (consentGrant) void revokeSpaceModel(consentGrant)
       onChange(LOCAL_CARE)
     }
   }, [onChange])

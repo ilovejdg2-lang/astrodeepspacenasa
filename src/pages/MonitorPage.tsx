@@ -32,7 +32,7 @@ export function MonitorPage({ embedded = false }: { embedded?: boolean } = {}) {
   const posture = crew ? crewPosture(state, crew.id) : null
   const hr = crew ? latestMeasurement(state, crew.id, 'heart_rate') : null
   const trusted = hr ? isReliable(hr, state.clock.simulatedAt) : false
-  const symptoms = crew ? state.symptoms.filter((item) => item.crewId === crew.id) : []
+  const symptoms = useMemo(() => crew ? state.symptoms.filter((item) => item.crewId === crew.id) : [], [crew, state.symptoms])
   const alerts = crew ? state.alerts.filter((item) => item.crewId === crew.id && item.status !== 'closed') : []
   const unit = en ? 'bpm' : 'lpm'
   const baseline = crew ? `${crew.baseline.hrMin}-${crew.baseline.hrMax} ${unit}` : ''
@@ -54,15 +54,16 @@ export function MonitorPage({ embedded = false }: { embedded?: boolean } = {}) {
     } else {
       steps.push(posture.summary)
     }
-    if (quality.status !== 'ok' || !quality.restControl) {
+    if (quality.status !== 'valid' || !quality.restControl) {
       steps.push(
         en
           ? 'Resting control missing or signal not ready for clinical certainty.'
           : 'Falta control en reposo o la señal no alcanza certeza clínica.',
       )
     }
-    if (symptoms.length) {
-      const words = symptoms[0].symptoms
+    const latestSymptom = symptoms[0]
+    if (latestSymptom) {
+      const words = latestSymptom.symptoms
         .map((id) => SYMPTOM_LABEL[lang][id as keyof typeof SYMPTOM_LABEL.en] ?? id)
         .join(', ')
       steps.push(en ? `Self-report: ${words || 'note'}.` : `Autorreporte: ${words || 'nota'}.`)

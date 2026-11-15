@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useId, useState } from 'react'
 import { useLocale } from '../../i18n'
 import { platformApi, type PrepSuggestion } from '../../platform/api'
 import { getActiveMissionId } from '../../platform/session'
@@ -14,6 +14,7 @@ export function PrepAiPanel({
   analysisStale?: boolean
   onSaved?: () => void
 }) {
+  const suggestionId = useId()
   const { lang } = useLocale()
   const en = lang === 'en'
   const role = getWorkspaceRole()
@@ -124,12 +125,13 @@ export function PrepAiPanel({
       {error ? <p className="field-error" role="alert">{error}</p> : null}
       {suggestions.length > 0 ? (
         <ul className="inv-ai-list">
-          {suggestions.map((item) => {
+          {suggestions.map((item, index) => {
             const on = picked.includes(item.title)
             return (
               <li key={item.title}>
-                <label className={`inv-ai-item${on ? ' is-on' : ''}`}>
+                <label aria-label={item.title} htmlFor={`${suggestionId}-${index}`} className={`inv-ai-item${on ? ' is-on' : ''}`}>
                   <input
+                    id={`${suggestionId}-${index}`}
                     type="checkbox"
                     checked={on}
                     onChange={() => setPicked((current) => (

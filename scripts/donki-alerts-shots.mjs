@@ -1,3 +1,6 @@
+/* global document, localStorage */
+import process from 'node:process'
+import console from 'node:console'
 import { chromium, devices } from '@playwright/test'
 import { mkdirSync } from 'node:fs'
 import { join } from 'node:path'
