@@ -1,6 +1,7 @@
 import { analysisResultSchema, checkAnalysisRefs, type AnalysisContextInput } from '../../shared/aiSchema'
 import { spaceProposalSchema, type SpaceContextInput, type SpaceProposal } from '../../shared/spaceSchema'
 import type { AnalysisResult } from '../../shared/types'
+import { apiUrl } from '../api/baseUrl'
 
 export interface AiHealth {
   configured: boolean
@@ -16,7 +17,7 @@ export type ModelResult =
 
 export async function getAiHealth(signal?: AbortSignal): Promise<AiHealth> {
   try {
-    const response = await fetch('/api/ai/health', { signal })
+    const response = await fetch(apiUrl('/api/ai/health'), { signal })
     if (!response.ok) return { configured: false, provider: 'desconocido', model: '', missing: [], reachable: false }
     const body = (await response.json()) as Partial<AiHealth>
     return {
@@ -33,7 +34,7 @@ export async function getAiHealth(signal?: AbortSignal): Promise<AiHealth> {
 
 export async function askModel(path: '/api/ai/analyze' | '/api/ai/chat', context: AnalysisContextInput, signal: AbortSignal): Promise<ModelResult> {
   try {
-    const response = await fetch(path, {
+    const response = await fetch(apiUrl(path), {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify(context),
@@ -60,7 +61,7 @@ export type SpaceModelResult =
 
 export async function askSpaceModel(context: SpaceContextInput, signal: AbortSignal): Promise<SpaceModelResult> {
   try {
-    const response = await fetch('/api/ai/space', {
+    const response = await fetch(apiUrl('/api/ai/space'), {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify(context),
