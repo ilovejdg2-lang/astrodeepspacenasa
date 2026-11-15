@@ -36,9 +36,16 @@ export function ScientificInsights() {
     })
     return () => controller.abort()
   }, [attempt])
+  const liveCount = studies.filter((s) => s.fetchedAt && !s.message).length
+  const cachedCount = studies.filter((s) => s.cached).length
   return (
-    <section className="panel">
+    <section className="panel" data-testid="nasa-osdr-provenance">
       <h2>Scientific Health Insights · OSDR</h2>
+      <p className="badge">
+        {en
+          ? `Provenance · Nest GET /api/nasa/osdr · live ${liveCount}/${OSDR_DEMO_STUDIES.length}${cachedCount ? ` · cached ${cachedCount}` : ''}`
+          : `Procedencia · Nest GET /api/nasa/osdr · en vivo ${liveCount}/${OSDR_DEMO_STUDIES.length}${cachedCount ? ` · caché ${cachedCount}` : ''}`}
+      </p>
       <p>
         {en
           ? 'Research metadata for educational context. Data are courtesy of the NASA Open Science Data Repository.'
@@ -46,8 +53,8 @@ export function ScientificInsights() {
       </p>
       <p className="callout callout-amber">
         {en
-          ? 'Animal results do not establish clinical conclusions for humans. Metadata alone cannot support causal claims or medical recommendations.'
-          : 'Los resultados en animales no establecen conclusiones clínicas para humanos. Los metadatos por sí solos no fundamentan causalidad ni recomendaciones médicas.'}
+          ? 'Animal results do not establish clinical conclusions for humans. Metadata alone cannot support causal claims or medical recommendations. This is not personal astronaut telemetry.'
+          : 'Los resultados en animales no establecen conclusiones clínicas para humanos. Los metadatos por sí solos no fundamentan causalidad ni recomendaciones médicas. No es telemetría personal del astronauta.'}
       </p>
       <button
         className="chip"

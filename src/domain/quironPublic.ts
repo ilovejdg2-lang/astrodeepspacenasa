@@ -114,6 +114,29 @@ export function answerPublicLocal(question: string, locale: QuironPublicLocale, 
   }
 }
 
+function normQuestion(value: string) {
+  return value
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/\p{M}/gu, '')
+    .replace(/[¿?¡!.,]/g, '')
+    .replace(/\s+/g, ' ')
+}
+
+/** True only for the suggestion chips, in either language. */
+export function isPresetQuestion(question: string): boolean {
+  const target = normQuestion(question)
+  if (!target) return false
+  const presets = [
+    ...publicSuggestions('en'),
+    ...publicSuggestions('es'),
+    ...dashboardSuggestions('en'),
+    ...dashboardSuggestions('es'),
+  ]
+  return presets.some((item) => normQuestion(item) === target)
+}
+
 export function publicSuggestions(locale: QuironPublicLocale): string[] {
   return locale === 'en'
     ? [

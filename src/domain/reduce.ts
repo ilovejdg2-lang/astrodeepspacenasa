@@ -341,6 +341,12 @@ function swapScenario(state: AppState, scenarioId: ScenarioId): AppState {
   };
 }
 
+const MISSION_STAGE_ORDER: MissionStage[] = [
+  'preembarque',
+  'a_bordo',
+  'posmision',
+];
+
 function setMissionStage(state: AppState, stage: MissionStage): AppState {
   if (state.mission.stage === stage) {
     return withNotice(
@@ -354,6 +360,19 @@ function setMissionStage(state: AppState, stage: MissionStage): AppState {
       state,
       'err',
       'Este rol simulado no cambia la etapa de la misión.',
+    );
+  }
+  const from = MISSION_STAGE_ORDER.indexOf(state.mission.stage);
+  const to = MISSION_STAGE_ORDER.indexOf(stage);
+  if (
+    from >= 0 &&
+    to >= 0 &&
+    to < from
+  ) {
+    return withNotice(
+      state,
+      'err',
+      'No se puede volver al checklist de preembarque. La etapa solo avanza (preembarque → a bordo → posmisión).',
     );
   }
   const openEpisodes = state.episodes.filter(
@@ -389,6 +408,13 @@ function setPrepStatus(
       state,
       'err',
       'Este rol simulado no actualiza la lista de preparación.',
+    );
+  }
+  if (state.mission.stage !== 'preembarque') {
+    return withNotice(
+      state,
+      'err',
+      'Checklist cerrado: solo se edita en preembarque. No se puede reabrir después del despegue.',
     );
   }
   const current = state.prepItems.find((item) => item.id === prepId);

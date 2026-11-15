@@ -11,24 +11,45 @@ test('NASA environmental panels isolate data and expose missing quantities', asy
             id: 'fixture-flare',
             type: 'FLR',
             timestamp: '2024-05-10T00:10Z',
+            beginTime: '2024-05-10T00:10Z',
+            peakTime: '2024-05-10T00:13Z',
+            endTime: '2024-05-10T00:22Z',
             classification: 'M1.3',
             description: 'NASA fixture for UI test',
-            sourceUrl: 'https://ccmc.gsfc.nasa.gov/DONKI/',
+            sourceUrl: 'https://ccmc.gsfc.nasa.gov/DONKI/view/FLR/1/-1',
+            instruments: ['GOES-P: EXIS 1.0-8.0'],
+            linkedEvents: [],
           },
         ],
         sources: [
           {
-            source: 'NASA DONKI',
-            sourceUrl: 'https://ccmc.gsfc.nasa.gov/DONKI/',
-            fetchedAt: '2026-11-14T12:00:00Z',
+            source: 'NASA DONKI · FLR',
+            sourceUrl: 'https://ccmc.gsfc.nasa.gov/DONKI/WS/get/FLR',
+            fetchedAt: '2026-11-14T12:00:00.000Z',
             cached: true,
             historical: true,
             simulated: false,
+            type: 'FLR',
           },
         ],
+        failures: [],
       },
     }),
   )
+  await page.goto('/app/alertas', { waitUntil: 'domcontentloaded' })
+  await expect(
+    page.getByRole('heading', {
+      name: /Actividad espacial registrada por NASA|Space activity recorded by NASA/,
+    }),
+  ).toBeVisible()
+  await expect(page.getByTestId('donki-alerts')).toBeVisible()
+  await expect(
+    page.getByRole('button', { name: /Ver detalles|View details/ }),
+  ).toBeVisible()
+  await expect(
+    page.getByText(/Información de contexto espacial|Space-context information/),
+  ).toBeVisible()
+
   await page.goto('/app/mision', { waitUntil: 'domcontentloaded' })
   await expect(
     page.getByRole('heading', { name: 'Space Weather Monitoring' }),

@@ -5,6 +5,19 @@ import { analysisResultSchema } from '../../shared/aiSchema'
 import { apiUrl } from './baseUrl'
 import { uiLang } from '../locale'
 
+function heliosMissionHeaders(): Record<string, string> {
+  try {
+    const token = localStorage.getItem('helios-demo-session')
+    const mission = localStorage.getItem('helios-active-mission')
+    const headers: Record<string, string> = {}
+    if (token) headers['X-Helios-Session'] = token
+    if (mission) headers['X-Helios-Mission'] = mission
+    return headers
+  } catch {
+    return {}
+  }
+}
+
 export interface Snapshot {
   state: AppState
   revision: number
@@ -25,9 +38,15 @@ export class SimulationClient {
   constructor(public sessionId: string) {}
 
   private async request(path: string, body?: unknown): Promise<unknown> {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'X-Simulation-Id': this.sessionId,
+      'Accept-Language': uiLang(),
+      ...heliosMissionHeaders(),
+    }
     const response = await fetch(apiUrl(path), {
       method: body === undefined ? 'GET' : 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-Simulation-Id': this.sessionId, 'Accept-Language': uiLang() },
+      headers,
       body: body === undefined ? undefined : JSON.stringify(body),
       signal: AbortSignal.timeout(8000),
     })
@@ -76,5 +95,67 @@ export class SimulationClient {
     const result = analysisResultSchema.safeParse(value.result)
     if (value.source !== 'local_engine' || !result.success) throw new Error('Análisis inválido')
     return result.data
+  }
+
+  /** Nest monitoring surface — same simulation session, not Quirón consent. */
+  async monitoringLatest(crewId: string, kind: string) {
+    return (await this.request(
+      `/api/monitoring/latest?crewId=${encodeURIComponent(crewId)}&kind=${encodeURIComponent(kind)}`,
+    )) as {
+      simulated: true
+      measurement: AppState['measurements'][number] | null
+      comparison: { min: number; max: number; deltaFromMinimum: number; deltaFromMaximum: number } | null
+      humanReviewRequired: boolean
+    }
+  }
+
+  async monitoringMeasurements(crewId: string, kind?: string) {
+    const qs = new URLSearchParams({ crewId })
+    if (kind) qs.set('kind', kind)
+    return (await this.request(`/api/monitoring/measurements?${qs}`)) as {
+      simulated: true
+      measurements: AppState['measurements']
+    }
+  }
+
+  async listAlerts(filters?: { crewId?: string; status?: string }) {
+    const qs = new URLSearchParams()
+    if (filters?.crewId) qs.set('crewId', filters.crewId)
+    if (filters?.status) qs.set('status', filters.status)
+    const suffix = qs.size ? `?${qs}` : ''
+    return (await this.request(`/api/alerts${suffix}`)) as {
+      simulated: true
+      alerts: AppState['alerts']
+    }
+  }
+
+  async ackAlert(alertId: string): Promise<Snapshot> {
+    return this.accept(
+      await this.request(`/api/alerts/${encodeURIComponent(alertId)}/acknowledge`, {
+        requestId: crypto.randomUUID(),
+        expectedRevision: this.revision,
+      }),
+    )
+  }
+
+  async setAlertStatus(alertId: string, status: 'active' | 'following' | 'closed'): Promise<Snapshot> {
+    return this.accept(
+      await this.request(`/api/alerts/${encodeURIComponent(alertId)}/status`, {
+        requestId: crypto.randomUUID(),
+        expectedRevision: this.revision,
+        status,
+      }),
+    )
+  }
+
+  async listHistory(filters?: { crewId?: string; type?: string }) {
+    const qs = new URLSearchParams()
+    if (filters?.crewId) qs.set('crewId', filters.crewId)
+    if (filters?.type) qs.set('type', filters.type)
+    const suffix = qs.size ? `?${qs}` : ''
+    return (await this.request(`/api/history${suffix}`)) as {
+      simulated: true
+      events: Array<{ type: string; at: number; crewId: string | null; data: unknown }>
+    }
   }
 }

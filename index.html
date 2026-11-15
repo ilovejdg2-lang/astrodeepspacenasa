@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="es" data-theme="dark">
+<html lang="en" data-theme="dark">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -9,11 +9,14 @@
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <script>
       try {
+        var storedLang = localStorage.getItem('helios-locale')
+        document.documentElement.lang = storedLang === 'es' ? 'es' : 'en'
         var stored = localStorage.getItem('helios-theme') || localStorage.getItem('vitalink-theme') || 'dark'
         var dark = stored !== 'light'
         document.documentElement.dataset.theme = dark ? 'dark' : 'light'
         document.documentElement.style.colorScheme = dark ? 'dark' : 'light'
       } catch (error) {
+        document.documentElement.lang = 'en'
         document.documentElement.dataset.theme = 'dark'
         document.documentElement.style.colorScheme = 'dark'
       }

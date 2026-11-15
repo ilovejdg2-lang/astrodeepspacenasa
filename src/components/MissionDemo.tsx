@@ -88,7 +88,7 @@ export function MissionDemoButton() {
   const quality = measurementQuality(state, 'elena-torres')
   return <>
     <button type="button" className="helios-pill demo-pill" data-testid="start-mission-demo" disabled={busy} onClick={() => void go(0)}>
-      {en ? 'Start Mission Demo' : 'Iniciar demo de misión'}
+      {en ? 'Judge demo' : 'Demo jueces'}
     </button>
     {(step !== null || error) && createPortal(<section className="mission-demo-controller panel" aria-label={en ? 'Guided mission demo' : 'Demo guiada de misión'} data-testid="mission-demo-controller" aria-busy={busy}>
       <div className="spread">

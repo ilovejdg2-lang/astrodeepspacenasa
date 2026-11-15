@@ -284,6 +284,59 @@
 .pub-footer nav a:last-child:nth-child(odd) {
   grid-column: 1 / -1;
 }
+.pub-footer-brands {
+  width: min(1180px, 100%);
+  margin: 28px auto 0;
+  padding: 20px 22px 18px;
+  border-radius: 20px;
+  background: #050505;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-sizing: border-box;
+}
+.pub-footer-brands-label {
+  margin: 0 0 14px;
+  text-align: center;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.7);
+}
+.pub-footer-brands-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 18px 28px;
+}
+.pub-footer-brands-divider {
+  width: 1px;
+  height: 52px;
+  background: rgba(255, 255, 255, 0.22);
+  flex: none;
+}
+.pub-footer-logo {
+  display: block;
+  width: auto;
+  max-width: min(100%, 260px);
+  height: auto;
+  object-fit: contain;
+  object-position: center;
+}
+.pub-footer-logo-astro {
+  height: 68px;
+  max-width: min(100%, 220px);
+}
+.pub-footer-logo-nasa {
+  height: 96px;
+  width: 96px;
+  max-width: min(100%, 120px);
+  display: block;
+  flex: none;
+  object-fit: contain;
+  background: #000;
+  border-radius: 10px;
+}
 .pub-footer-note {
   width: min(1180px, 100%); margin: 22px auto 0;
   font-size: 0.85rem; color: color-mix(in srgb, currentColor 62%, transparent);
@@ -771,11 +824,6 @@
 }
 .team-gallery-photo img, .team-gallery-photo .ph { width: 100%; height: 100%; object-fit: cover; display: block; }
 .team-gallery-photo .ph { display: grid; place-items: center; font-weight: 800; font-size: 1.5rem; color: var(--pub-accent); }
-.team-orbit-mark {
-  position: absolute; inset: 8%; border-radius: 50%; border: 1px dashed color-mix(in srgb, var(--pub-accent) 45%, transparent);
-  pointer-events: none; z-index: 1; animation: haloSpin 20s linear infinite; opacity: 0.7;
-}
-:root[data-reduce-motion="1"] .team-orbit-mark { animation: none; }
 .team-gallery-card h3 {
   margin: 0; font-size: clamp(0.98rem, 1.4vw, 1.12rem); font-weight: 750; letter-spacing: -0.02em;
   line-height: 1.2;
@@ -1280,7 +1328,6 @@
     width: min(46vw, 148px);
   }
   .team-gallery-photo { border-radius: 14px; }
-  .team-orbit-mark { inset: 10%; opacity: 0.45; }
   .hud-panel { width: min(160px, 58%); padding: 10px 12px; }
   .hud-stage { max-width: calc(100% - 24px); }
   .sim-console { padding: 16px 14px 14px; border-radius: 24px; }
@@ -1303,6 +1350,17 @@
   .pub-footer-grid { gap: 20px; }
   .pub-footer-title { font-size: 1rem; }
   .pub-footer-note { overflow-wrap: anywhere; margin-top: 18px; }
+  .pub-footer-brands { margin-top: 22px; padding: 16px 14px 14px; border-radius: 16px; }
+  .pub-footer-brands-row {
+    gap: 14px;
+    flex-direction: column;
+  }
+  .pub-footer-brands-divider {
+    width: 64px;
+    height: 1px;
+  }
+  .pub-footer-logo-astro { height: 52px; max-width: min(100%, 200px); }
+  .pub-footer-logo-nasa { height: 80px; width: 80px; max-width: min(100%, 96px); }
   .pub-mobile {
     inset: 68px 12px auto;
     max-height: min(70dvh, 520px);

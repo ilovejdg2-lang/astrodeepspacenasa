@@ -19,6 +19,17 @@ interface StoreValue {
   dispatch: (action: Action) => void
   runActions: (actions: Action[]) => Promise<AppState>
   analyzeEpisode: (episodeId: string, question?: string) => Promise<AnalysisResult>
+  /** Live Nest monitoring read (same session). Null when offline/local. */
+  monitoringLatest: (crewId: CrewId, kind: string) => Promise<{
+    measurement: AppState['measurements'][number] | null
+    comparison: { min: number; max: number; deltaFromMinimum: number; deltaFromMaximum: number } | null
+  } | null>
+  listHistoryEvents: (filters?: { crewId?: string; type?: string }) => Promise<Array<{
+    type: string
+    at: number
+    crewId: string | null
+    data: unknown
+  }> | null>
   unlockSpace: (crewId: CrewId) => void
   restoreDemo: () => Promise<void>
 }
@@ -73,7 +84,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
             return
           }
           try {
-            apply((await client.current.dispatch(action)).state)
+            // Prefer dedicated Nest surfaces when available (alerts REST).
+            let snapshot
+            if (action.type === 'ackAlert') {
+              snapshot = await client.current.ackAlert(action.alertId)
+            } else if (action.type === 'setAlertStatus') {
+              snapshot = await client.current.setAlertStatus(action.alertId, action.status)
+            } else {
+              snapshot = await client.current.dispatch(action)
+            }
+            apply(snapshot.state)
             setBackendError(null)
           } catch (error) {
             if (error instanceof ApiError && error.status < 500) {
@@ -214,6 +234,26 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return result
   }, [])
 
+  const monitoringLatest = useCallback(async (crewId: CrewId, kind: string) => {
+    if (!connected.current || !client.current) return null
+    try {
+      const data = await client.current.monitoringLatest(crewId, kind)
+      return { measurement: data.measurement, comparison: data.comparison }
+    } catch {
+      return null
+    }
+  }, [])
+
+  const listHistoryEvents = useCallback(async (filters?: { crewId?: string; type?: string }) => {
+    if (!connected.current || !client.current) return null
+    try {
+      const data = await client.current.listHistory(filters)
+      return data.events
+    } catch {
+      return null
+    }
+  }, [])
+
   const value = useMemo<StoreValue | null>(() => {
     if (!state) return null
     return {
@@ -225,6 +265,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       authenticatedCrewId,
       dispatch,
       analyzeEpisode,
+      monitoringLatest,
+      listHistoryEvents,
       runActions,
       unlockSpace: (crewId) => {
         const current = stateRef.current
@@ -239,7 +281,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         await queue.current
       },
     }
-  }, [state, persistenceError, saving, authenticatedCrewId, backendMode, backendError, dispatch, analyzeEpisode, runActions])
+  }, [state, persistenceError, saving, authenticatedCrewId, backendMode, backendError, dispatch, analyzeEpisode, monitoringLatest, listHistoryEvents, runActions])
 
   if (!value) {
     return (

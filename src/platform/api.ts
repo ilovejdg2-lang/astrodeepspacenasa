@@ -54,6 +54,7 @@ export const platformApi = {
     platformFetch<{
       ok: boolean
       percent: number
+      analysisStale?: boolean
       blockers: string[]
       criticalPending: string[]
       activeMembers: number
@@ -100,6 +101,18 @@ export const platformApi = {
     platformFetch<{ check: WakeCheck; note: string }>(`/api/platform/missions/${id}/wake${justWoke ? '?justWoke=1' : ''}`),
   completeWake: (id: string, payload: Record<string, unknown>) =>
     platformFetch(`/api/platform/missions/${id}/wake`, { method: 'POST', body: JSON.stringify(payload) }),
+  wakeCrew: (id: string) =>
+    platformFetch<{
+      periodKey: string
+      items: Array<{
+        profileId: string
+        displayName: string
+        role: string
+        status: string
+        payload: Record<string, unknown>
+        updatedAt: number | null
+      }>
+    }>(`/api/platform/missions/${id}/wake/crew`),
   addSleep: (id: string, body: { startAt: number; endAt: number; quality?: number; kind?: string }) =>
     platformFetch(`/api/platform/missions/${id}/sleep`, { method: 'POST', body: JSON.stringify(body) }),
   listSleep: (id: string, subjectId?: string) =>
@@ -112,13 +125,41 @@ export const platformApi = {
     platformFetch<{ items: unknown[] }>(
       `/api/platform/missions/${id}/symptoms${subjectId ? `?subjectId=${encodeURIComponent(subjectId)}` : ''}`,
     ),
+  listIndicators: (id: string, opts?: { subjectId?: string; kind?: string }) => {
+    const params = new URLSearchParams()
+    if (opts?.subjectId) params.set('subjectId', opts.subjectId)
+    if (opts?.kind) params.set('kind', opts.kind)
+    const q = params.toString()
+    return platformFetch<{ items: HealthIndicatorReading[] }>(
+      `/api/platform/missions/${id}/indicators${q ? `?${q}` : ''}`,
+    )
+  },
+  addIndicator: (
+    id: string,
+    body: {
+      kind: IndicatorKind
+      value: number
+      valueSecondary?: number | null
+      measuredAt?: number
+      unit?: string
+      origin?: HealthIndicatorReading['origin']
+      context?: string
+      quality?: HealthIndicatorReading['quality']
+      notes?: string
+      bodyRegion?: string | null
+    },
+  ) =>
+    platformFetch<HealthIndicatorReading>(`/api/platform/missions/${id}/indicators`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
   grants: (id: string) => platformFetch<{ items: unknown[]; chief: { sharesWithChief: string[]; neverAutoShared: string[]; note: string } }>(`/api/platform/missions/${id}/grants`),
   grant: (id: string, body: Record<string, unknown>) =>
     platformFetch(`/api/platform/missions/${id}/grants`, { method: 'POST', body: JSON.stringify(body) }),
   revokeGrant: (grantId: string) => platformFetch(`/api/platform/grants/${grantId}/revoke`, { method: 'POST', body: '{}' }),
-  quironStart: (id: string, mode: 'physical' | 'emotional', locale: 'es' | 'en' = 'es') =>
+  quironStart: (id: string, mode: 'physical' | 'emotional', locale: 'es' | 'en' = 'en') =>
     platformFetch(`/api/platform/missions/${id}/quiron`, { method: 'POST', body: JSON.stringify({ mode, locale }) }),
-  quironMessage: async (conversationId: string, text: string, locale: 'es' | 'en' = 'es', ai?: CareAiOptions, signal?: AbortSignal) =>
+  quironMessage: async (conversationId: string, text: string, locale: 'es' | 'en' = 'en', ai?: CareAiOptions, signal?: AbortSignal) =>
     careConversationSchema.parse(await platformFetch(`/api/platform/quiron/${conversationId}/message`, {
       method: 'POST', body: JSON.stringify({ text, locale, ai }), signal,
     })),
@@ -142,6 +183,19 @@ export const platformApi = {
       body: JSON.stringify({ accept }),
     }),
   evidence: () => platformFetch<{ items: Evidence[] }>('/api/platform/evidence'),
+  storageStatus: () =>
+    platformFetch<{
+      driver: 'json' | 'supabase'
+      revision: number
+      remoteError: string | null
+      recovery: { at: number; file: string; reason: string } | null
+      damaged: string[]
+    }>('/api/platform/storage'),
+  restoreStorage: (file: string) =>
+    platformFetch<{ damaged: string[] }>('/api/platform/storage/restore', {
+      method: 'POST',
+      body: JSON.stringify({ file }),
+    }),
 }
 
 export type Profile = {
@@ -152,11 +206,14 @@ export type Profile = {
   avatarKey: string | null
 }
 
+export type MissionEnvironment = 'spacecraft' | 'space_station' | 'rover' | 'surface_base' | 'training'
+
 export type Mission = {
   id: string
   code: string
   name: string
   destination: string
+  environment?: MissionEnvironment
   stage: string
   plannedStart: string | null
   durationDays: number
@@ -167,7 +224,36 @@ export type Mission = {
   storageNotes: string
   prepPercent: number
   rosterLocked?: boolean
+  analysisStale?: boolean
   createdBy: string
+}
+
+export type IndicatorKind =
+  | 'heart_rate'
+  | 'blood_pressure'
+  | 'spo2'
+  | 'glucose'
+  | 'temperature'
+  | 'respiratory_rate'
+  | 'sleep_hours'
+  | 'mood'
+
+export type HealthIndicatorReading = {
+  id: string
+  missionId: string
+  profileId: string
+  kind: IndicatorKind
+  measuredAt: number
+  value: number
+  valueSecondary: number | null
+  unit: string
+  origin: 'manual' | 'sensor' | 'import' | 'simulation'
+  context: string
+  quality: 'good' | 'fair' | 'poor' | 'unknown'
+  staleAfterMs: number
+  notes: string
+  bodyRegion: string | null
+  createdAt: number
 }
 
 export type MissionRow = {
@@ -197,11 +283,14 @@ export type PrepItem = {
 }
 
 export type PrepSuggestion = {
+  key?: string
   title: string
   category: string
   reason: string
   source: string
   qty: number | null
+  qtyLabel?: string | null
+  critical?: boolean
   assumptions: string
 }
 

@@ -4,15 +4,15 @@ import { platformApi, type PrepSuggestion } from '../../platform/api'
 import { getActiveMissionId } from '../../platform/session'
 import { getWorkspaceRole } from '../../platform/workspace'
 
-/** Análisis IA de checklist antes del despliegue — al guardar bloquea tripulación. */
+/** Análisis IA de checklist antes del despliegue. Cambios → volver a analizar. */
 export function PrepAiPanel({
   stage,
-  rosterLocked,
-  onLocked,
+  analysisStale,
+  onSaved,
 }: {
   stage?: string
-  rosterLocked?: boolean
-  onLocked?: () => void
+  analysisStale?: boolean
+  onSaved?: () => void
 }) {
   const { lang } = useLocale()
   const en = lang === 'en'
@@ -29,7 +29,7 @@ export function PrepAiPanel({
   const [loaded, setLoaded] = useState(false)
 
   useEffect(() => {
-    if (!missionId || !canEdit || !beforeDeploy || rosterLocked) return
+    if (!missionId || !canEdit || !beforeDeploy) return
     let alive = true
     setBusy(true)
     platformApi.suggestPrep(missionId)
@@ -48,22 +48,9 @@ export function PrepAiPanel({
         if (alive) setBusy(false)
       })
     return () => { alive = false }
-  }, [missionId, canEdit, beforeDeploy, rosterLocked, en])
+  }, [missionId, canEdit, beforeDeploy, en])
 
   if (!canEdit || !missionId) return null
-
-  if (rosterLocked) {
-    return (
-      <section className="inv-ai" aria-label={en ? 'AI checklist' : 'Checklist IA'}>
-        <h2>{en ? 'AI prep checklist' : 'Checklist de IA'}</h2>
-        <p className="inv-ai-warn">
-          {en
-            ? 'Checklist saved. Crew is locked: you cannot change members or add new people.'
-            : 'Checklist guardado. La tripulación está bloqueada: no podés cambiar tripulantes ni agregar nuevos.'}
-        </p>
-      </section>
-    )
-  }
 
   if (!beforeDeploy) {
     return (
@@ -71,8 +58,8 @@ export function PrepAiPanel({
         <h2>{en ? 'AI prep checklist' : 'Checklist de IA'}</h2>
         <p>
           {en
-            ? 'AI analysis is only available while boarding (draft / pre-flight), before deployment.'
-            : 'El análisis de IA solo está disponible mientras abordás (borrador / preembarque), antes del despliegue.'}
+            ? 'AI analysis is only available before deployment. After takeoff, no more astronauts can be added.'
+            : 'El análisis de IA solo está disponible antes del despliegue. Tras el despegue no se pueden agregar más astronautas.'}
         </p>
       </section>
     )
@@ -96,13 +83,13 @@ export function PrepAiPanel({
     }
   }
 
-  async function saveAndLock() {
+  async function saveChecklist() {
     if (!missionId || busy || picked.length === 0) return
     setBusy(true)
     setError('')
     try {
       await platformApi.commitAiPrep(missionId, picked)
-      onLocked?.()
+      onSaved?.()
     } catch (err) {
       setError(err instanceof Error ? err.message : (en ? 'Could not save checklist' : 'No se pudo guardar el checklist'))
     } finally {
@@ -117,14 +104,21 @@ export function PrepAiPanel({
           <h2>{en ? 'AI prep checklist' : 'Checklist de IA'}</h2>
           <p>
             {en
-              ? 'Before deployment, Quirón can propose a resource checklist from the current plan.'
-              : 'Antes del despliegue, Quirón puede proponer un checklist de recursos según el plan actual.'}
+              ? 'Before deployment, Quirón can propose a resource checklist from the current plan. If the plan changes, re-analyze.'
+              : 'Antes del despliegue, Quirón propone un checklist según el plan. Si el plan cambia, volvé a analizar.'}
           </p>
         </div>
         <button type="button" className="inv-btn is-sky" disabled={busy} onClick={() => void runAgain()}>
           {busy ? (en ? 'Analyzing…' : 'Analizando…') : loaded ? (en ? 'Re-run AI' : 'Volver a analizar') : (en ? 'Run AI analysis' : 'Analizar con IA')}
         </button>
       </div>
+      {analysisStale ? (
+        <p className="inv-ai-warn" role="status">
+          {en
+            ? 'Plan or crew changed — save a fresh analysis before takeoff.'
+            : 'Hubo cambios en el plan o la tripulación: guardá un análisis nuevo antes de despegar.'}
+        </p>
+      ) : null}
       {warning ? <p className="inv-ai-warn" role="status">{warning}</p> : null}
       {note ? <p className="muted">{note}</p> : null}
       {error ? <p className="field-error" role="alert">{error}</p> : null}
@@ -158,9 +152,9 @@ export function PrepAiPanel({
           type="button"
           className="inv-btn is-pink"
           disabled={busy || picked.length === 0}
-          onClick={() => void saveAndLock()}
+          onClick={() => void saveChecklist()}
         >
-          {en ? 'Save checklist and lock crew' : 'Guardar checklist y bloquear tripulación'}
+          {en ? 'Save checklist' : 'Guardar checklist'}
         </button>
       ) : null}
     </section>

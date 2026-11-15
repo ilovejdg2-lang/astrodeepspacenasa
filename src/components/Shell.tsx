@@ -1,6 +1,6 @@
 import * as Tooltip from '@radix-ui/react-tooltip'
 import { Activity, AlertTriangle, Box, Brain, BookOpen, Heart, History, Lock, Menu, Moon, Rocket, Stethoscope, Sun, X } from 'lucide-react'
-import { useEffect, useRef, useState, type ReactNode, type SVGProps } from 'react'
+import { lazy, Suspense, useEffect, useRef, useState, type ReactNode, type SVGProps } from 'react'
 import { Link, NavLink, useLocation } from 'react-router-dom'
 import { profileTitle, roleLabel } from '../platform/copy'
 import { getStoredProfile } from '../platform/session'
@@ -9,19 +9,28 @@ import { RoleSwitcher } from './role/RoleSwitcher'
 import { activeAlerts } from '../domain/selectors'
 import { useApp } from '../state/store'
 import { useTheme } from '../theme'
-import { AlertsBackdrop } from './AlertsBackdrop'
-import { AnalysisBackdrop } from './AnalysisBackdrop'
-import { HistoryBackdrop } from './HistoryBackdrop'
-import { ResourcesBackdrop } from './ResourcesBackdrop'
-import { CrewBackdrop } from './CrewBackdrop'
 import { useLocale } from '../i18n'
 import { noticeText } from '../noticeLocale'
-import { EcgBackdrop } from './EcgBackdrop'
-import { MedicalBackdrop } from './MedicalBackdrop'
+import { platformApi } from '../platform/api'
 import { HeliosLogo } from './HeliosLogo'
 import { Hint } from './Hint'
+import { MissionDemoButton } from './MissionDemo'
 import { PageEnter } from './PageEnter'
-import { QuironDashboard } from './quiron/QuironDashboard'
+
+const EcgBackdrop = lazy(() => import('./EcgBackdrop').then((m) => ({ default: m.EcgBackdrop })))
+const CrewBackdrop = lazy(() => import('./CrewBackdrop').then((m) => ({ default: m.CrewBackdrop })))
+const AlertsBackdrop = lazy(() => import('./AlertsBackdrop').then((m) => ({ default: m.AlertsBackdrop })))
+const ResourcesBackdrop = lazy(() =>
+  import('./ResourcesBackdrop').then((m) => ({ default: m.ResourcesBackdrop })),
+)
+const HistoryBackdrop = lazy(() => import('./HistoryBackdrop').then((m) => ({ default: m.HistoryBackdrop })))
+const AnalysisBackdrop = lazy(() =>
+  import('./AnalysisBackdrop').then((m) => ({ default: m.AnalysisBackdrop })),
+)
+const MedicalBackdrop = lazy(() => import('./MedicalBackdrop').then((m) => ({ default: m.MedicalBackdrop })))
+const QuironDashboard = lazy(() =>
+  import('./quiron/QuironDashboard').then((m) => ({ default: m.QuironDashboard })),
+)
 
 function beep() {
   const audio = new AudioContext()
@@ -60,7 +69,30 @@ export function Shell({ children }: { children: ReactNode }) {
   const { lang, setLang, copy } = useLocale()
   const shell = copy.shell
   const workspaceRole = useWorkspaceRole()
+  const [storageNote, setStorageNote] = useState<string | null>(null)
+  const [damagedFile, setDamagedFile] = useState<string | null>(null)
   const en = lang === 'en'
+  useEffect(() => {
+    let active = true
+    platformApi.storageStatus()
+      .then((status) => {
+        if (!active || !status.damaged[0]) return
+        setDamagedFile(status.damaged[0])
+        setStorageNote(en
+          ? 'A damaged database copy was kept instead of replacing it with the demo file.'
+          : 'Se conservó una copia dañada de la base en lugar de reemplazarla con la demo.')
+      })
+      .catch(() => {})
+    return () => { active = false }
+  }, [en])
+  async function restoreDamagedCopy(file: string) {
+    try {
+      await platformApi.restoreStorage(file)
+      window.location.reload()
+    } catch (error) {
+      setStorageNote(error instanceof Error ? error.message : (en ? 'Could not restore the copy.' : 'No se pudo restaurar la copia.'))
+    }
+  }
   const homeLabel =
     workspaceRole === 'chief'
       ? (en ? 'Mission center' : 'Centro')
@@ -235,13 +267,15 @@ export function Shell({ children }: { children: ReactNode }) {
         </div>
       </aside>
       <div className={(isMonitor || (isHome && workspaceRole === 'chief')) ? 'workspace workspace-monitor' : isCrew ? 'workspace workspace-crew' : isAlerts ? 'workspace workspace-alerts' : isResources ? 'workspace workspace-resources' : isHistory ? 'workspace workspace-history' : isAnalysis ? 'workspace workspace-analysis' : isMedical ? 'workspace workspace-medical' : 'workspace'}>
-        {(isMonitor || (isHome && workspaceRole === 'chief')) ? <EcgBackdrop /> : null}
-        {isCrew ? <CrewBackdrop /> : null}
-        {isAlerts ? <AlertsBackdrop /> : null}
-        {isResources ? <ResourcesBackdrop /> : null}
-        {isHistory ? <HistoryBackdrop /> : null}
-        {isAnalysis ? <AnalysisBackdrop /> : null}
-        {isMedical ? <MedicalBackdrop /> : null}
+        <Suspense fallback={null}>
+          {(isMonitor || (isHome && workspaceRole === 'chief')) ? <EcgBackdrop /> : null}
+          {isCrew ? <CrewBackdrop /> : null}
+          {isAlerts ? <AlertsBackdrop /> : null}
+          {isResources ? <ResourcesBackdrop /> : null}
+          {isHistory ? <HistoryBackdrop /> : null}
+          {isAnalysis ? <AnalysisBackdrop /> : null}
+          {isMedical ? <MedicalBackdrop /> : null}
+        </Suspense>
         <header className="topbar">
           <Link className="mobile-brand" to="/" aria-label={shell.presentation}>
             <HeliosLogo variant="wordmark" />
@@ -265,6 +299,10 @@ export function Shell({ children }: { children: ReactNode }) {
             {getStoredProfile() ? <RoleSwitcher /> : null}
           </div>
           <div className="top-actions">
+            <MissionDemoButton />
+            <Link className="helios-pill" to="/misiones/evidencia" title={en ? 'Evidence hub' : 'Hub de evidencia'}>
+              {en ? 'Defense' : 'Defensa'}
+            </Link>
             <div className="lang-switch" role="group" aria-label={shell.language}>
               <button type="button" aria-pressed={lang === 'en'} onClick={() => setLang('en')}>EN</button>
               <button type="button" aria-pressed={lang === 'es'} onClick={() => setLang('es')}>ES</button>
@@ -286,6 +324,18 @@ export function Shell({ children }: { children: ReactNode }) {
           <div className="connection-notices" aria-live="polite">
             {backendError ? <p role="status">{backendError}</p> : null}
             {persistenceError ? <p>{persistenceError}</p> : null}
+          </div>
+        ) : null}
+        {storageNote ? (
+          <div className="connection-notices" role="status">
+            <p className="callout callout-amber">
+              {storageNote}
+              {damagedFile && getStoredProfile()?.demoRole === 'chief' ? (
+                <button type="button" className="alerts-btn is-line" onClick={() => void restoreDamagedCopy(damagedFile)}>
+                  {en ? 'Restore saved copy' : 'Restaurar copia'}
+                </button>
+              ) : null}
+            </p>
           </div>
         ) : null}
         <div className="notice" aria-live="polite">{ai ? <div className="content notice-float" style={{ paddingBottom: 0 }}><p className={`callout callout-${ai.tone === 'err' ? 'bad' : ai.tone === 'ok' ? 'ok' : 'amber'}`} data-testid="notice">{noticeText(ai.text, lang)}</p></div> : null}</div>
@@ -313,6 +363,13 @@ export function Shell({ children }: { children: ReactNode }) {
         {more ? <button className="scrim more-scrim" type="button" aria-label={shell.closeMenu} onClick={() => { setMore(false); moreButton.current?.focus() }} /> : null}
         {more ? (
           <div ref={morePanel} id="more-modules" className="more-menu" role="dialog" aria-label={shell.moreSections}>
+            <div className="more-lang" role="group" aria-label={shell.language}>
+              <span className="more-lang-label">{shell.language}</span>
+              <div className="lang-switch">
+                <button type="button" aria-pressed={lang === 'en'} onClick={() => setLang('en')}>EN</button>
+                <button type="button" aria-pressed={lang === 'es'} onClick={() => setLang('es')}>ES</button>
+              </div>
+            </div>
             {primaryLinks.slice(narrowPhone ? 4 : 5).map((link) => (
               <NavLink key={link.to} to={link.to} end={link.end} onClick={() => setMore(false)}>
                 <link.icon aria-hidden="true" className="nav-icon" size={NAV_ICON} strokeWidth={NAV_STROKE} />
@@ -333,7 +390,9 @@ export function Shell({ children }: { children: ReactNode }) {
             ))}
           </div>
         ) : null}
-        <QuironDashboard />
+        <Suspense fallback={null}>
+          <QuironDashboard />
+        </Suspense>
       </div>
     </div>
     </Tooltip.Provider>

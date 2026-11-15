@@ -5,7 +5,7 @@ export function CrewHelmet({ id, name, selected }: { id: CrewId; name: string; s
   const src = selected ? '/brand/helmet-selected.jpg' : '/brand/helmet-default.jpg'
   return (
     <span className={selected ? 'crew-helmet is-selected' : 'crew-helmet'} data-crew={id} title={name}>
-      <img src={src} alt="" width={106} height={106} draggable={false} />
+      <img src={src} alt="" width={106} height={106} draggable={false} loading="lazy" decoding="async" />
     </span>
   )
 }

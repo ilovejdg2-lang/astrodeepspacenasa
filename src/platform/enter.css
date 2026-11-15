@@ -89,6 +89,7 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px;
+  align-items: stretch;
 }
 @media (min-width: 1024px) {
   .enter-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px; }
@@ -98,7 +99,12 @@
 }
 
 .enter-card {
-  display: grid; gap: 10px; align-content: start;
+  display: grid;
+  grid-template-rows: auto auto auto minmax(0, 1fr) auto;
+  gap: 10px;
+  align-content: stretch;
+  height: 100%;
+  min-height: 0;
   padding: 18px 16px 16px;
   border-radius: 24px;
   border: 1px solid color-mix(in srgb, currentColor 12%, transparent);
@@ -139,13 +145,15 @@
 .enter-card-art svg { width: 78%; max-width: 180px; height: auto; color: currentColor; }
 .enter-card h2 { margin: 0; font-size: 1.2rem; letter-spacing: -0.02em; color: var(--enter-ink); }
 :root[data-theme="dark"] .enter-card h2 { color: #f4f2f8; }
-.enter-card p {
+.enter-card > p {
   margin: 0; font-size: 0.92rem; line-height: 1.45;
+  min-height: 4.35em;
   color: color-mix(in srgb, var(--enter-ink) 72%, transparent);
 }
-:root[data-theme="dark"] .enter-card p { color: color-mix(in srgb, #f4f2f8 72%, transparent); }
+:root[data-theme="dark"] .enter-card > p { color: color-mix(in srgb, #f4f2f8 72%, transparent); }
 .enter-card ul {
-  margin: 2px 0 4px; padding: 0; list-style: none; display: grid; gap: 6px;
+  margin: 2px 0 0; padding: 0; list-style: none; display: grid; gap: 6px;
+  align-content: start;
 }
 .enter-card li {
   position: relative; padding-left: 14px; font-size: 0.84rem; font-weight: 650;
@@ -158,9 +166,10 @@
 :root[data-theme="dark"] .enter-card li { color: color-mix(in srgb, #f4f2f8 82%, transparent); }
 
 .enter-cta {
-  margin-top: 4px; width: 100%;
+  margin-top: auto; width: 100%;
+  align-self: end;
   box-sizing: border-box;
-  min-height: 36px; height: 36px;
+  min-height: 40px; height: 40px;
   border: 0; border-radius: 999px; cursor: pointer;
   background: var(--enter-fucsia); color: #fff;
   font: inherit; font-weight: 750; font-size: 0.82rem;

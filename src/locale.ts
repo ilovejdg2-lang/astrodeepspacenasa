@@ -30,9 +30,12 @@ export function writeStored(lang: Lang) {
   }
 }
 
-/** Spanish when there is no document, so unit tests keep the original strings. */
+/**
+ * Browser: follows document.documentElement.lang (default en via index.html / LocaleProvider).
+ * No document (unit tests): keep Spanish so domain fixtures stay stable.
+ */
 export function uiLang(): Lang {
   const root = (globalThis as { document?: { documentElement?: { lang?: string } } }).document
   if (!root) return 'es'
-  return root.documentElement?.lang === 'en' ? 'en' : 'es'
+  return root.documentElement?.lang === 'es' ? 'es' : 'en'
 }

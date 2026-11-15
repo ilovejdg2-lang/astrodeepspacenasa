@@ -1,14 +1,15 @@
 import { AnimatePresence, motion } from 'motion/react'
 import { Menu, Moon, Sun, X } from 'lucide-react'
-import { useEffect, useId, useState } from 'react'
+import { Suspense, useEffect, useId, useState } from 'react'
 import { Link, NavLink, useLocation, useOutlet } from 'react-router-dom'
 import { DASHBOARD_PATH } from '../../content/landing'
 import { publicNav } from '../../content/publicCopy'
 import { useLocale } from '../../i18n'
 import { useMotionPref } from '../../hooks/useMotionPref'
 import { useTheme } from '../../theme'
+import { RouteFallback } from '../RouteFallback'
 import { HeliosLogo } from '../HeliosLogo'
-import { QuironChat } from '../quiron/QuironChat'
+import { NasaSpaceAppsMark } from './NasaSpaceAppsMark'
 import { Starfield } from './Starfield'
 import '../../public.css'
 
@@ -17,14 +18,16 @@ function PublicPageTransition({ reduced }: { reduced: boolean }) {
   const outlet = useOutlet({ reduced })
 
   return (
-    <motion.div
-      key={location.pathname}
-      initial={reduced ? false : { opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-    >
-      {outlet}
-    </motion.div>
+    <Suspense fallback={<RouteFallback />}>
+      <motion.div
+        key={location.pathname}
+        initial={reduced ? false : { opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+      >
+        {outlet}
+      </motion.div>
+    </Suspense>
   )
 }
 
@@ -160,6 +163,24 @@ export function PublicLayout() {
               <Link to={DASHBOARD_PATH}>{en ? 'System' : 'Sistema'}</Link>
             </nav>
           </div>
+          <div className="pub-footer-brands" aria-label={en ? 'Challenge and team marks' : 'Marcas del reto y del equipo'}>
+            <p className="pub-footer-brands-label">
+              {en ? 'Built for NASA Space Apps Challenge' : 'Creado para NASA Space Apps Challenge'}
+            </p>
+            <div className="pub-footer-brands-row">
+              <img
+                className="pub-footer-logo pub-footer-logo-astro"
+                src="/brand/partners/astro-deep-space.png"
+                alt="Astro Deep Space"
+                width={220}
+                height={120}
+                loading="lazy"
+                decoding="async"
+              />
+              <span className="pub-footer-brands-divider" aria-hidden="true" />
+              <NasaSpaceAppsMark className="pub-footer-logo pub-footer-logo-nasa" />
+            </div>
+          </div>
           <p className="pub-footer-note">
             © {new Date().getFullYear()}{' '}
             {en
@@ -168,7 +189,6 @@ export function PublicLayout() {
           </p>
         </footer>
       </div>
-      <QuironChat mode="public" />
     </div>
   )
 }

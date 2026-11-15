@@ -38,6 +38,7 @@ export function MissionPage() {
   const [answer, setAnswer] = useState('')
   const openEpisodes = state.episodes.filter((item) => item.status !== 'closed')
   const canEdit = state.role === 'medical' || state.role === 'ops'
+  const canEditPrep = canEdit && state.mission.stage === 'preembarque'
   const counts = Object.fromEntries(
     (['propuesto', 'pendiente_revision', 'aprobado', 'disponible', 'faltante', 'cargado_verificado'] as PrepStatus[]).map((status) => [
       status,
@@ -74,21 +75,38 @@ export function MissionPage() {
       <section className="panel">
         <h2>{en ? 'Mission stage' : 'Etapa de la misión'}</h2>
         <div className="chips" role="group" aria-label={en ? 'Mission stage' : 'Etapa de la misión'}>
-          {STAGES.map((stage) => (
-            <button
-              key={stage}
-              type="button"
-              className="chip"
-              data-testid={`stage-${stage}`}
-              aria-pressed={state.mission.stage === stage}
-              disabled={!canEdit}
-              onClick={() => dispatch({ type: 'setMissionStage', stage })}
-            >
-              {en ? STAGE_EN[stage] : MISSION_STAGE_LABEL[stage]}
-            </button>
-          ))}
+          {STAGES.map((stage) => {
+            const currentIdx = STAGES.indexOf(state.mission.stage)
+            const targetIdx = STAGES.indexOf(stage)
+            const goingBack = targetIdx < currentIdx
+            return (
+              <button
+                key={stage}
+                type="button"
+                className="chip"
+                data-testid={`stage-${stage}`}
+                aria-pressed={state.mission.stage === stage}
+                disabled={!canEdit || goingBack}
+                title={goingBack
+                  ? (en
+                    ? 'Cannot go back to an earlier stage'
+                    : 'No se puede volver a una etapa anterior')
+                  : undefined}
+                onClick={() => dispatch({ type: 'setMissionStage', stage })}
+              >
+                {en ? STAGE_EN[stage] : MISSION_STAGE_LABEL[stage]}
+              </button>
+            )
+          })}
         </div>
         <p className="lede">{(en ? STAGE_HELP_EN : STAGE_HELP)[state.mission.stage]}</p>
+        {canEdit ? (
+          <p className="muted">
+            {en
+              ? 'Stages only move forward. After takeoff you cannot return to the prep checklist step.'
+              : 'Las etapas solo avanzan. Después del despegue no se vuelve al paso del checklist.'}
+          </p>
+        ) : null}
         {!canEdit ? <p className="callout callout-amber">{en ? 'The astronaut role can view the stage, but cannot change it.' : 'El rol astronauta puede consultar la etapa, pero no cambiarla.'}</p> : null}
       </section>
 
@@ -124,7 +142,7 @@ export function MissionPage() {
                     <select
                       id={`prep-status-${item.id}`}
                       value={item.status}
-                      disabled={!canEdit}
+                      disabled={!canEditPrep}
                       onChange={(event) => dispatch({ type: 'setPrepStatus', prepId: item.id, status: event.target.value as PrepStatus })}
                     >
                       {(Object.keys(PREP_STATUS_LABEL) as PrepStatus[]).map((status) => (

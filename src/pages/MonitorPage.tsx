@@ -1,5 +1,5 @@
 import { Brain, Check, ClipboardPlus, Heart, Package, RefreshCw } from 'lucide-react'
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import type { MeasurementKind } from '../../shared/types'
 import { runLocalAnalysis } from '../domain/analysis'
@@ -22,7 +22,7 @@ const SYMPTOM_LABEL = {
 
 export function MonitorPage({ embedded = false }: { embedded?: boolean } = {}) {
   const { lang } = useLocale()
-  const { state, dispatch } = useApp()
+  const { state, dispatch, backendMode, monitoringLatest } = useApp()
   const en = lang === 'en'
   const crew = CREW.find((item) => item.id === state.selectedCrewId) ?? CREW[0]
   const posture = crew ? crewPosture(state, crew.id) : null
@@ -38,6 +38,28 @@ export function MonitorPage({ embedded = false }: { embedded?: boolean } = {}) {
   const hrAbove = Boolean(crew && hr && hr.value > crew.baseline.hrMax)
   const hrText = hr ? `${formatValue('heart_rate', hr.value)} ${unit}` : null
   const shellClass = embedded ? 'monitor-page monitor-embedded' : 'page monitor-page'
+  const [apiDelta, setApiDelta] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!crew || backendMode !== 'connected') {
+      setApiDelta(null)
+      return
+    }
+    let alive = true
+    void monitoringLatest(crew.id, 'heart_rate').then((data) => {
+      if (!alive || !data?.comparison || data.measurement == null) {
+        if (alive) setApiDelta(null)
+        return
+      }
+      const over = data.comparison.deltaFromMaximum
+      setApiDelta(
+        en
+          ? `Nest monitoring: ${over > 0 ? `+${over.toFixed(0)} above baseline max` : `${Math.abs(over).toFixed(0)} within/under max`}`
+          : `Monitoreo Nest: ${over > 0 ? `+${over.toFixed(0)} sobre el máximo de línea base` : `${Math.abs(over).toFixed(0)} dentro/bajo el máximo`}`,
+      )
+    })
+    return () => { alive = false }
+  }, [crew, backendMode, monitoringLatest, en, hr?.id])
 
   if (!crew || !posture) {
     return (
@@ -107,6 +129,7 @@ export function MonitorPage({ embedded = false }: { embedded?: boolean } = {}) {
                   : `Medida ${ageLabel(state.clock.simulatedAt, hr.measuredAt)} / recibida ${ageLabel(state.clock.simulatedAt, hr.receivedAt)} / Señal ${hr.signalQuality}/100`
                 : en ? 'There is no pulse measurement.' : 'No hay una medición de pulso.'}
             </p>
+            {apiDelta ? <p className="muted">{apiDelta}</p> : null}
           </div>
         </div>
         <div className="monitor-card-trust">

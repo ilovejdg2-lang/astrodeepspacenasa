@@ -221,18 +221,24 @@ export function formatServiceStatus(
   }
   if (health.reachable && health.configured) {
     return {
-      label: locale === 'en' ? `Model configured · ${health.provider}` : `Modelo configurado · ${health.provider}`,
+      label: locale === 'en'
+        ? `Optional model ready · ${health.provider} · not clinical`
+        : `Modelo opcional listo · ${health.provider} · no clínico`,
       ok: true,
     }
   }
   if (health.reachable && !health.configured) {
     return {
-      label: locale === 'en' ? 'Local engine · model not configured' : 'Motor local · modelo sin configurar',
+      label: locale === 'en'
+        ? 'Local / demo engine · model key not set (honest fallback)'
+        : 'Motor local / demo · sin clave de modelo (fallback honesto)',
       ok: true,
     }
   }
   return {
-    label: locale === 'en' ? 'Local engine · AI unreachable' : 'Motor local · IA no alcanzable',
+    label: locale === 'en'
+      ? 'Local / demo engine · AI endpoint unreachable'
+      : 'Motor local / demo · endpoint de IA no alcanzable',
     ok: true,
   }
 }

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { HeliosLogo } from '../../components/HeliosLogo'
 import { useLocale } from '../../i18n'
-import { platformApi, type PrepItem, type PrepSuggestion, type StartCheck } from '../../platform/api'
+import { platformApi, type MissionEnvironment, type PrepItem, type PrepSuggestion, type StartCheck } from '../../platform/api'
 import { getSessionToken, getStoredProfile, setActiveMissionId } from '../../platform/session'
 import '../../platform/platform.css'
 
@@ -17,7 +17,9 @@ export function MissionWizardPage() {
   const [busy, setBusy] = useState(false)
   const [name, setName] = useState(en ? 'HELIOS Mission' : 'Misión HELIOS')
   const [destination, setDestination] = useState(en ? 'Orbital habitat (simulation)' : 'Hábitat orbital (simulación)')
+  const [environment, setEnvironment] = useState<MissionEnvironment>('space_station')
   const [durationDays, setDurationDays] = useState(30)
+  /** Default = 4 personas del monitor (Elena, Mateo, Sofía, Alex). */
   const [plannedCrewCount, setPlannedCrewCount] = useState(4)
   const [activities, setActivities] = useState(en ? 'Operations, exercise, demo EVA' : 'Operaciones, ejercicio, EVA demo')
   const [prep, setPrep] = useState<PrepItem[]>([])
@@ -52,6 +54,7 @@ export function MissionWizardPage() {
       const created = await platformApi.createMission({
         name,
         destination,
+        environment,
         durationDays,
         plannedCrewCount,
         activities: activities.split(',').map((item) => item.trim()).filter(Boolean),
@@ -158,6 +161,21 @@ export function MissionWizardPage() {
             <div className="plat-field">
               <label>{en ? 'Destination / scenario' : 'Destino / escenario'}</label>
               <input value={destination} onChange={(event) => setDestination(event.target.value)} />
+            </div>
+            <div className="plat-field">
+              <label>{en ? 'Mission environment' : 'Entorno de misión'}</label>
+              <select value={environment} onChange={(event) => setEnvironment(event.target.value as MissionEnvironment)}>
+                <option value="spacecraft">{en ? 'Spacecraft' : 'Nave espacial'}</option>
+                <option value="space_station">{en ? 'Space station' : 'Estación espacial'}</option>
+                <option value="rover">{en ? 'Rover' : 'Rover'}</option>
+                <option value="surface_base">{en ? 'Lunar / planetary base' : 'Base lunar o planetaria'}</option>
+                <option value="training">{en ? 'Training scenario' : 'Escenario de entrenamiento'}</option>
+              </select>
+              <p className="plat-muted">
+                {en
+                  ? 'Adapts copy and prep context only. Does not invent different medical thresholds.'
+                  : 'Adapta textos y contexto de preparación. No inventa umbrales médicos distintos.'}
+              </p>
             </div>
             <div className="plat-field">
               <label>{en ? 'Estimated duration (days)' : 'Duración estimada (días)'}</label>

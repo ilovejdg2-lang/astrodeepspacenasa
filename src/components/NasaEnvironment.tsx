@@ -330,7 +330,11 @@ export function RadiationPanel() {
       </div>
       {data && (
         <>
-          <p className="badge">NASA Historical Benchmark · RadLab</p>
+          <p className="badge" data-testid="radlab-provenance">
+            NASA Historical Benchmark · RadLab · Nest GET /api/nasa/radlab
+            {data.cached ? (en ? ' · cached' : ' · caché') : (en ? ' · live fetch' : ' · consulta en vivo')}
+            {data.fetchedAt ? ` · ${data.fetchedAt}` : ''}
+          </p>
           <p>{en ? 'Environmental historical measurements; they do not establish individual astronaut exposure or diagnoses. Units are supplied by NASA (µGy/h and µSv/h); values are not relabeled as daily rates. All record times are UTC.' : 'Mediciones ambientales históricas; no establecen exposición individual ni diagnósticos. Las unidades son las suministradas por NASA (µGy/h y µSv/h); no se presentan como tasas diarias. Todas las fechas del registro son UTC.'}</p>
           <Source {...data} en={en} />
           <a href={data.sourceUrl} target="_blank" rel="noreferrer">

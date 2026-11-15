@@ -1,24 +1,42 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { CREW } from '../domain/crew'
 import { filterHistory, historyRows, type HistoryRow } from '../domain/exportData'
 import { episodeStatusLabel, formatMission } from '../domain/format'
 import { dailyTrends, exportDocument, exportRecords, pulseAxis, recordsToCsv, sleepAxis, type TrendPoint } from '../domain/historySeries'
 import { useLocale } from '../i18n'
+import { getActiveMissionId } from '../platform/session'
 import { useApp } from '../state/store'
 import { TrendChart } from '../components/Charts'
+import { PlatformIndicatorCharts } from '../components/health/PlatformIndicatorCharts'
 import { Empty } from '../components/ui'
 import type { CrewId } from '../../shared/types'
 
 export function HistoryPage() {
   const { lang } = useLocale()
   const en = lang === 'en'
-  const { state } = useApp()
+  const { state, backendMode, listHistoryEvents } = useApp()
   const [crewId, setCrewId] = useState<CrewId | 'all'>('all')
   const [type, setType] = useState<HistoryRow['type'] | 'all'>('all')
   const [selected, setSelected] = useState<string | null>(state.selectedEpisodeId)
   const [exporting, setExporting] = useState<'json' | 'csv' | null>(null)
   const [exportError, setExportError] = useState<string | null>(null)
+  const [nestEvents, setNestEvents] = useState<number | null>(null)
   const rows = useMemo(() => filterHistory(historyRows(state), { crewId, type }), [state, crewId, type])
+
+  useEffect(() => {
+    if (backendMode !== 'connected') {
+      setNestEvents(null)
+      return
+    }
+    let alive = true
+    void listHistoryEvents({
+      crewId: crewId === 'all' ? undefined : crewId,
+      type: type === 'all' ? undefined : type,
+    }).then((events) => {
+      if (alive) setNestEvents(events?.length ?? null)
+    })
+    return () => { alive = false }
+  }, [backendMode, listHistoryEvents, crewId, type])
   const chartsOn = type === 'all' || type === 'measurement'
   const trends = useMemo(
     () => (chartsOn ? dailyTrends(state.measurements, crewId) : { pulse: [] as TrendPoint[], sleep: [] as TrendPoint[] }),
@@ -75,6 +93,11 @@ export function HistoryPage() {
             {en
               ? 'Pulse and sleep use separate charts: they do not share an axis because the units are not comparable.'
               : 'El pulso y el descanso van en gráficos separados: no comparten eje porque las unidades no son comparables.'}
+            {nestEvents != null
+              ? (en
+                ? ` Nest /api/history reports ${nestEvents} events for this filter.`
+                : ` Nest /api/history reporta ${nestEvents} eventos para este filtro.`)
+              : ''}
           </p>
         </div>
         <div className="hist-exports no-print">
@@ -144,6 +167,9 @@ export function HistoryPage() {
             {en ? 'It does not share an axis with pulse.' : 'No está en el mismo eje que el pulso.'}
           </p>
         </section>
+      </div>
+      <div className="no-print" style={{ margin: '18px 0 28px' }}>
+        <PlatformIndicatorCharts missionId={getActiveMissionId()} />
       </div>
       <table className="hist-table">
         <caption>{en ? 'Daily values used in the charts' : 'Valores diarios usados en los gráficos'}. {aggregation}</caption>

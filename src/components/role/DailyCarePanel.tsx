@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useLocale } from '../../i18n'
 import { platformApi } from '../../platform/api'
+import { enqueueOfflineOp, isBrowserOnline } from '../../platform/offlineQueue'
 
 function nowTimeValue() {
   const d = new Date()
@@ -209,12 +210,22 @@ export function DailyCarePanel({
                 intensity: 3,
                 context: 'self',
                 source: 'self_report',
-              })
-              setSymptom('')
-            }, en ? 'Symptom saved' : 'Síntoma guardado')}
-          >
-            {en ? 'Save symptom' : 'Guardar síntoma'}
-          </button>
+              const payload = {
+                description: symptom.trim(),
+                intensity: 3,
+                context: 'self',
+                source: 'self_report',
+                bodyRegion: null as string | null,
+              }
+              if (!isBrowserOnline()) {
+                enqueueOfflineOp({ type: 'symptom', missionId: missionId!, payload })
+              } else {
+                try {
+                  await platformApi.addSymptom(missionId!, payload)
+                } catch {
+                  enqueueOfflineOp({ type: 'symptom', missionId: missionId!, payload })
+                }
+              }
           <button
             type="button"
             className="rd-btn ghost"
