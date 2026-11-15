@@ -21,6 +21,7 @@ const RoleHome = lazy(() => import('./pages/role/RoleHome').then((m) => ({ defau
 const MyHealthPage = lazy(() => import('./pages/role/MyHealthPage').then((m) => ({ default: m.MyHealthPage })))
 const MonitorGate = lazy(() => import('./pages/role/MonitorGate').then((m) => ({ default: m.MonitorGate })))
 const MissionPage = lazy(() => import('./pages/MissionPage').then((m) => ({ default: m.MissionPage })))
+const MonitorPage = lazy(() => import('./pages/MonitorPage').then((m) => ({ default: m.MonitorPage })))
 const CrewPage = lazy(() => import('./pages/CrewPage').then((m) => ({ default: m.CrewPage })))
 const ResourcesPage = lazy(() => import('./pages/ResourcesPage').then((m) => ({ default: m.ResourcesPage })))
 const AlertsPage = lazy(() => import('./pages/AlertsPage').then((m) => ({ default: m.AlertsPage })))
@@ -47,6 +48,7 @@ function Dashboard() {
               <Route path="mi-salud" element={<MyHealthPage />} />
               <Route path="mision" element={<MissionPage />} />
               <Route path="tripulacion" element={<CrewPage />} />
+              <Route path="tripulacion/:crewId" element={<MonitorPage />} />
               <Route path="recursos" element={<ResourcesPage />} />
               <Route path="alertas" element={<AlertsPage />} />
               <Route path="historial" element={<HistoryPage />} />

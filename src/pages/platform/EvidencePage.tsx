@@ -1,3 +1,4 @@
+import { systemText } from '../../systemText'
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { HeliosLogo } from '../../components/HeliosLogo'
@@ -104,9 +105,9 @@ export function EvidencePage() {
         <div className="plat-list">
           {items.map((item) => (
             <article className="plat-panel" key={item.id}>
-              <h2>{item.title}</h2>
+              <h2>{systemText(item.title)}</h2>
               <p>{item.institution} · {item.kind}</p>
-              <p>{item.notes}</p>
+              <p>{systemText(item.notes)}</p>
               <a className="plat-btn ghost" href={item.url} target="_blank" rel="noreferrer">
                 {en ? 'Open source' : 'Abrir fuente'}
               </a>

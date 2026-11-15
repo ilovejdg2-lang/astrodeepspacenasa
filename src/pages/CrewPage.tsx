@@ -1,3 +1,4 @@
+import { Link, useNavigate } from 'react-router-dom'
 import { Heart } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { CarouselStrip } from '../components/CarouselStrip'
@@ -14,7 +15,6 @@ import { latestVisibleRequest } from '../domain/spaceRequests'
 import { readPrivate, writePrivate } from '../persistence/private'
 import { useLocale } from '../i18n'
 import { useApp } from '../state/store'
-import type { CrewId } from '../../shared/types'
 
 type Filter = 'all' | 'change' | 'stable' | 'missing'
 
@@ -32,6 +32,7 @@ const STATUS_LABEL: Record<ObservedKind, string> = {
 }
 
 export function CrewPage() {
+  const navigate = useNavigate()
   const { lang } = useLocale()
   const en = lang === 'en'
   const { state, dispatch, authenticatedCrewId, unlockSpace } = useApp()
@@ -45,7 +46,6 @@ export function CrewPage() {
   const selected = CREW.find((item) => item.id === state.selectedCrewId) ?? CREW[0]
   const sessionCrew = crewById(state.sessionCrewId)
   const allowed = selected ? canReadPrivateWellbeing(state.role, state.sessionCrewId, selected.id) : false
-  const roleValue = `${state.role}:${state.sessionCrewId}`
 
   useEffect(() => {
     if (!selected || !allowed) {
@@ -68,20 +68,6 @@ export function CrewPage() {
     return true
   })
 
-  const setRole = (value: string) => {
-    const [role, crewId] = value.split(':')
-    if (role === 'medical' || role === 'ops' || role === 'astronaut') {
-      setPin('')
-      setPinError('')
-      dispatch({ type: 'setRole', role, sessionCrewId: (crewId as CrewId) || state.sessionCrewId })
-    }
-  }
-
-  const roles = [
-    { value: 'medical:elena-torres', label: en ? 'Medical team' : 'Equipo médico' },
-    { value: 'ops:elena-torres', label: en ? 'Operations' : 'Operaciones' },
-    ...CREW.map((crew) => ({ value: `astronaut:${crew.id}`, label: `Ast. ${crew.name}` })),
-  ]
   const filters = [
     ['all', en ? 'All' : 'Todas'],
     ['change', en ? 'With change' : 'Con cambio'],
@@ -107,28 +93,6 @@ export function CrewPage() {
             {en ? 'Missing data does not mean stability.' : 'Falta de datos no significa estabilidad.'}
           </p>
         </header>
-        <fieldset className="crew-roles" data-testid="role-select">
-          <legend>{en ? 'Simulated role' : 'Rol simulado'}</legend>
-          {roles.map((role) => {
-            const selectedRole = state.role === 'medical'
-              ? role.value === 'medical:elena-torres'
-              : state.role === 'ops'
-                ? role.value === 'ops:elena-torres'
-                : role.value === roleValue
-            return (
-              <label key={role.value} className={selectedRole ? 'is-selected' : undefined}>
-                <input
-                  type="radio"
-                  name="simulated-role"
-                  value={role.value}
-                  checked={selectedRole}
-                  onChange={() => setRole(role.value)}
-                />
-                {role.label}
-              </label>
-            )
-          })}
-        </fieldset>
       </div>
 
       <div className="crew-filters" role="group" aria-label={en ? 'Filter crew' : 'Filtrar tripulación'}>
@@ -149,8 +113,9 @@ export function CrewPage() {
               key={crew.id}
               type="button"
               className={alert ? 'crew-tile is-alert' : 'crew-tile'}
-              aria-pressed={crew.id === selected?.id}
-              onClick={() => dispatch({ type: 'selectCrew', crewId: crew.id })}
+              aria-label={`${crew.name}, ${en ? 'view monitoring' : 'ver monitoreo'}`}
+              data-testid={`crew-profile-${crew.id}`}
+              onClick={() => { dispatch({ type: 'selectCrew', crewId: crew.id }); navigate(`/app/tripulacion/${crew.id}`) }}
             >
               <span className="crew-tile-avatar">
                 <CrewHelmet id={crew.id} name={crew.name} selected={alert} />
@@ -188,15 +153,15 @@ export function CrewPage() {
       <div className="crew-extra">
         {state.role === 'astronaut' ? (
           <section className="callout">
-            <strong>Acceso simulado a Mi espacio</strong>
+          <strong>{en ? 'Simulated access to My space' : 'Acceso simulado a Mi espacio'}</strong>
             {spaceOpen ? (
-              <p>Sesión simulada abierta para {sessionCrew.name}. Al recargar la página hay que repetir el PIN.</p>
+              <p>{en ? `Simulated session open for ${sessionCrew.name}. Enter the PIN again after reloading.` : `Sesión simulada abierta para ${sessionCrew.name}. Al recargar la página hay que repetir el PIN.`}</p>
             ) : (
               <form
                 onSubmit={(event) => {
                   event.preventDefault()
                   if (!simulatedPinMatches(state.sessionCrewId, pin)) {
-                    setPinError('Ese PIN simulado no corresponde a esta persona.')
+                    setPinError(en ? 'That simulated PIN does not match this person.' : 'Ese PIN simulado no corresponde a esta persona.')
                     return
                   }
                   setPinError('')
@@ -230,6 +195,7 @@ export function CrewPage() {
           <section className="detail">
             <div className="spread">
               <h2>{selected.name}</h2>
+              <Link className="btn btn-primary" to={`/app/tripulacion/${selected.id}`}>{en ? 'View monitoring' : 'Ver monitoreo'}</Link>
             </div>
             <p>{crewPlace(selected, lang)}</p>
             <p>{crewPosture(state, selected.id).summary}</p>

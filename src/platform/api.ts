@@ -1,3 +1,5 @@
+import { systemText } from '../systemText'
+import { uiLang } from '../locale'
 import { apiUrl } from '../api/baseUrl'
 import { getActiveMissionId, getSessionToken } from './session'
 import { careConversationSchema, careDraftSchema, type CareAiOptions } from '../../shared/careSchema'
@@ -5,6 +7,7 @@ import { careConversationSchema, careDraftSchema, type CareAiOptions } from '../
 async function platformFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const headers = new Headers(init?.headers)
   headers.set('Accept', 'application/json')
+  headers.set('Accept-Language', uiLang())
   if (init?.body && !headers.has('Content-Type')) headers.set('Content-Type', 'application/json')
   const token = getSessionToken()
   if (token) headers.set('X-Helios-Session', token)
@@ -18,7 +21,7 @@ async function platformFetch<T>(path: string, init?: RequestInit): Promise<T> {
       : Array.isArray(data?.message)
         ? data.message.join(', ')
         : `Error ${response.status}`
-    throw new Error(message)
+    throw new Error(systemText(message))
   }
   return data as T
 }

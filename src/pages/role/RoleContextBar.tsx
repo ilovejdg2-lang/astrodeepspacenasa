@@ -1,3 +1,4 @@
+import { systemText } from '../../systemText'
 import { useLocale } from '../../i18n'
 import { roleLabel, stageLabel } from '../../platform/copy'
 import type { WorkspaceMode, WorkspaceRole } from '../../platform/workspace'
@@ -19,7 +20,7 @@ export function RoleContextBar({
   const en = lang === 'en'
   return (
     <div className="rd-meta" aria-label={en ? 'Active context' : 'Contexto activo'}>
-      {missionName ? <span className="rd-chip">{missionName}</span> : null}
+      {missionName ? <span className="rd-chip">{systemText(missionName)}</span> : null}
       {stage ? <span className="rd-chip">{stageLabel(stage, en)}</span> : null}
       {role ? <span className="rd-chip">{en ? 'Role' : 'Rol'}: {roleLabel(role, en)}</span> : null}
       {mode === 'demo' ? <span className="rd-chip rd-demo">{en ? 'Demonstration' : 'Demostración'}</span> : null}

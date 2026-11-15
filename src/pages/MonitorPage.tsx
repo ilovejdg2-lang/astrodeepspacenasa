@@ -1,6 +1,6 @@
 import { AlertTriangle, Brain, ClipboardPlus, Heart, Package, RefreshCw } from 'lucide-react'
-import { useMemo, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import type { MeasurementKind } from '../../shared/types'
 import { canRegisterSymptom, canUseInventory } from '../domain/access'
 import { CREW, crewDuty, crewPlace } from '../domain/crew'
@@ -22,13 +22,15 @@ const SYMPTOM_LABEL = {
   es: { cansancio: 'Cansancio', mareo: 'Mareo', cefalea: 'Dolor de cabeza', nausea: 'Náusea', otro: 'Otro' },
 } as const
 
-export function MonitorPage({ embedded = false }: { embedded?: boolean } = {}) {
+export function MonitorPage() {
+  const { crewId } = useParams()
+  const navigate = useNavigate()
   const { lang } = useLocale()
   const { state, dispatch } = useApp()
   const workspaceRole = useWorkspaceRole()
   const mode = getWorkspaceMode()
   const en = lang === 'en'
-  const crew = CREW.find((item) => item.id === state.selectedCrewId) ?? CREW[0]
+  const crew = CREW.find((item) => item.id === (crewId ?? state.selectedCrewId)) ?? CREW[0]
   const posture = crew ? crewPosture(state, crew.id) : null
   const hr = crew ? latestMeasurement(state, crew.id, 'heart_rate') : null
   const trusted = hr ? isReliable(hr, state.clock.simulatedAt) : false
@@ -38,7 +40,15 @@ export function MonitorPage({ embedded = false }: { embedded?: boolean } = {}) {
   const baseline = crew ? `${crew.baseline.hrMin}-${crew.baseline.hrMax} ${unit}` : ''
   const hrAbove = Boolean(crew && hr && hr.value > crew.baseline.hrMax)
   const hrText = hr ? `${formatValue('heart_rate', hr.value)} ${unit}` : null
-  const shellClass = embedded ? 'monitor-page monitor-embedded' : 'page monitor-page'
+  const shellClass = 'page monitor-page'
+
+  useEffect(() => {
+    if (crew && crew.id !== state.selectedCrewId) dispatch({ type: 'selectCrew', crewId: crew.id })
+  }, [crew, state.selectedCrewId, dispatch])
+
+  useEffect(() => {
+    document.title = en ? `HELIOS · Monitoring ${crew?.name ?? ''}` : `HELIOS · Monitoreo de ${crew?.name ?? ''}`
+  }, [crew, en])
 
   const nextSteps = useMemo(() => {
     if (!crew || !posture) return [] as string[]
@@ -101,6 +111,7 @@ export function MonitorPage({ embedded = false }: { embedded?: boolean } = {}) {
 
   return (
     <div className={shellClass}>
+      <Link className="monitor-back-link" to="/app/tripulacion">{en ? '← Back to crew' : '← Volver a tripulación'}</Link>
       <CarouselStrip className="crew-carousel" trackClassName="crew-picker" label={en ? 'Crew' : 'Tripulación'}>
         {CREW.map((item) => (
           <button
@@ -116,7 +127,7 @@ export function MonitorPage({ embedded = false }: { embedded?: boolean } = {}) {
                   : `${item.name}, seleccionada`
                 : item.name
             }
-            onClick={() => dispatch({ type: 'selectCrew', crewId: item.id })}
+            onClick={() => { dispatch({ type: 'selectCrew', crewId: item.id }); navigate(`/app/tripulacion/${item.id}`) }}
           >
             <CrewHelmet id={item.id} name={item.name} selected={item.id === crew.id} />
             <span aria-hidden="true">{item.name.split(' ')[0]}</span>
@@ -128,7 +139,7 @@ export function MonitorPage({ embedded = false }: { embedded?: boolean } = {}) {
         <div className="monitor-avatar">
           <CrewHelmet id={crew.id} name={crew.name} selected />
         </div>
-        <p className="monitor-kicker">{embedded ? (en ? 'Mission center' : 'Centro') : 'Monitor'}</p>
+        <p className="monitor-kicker">{en ? 'Crew monitoring' : 'Monitoreo del tripulante'}</p>
         <h1 className="monitor-name">{crew.name}</h1>
         <p className="monitor-meta">{crewDuty(crew, lang)} · {crewPlace(crew, lang)}</p>
         <p className="monitor-summary">

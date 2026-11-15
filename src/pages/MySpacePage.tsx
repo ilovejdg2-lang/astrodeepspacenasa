@@ -1,3 +1,4 @@
+import { QUIRON_LOCALE } from '../ai/locale'
 import * as Switch from '@radix-ui/react-switch'
 import { useEffect, useRef, useState } from 'react'
 import type { AppState, CrewId } from '../../shared/types'
@@ -28,12 +29,6 @@ import { useLocale } from '../i18n'
 import { useApp } from '../state/store'
 import { Field } from '../components/ui'
 
-const QUICK = [
-  'Estoy cansada',
-  'Necesito descansar',
-  'Quiero hablar con alguien',
-  'Me siento mal ahora',
-] as const
 
 const LEVELS: { id: SpaceShareLevel; label: string }[] = [
   { id: 'solo_yo', label: 'Solo yo' },
@@ -118,7 +113,7 @@ export function MySpacePage() {
           stateRef.current,
           state.sessionCrewId,
           result.record.dataUse,
-          lang,
+          QUIRON_LOCALE,
         )
         const next = {
           ...result.record,
@@ -144,12 +139,12 @@ export function MySpacePage() {
         setRecord(saved.ok ? next : result.record)
       })
       .catch(() => {
-        if (active) setNote('No se pudo abrir tu espacio en este navegador.')
+        if (active) setNote(en ? 'Could not open your space in this browser.' : 'No se pudo abrir tu espacio en este navegador.')
       })
     return () => {
       active = false
     }
-  }, [allowed, authenticatedCrewId, state.role, state.sessionCrewId, lang])
+  }, [allowed, authenticatedCrewId, state.role, state.sessionCrewId, lang, en])
 
   useEffect(() => {
     setModelConsent(false)
@@ -201,7 +196,7 @@ export function MySpacePage() {
       current.dataUse,
       trimmed,
       localHistory,
-      lang,
+      QUIRON_LOCALE,
     )
     const at = state.clock.simulatedAt
     const id = crypto.randomUUID()
@@ -273,7 +268,7 @@ export function MySpacePage() {
         current.dataUse,
         trimmed,
       )
-      context.locale = lang
+      context.locale = QUIRON_LOCALE
       context.selectedLevel = level
       context.history = historyConsent
         ? recentSpaceMessages(localHistory, trimmed)
@@ -386,8 +381,8 @@ export function MySpacePage() {
     }
     setNote(
       status === 'sent'
-        ? 'La solicitud quedó en el panel del equipo, con el nivel que elegiste. La conversación sigue en este espacio.'
-        : 'Guardada solo para ti.',
+        ? (en ? 'Your request is in the team panel at your chosen sharing level. The conversation stays in this space.' : 'La solicitud quedó en el panel del equipo, con el nivel que elegiste. La conversación sigue en este espacio.')
+        : (en ? 'Saved only for you.' : 'Guardada solo para ti.'),
     )
     void commit(next)
   }
@@ -419,7 +414,7 @@ export function MySpacePage() {
           onClearError={() => setPinError('')}
           onSubmit={() => {
             if (!simulatedPinMatches(state.sessionCrewId, pin)) {
-              setPinError('Ese PIN simulado no corresponde a esta persona.')
+              setPinError(en ? 'That simulated PIN does not match this person.' : 'Ese PIN simulado no corresponde a esta persona.')
               return
             }
             setPinError('')
@@ -599,16 +594,13 @@ export function MySpacePage() {
                 </button>
               </div>
             ) : null}
-            <div className="chips" role="group" aria-label="Respuestas rápidas">
-              {(en
-                ? [
-                    'I am tired',
-                    'I need to rest',
-                    'I want to talk to someone',
-                    'I feel unwell now',
-                  ]
-                : QUICK
-              ).map((text) => (
+            <div className="chips" role="group" aria-label={en ? 'Quick replies' : 'Respuestas rápidas'}>
+              {[
+                'I am tired',
+                'I need to rest',
+                'I want to talk to someone',
+                'I feel unwell now',
+              ].map((text) => (
                 <button
                   key={text}
                   type="button"
@@ -694,11 +686,11 @@ export function MySpacePage() {
           </section>
           <section className="panel">
             <h2>{en ? 'Request' : 'Solicitud'}</h2>
-            <p className="muted">Vista previa de lo que vería el equipo.</p>
+            <p className="muted">{en ? 'Preview of what the team would see.' : 'Vista previa de lo que vería el equipo.'}</p>
             <p data-testid="space-preview">
               {draft.trim()
                 ? preview.cardText
-                : 'Escribe algo para armar la solicitud.'}
+                : (en ? 'Write something to prepare the request.' : 'Escribe algo para armar la solicitud.')}
             </p>
             <div className="chips" role="group" aria-label={en ? 'Sharing level' : 'Nivel de compartir'}>
               {(en ? [
@@ -745,13 +737,12 @@ export function MySpacePage() {
                 disabled={!draft.trim()}
                 onClick={() => saveRequest('mine')}
               >
-                Guardar solo para mí
+                {en ? 'Save only for me' : 'Guardar solo para mí'}
               </button>
             </div>
             {level === 'solo_yo' ? (
               <p className="muted">
-                Con Solo yo, Enviar queda deshabilitado. Usa Guardar solo para
-                mí.
+                {en ? 'With Only me selected, Send is disabled. Use Save only for me.' : 'Con Solo yo, Enviar queda deshabilitado. Usa Guardar solo para mí.'}
               </p>
             ) : null}
             {note ? (
@@ -768,7 +759,7 @@ export function MySpacePage() {
                     <li key={item.id}>
                       <span className="dot" aria-hidden="true" />
                       <span>
-                        {item.status === 'sent' ? 'Enviar' : 'Solo para mí'} ·{' '}
+                        {item.status === 'sent' ? (en ? 'Sent' : 'Enviado') : (en ? 'Only for me' : 'Solo para mí')} ·{' '}
                         {item.preview}
                       </span>
                     </li>
@@ -811,12 +802,14 @@ function PinGate({
   onClearError: () => void
   onSubmit: () => void
 }) {
+  const { lang } = useLocale()
+  const en = lang === 'en'
   const pinHint = CREW.map(
     (crew) => `${crew.name.split(' ')[0]} ${SIMULATED_PINS[crew.id]}`,
   ).join(' · ')
   return (
     <section className="callout">
-      <strong>Acceso simulado a Mi espacio</strong>
+      <strong>{en ? 'Simulated access to My space' : 'Acceso simulado a Mi espacio'}</strong>
       <form
         onSubmit={(event) => {
           event.preventDefault()
@@ -824,13 +817,12 @@ function PinGate({
         }}
       >
         <p>
-          Este PIN es simulado. Sirve solo para la demostración y no protege los
-          datos. Quien controla el navegador puede leer IndexedDB.
+          {en ? 'This PIN is simulated. It is only for the demonstration and does not protect the data. Whoever controls the browser can read IndexedDB.' : 'Este PIN es simulado. Sirve solo para la demostración y no protege los datos. Quien controla el navegador puede leer IndexedDB.'}
         </p>
-        <p className="muted">Códigos de demostración: {pinHint}.</p>
+        <p className="muted">{en ? 'Demonstration codes' : 'Códigos de demostración'}: {pinHint}.</p>
         <Field
           id="space-page-pin"
-          label={`PIN simulado de ${name}`}
+          label={en ? `Simulated PIN for ${name}` : `PIN simulado de ${name}`}
           error={pinError}
         >
           <input
@@ -848,7 +840,7 @@ function PinGate({
           />
         </Field>
         <button className="btn btn-primary" type="submit">
-          Abrir sesión simulada
+          {en ? 'Open simulated session' : 'Abrir sesión simulada'}
         </button>
       </form>
     </section>

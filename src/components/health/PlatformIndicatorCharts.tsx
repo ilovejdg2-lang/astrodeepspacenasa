@@ -39,7 +39,7 @@ export function PlatformIndicatorCharts({ missionId }: { missionId: string | nul
       <h2>{en ? 'Platform indicator history' : 'Historial de indicadores (platform)'}</h2>
       <p className="rd-muted">
         {en
-          ? 'Care-layer readings from Mi salud. Each chart uses a single unit — incompatible units are never mixed on one axis.'
+          ? 'Care-layer readings from My health. Each chart uses a single unit — incompatible units are never mixed on one axis.'
           : 'Lecturas de la capa de cuidado (Mi salud). Cada gráfico usa una sola unidad — nunca se mezclan unidades incompatibles en el mismo eje.'}
       </p>
       {error ? <p className="rd-error" role="alert">{error}</p> : null}
@@ -85,7 +85,7 @@ export function PlatformIndicatorCharts({ missionId }: { missionId: string | nul
           <ul className="health-mini-list">
             {moodItems.map((item) => (
               <li key={item.id}>
-                {item.value}/5 · {new Date(item.measuredAt).toLocaleString()} · {item.origin}
+                {item.value}/5 · {new Date(item.measuredAt).toLocaleString(en ? 'en-US' : 'es-CR')} · {item.origin}
               </li>
             ))}
           </ul>

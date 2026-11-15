@@ -1,3 +1,4 @@
+import { systemText } from '../../systemText'
 import { useEffect, useState } from 'react'
 import { useLocale } from '../../i18n'
 import { platformApi, type PrepItem } from '../../platform/api'
@@ -21,7 +22,7 @@ function formatPrepQty(item: PrepItem, en: boolean): string | null {
 }
 
 /** Plan obligatorio + análisis + checklist ≥80% para despegar. Cambios → re-analizar. */
-export function ChiefLaunchPanel({
+export function MissionChecklistPanel({
   missionId,
   stage,
   plannedCrewCount,
@@ -289,7 +290,7 @@ export function ChiefLaunchPanel({
               : 'Misión terminada (posmisión). La revisión sigue disponible; no se agregan integrantes; el checklist permanece cerrado.'}
           </p>
         ) : null}
-        {error ? <p className="field-error" role="alert">{error}</p> : null}
+        {error ? <p className="field-error" role="alert">{systemText(error)}</p> : null}
         {ok ? <p className="muted">{ok}</p> : null}
       </section>
     )
@@ -417,7 +418,7 @@ export function ChiefLaunchPanel({
                       : undefined}
                   />
                   <span>
-                    <strong>{item.title}</strong>
+                    <strong>{systemText(item.title)}</strong>
                     {qtyLine ? <span className="chief-launch-qty">{qtyLine}</span> : null}
                     {hasQty ? (
                       <span className="chief-launch-have">
@@ -443,10 +444,10 @@ export function ChiefLaunchPanel({
                     ) : null}
                     <span className="muted">
                       {item.critical ? (en ? 'Critical · ' : 'Crítico · ') : ''}
-                      {item.source}
+                      {systemText(item.source)}
                     </span>
                     {item.description ? (
-                      <span className="muted chief-launch-desc">{item.description}</span>
+                      <span className="muted chief-launch-desc">{systemText(item.description)}</span>
                     ) : null}
                   </span>
                 </label>
@@ -462,7 +463,7 @@ export function ChiefLaunchPanel({
         </p>
       )}
 
-      {error ? <p className="field-error" role="alert">{error}</p> : null}
+      {error ? <p className="field-error" role="alert">{systemText(error)}</p> : null}
       {ok ? <p className="muted">{ok}</p> : null}
     </section>
   )

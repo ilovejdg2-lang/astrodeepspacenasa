@@ -1,3 +1,4 @@
+import { systemText } from '../../systemText'
 import { Link } from 'react-router-dom'
 import { useLocale } from '../../i18n'
 import { platformApi } from '../../platform/api'
@@ -47,13 +48,13 @@ export function CrewHome() {
         </p>
       </header>
 
-      {error ? <p className="rd-error" role="alert">{error}</p> : null}
+      {error ? <p className="rd-error" role="alert">{systemText(error)}</p> : null}
       {loading ? <p className="rd-muted">{en ? 'Loading…' : 'Cargando…'}</p> : null}
 
       <DailyCarePanel
         variant="quick"
         missionId={missionId}
-        wakeNote={wakeNote}
+        wakeNote={systemText(wakeNote)}
         symptomCount={symptoms.length}
         appointmentCount={appointments.length}
         onChanged={() => refresh({ silent: true })}

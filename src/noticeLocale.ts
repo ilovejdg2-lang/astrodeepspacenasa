@@ -1,4 +1,5 @@
 import type { Lang } from './locale'
+import { systemText } from './systemText'
 
 // Nest returns these established messages in Spanish. Translate their display
 // without changing the authoritative snapshot or executing actions again.
@@ -15,5 +16,5 @@ const NOTICES: readonly (readonly [string, string])[] = [
 
 export function noticeText(text: string, lang: Lang): string {
   const pair = NOTICES.find(([es, en]) => text === es || text === en)
-  return pair ? pair[lang === 'en' ? 1 : 0] : text
+  return pair ? pair[lang === 'en' ? 1 : 0] : systemText(text, lang)
 }

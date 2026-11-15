@@ -1,3 +1,4 @@
+import { systemText } from '../../systemText'
 import { useCallback, useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { HeliosLogo } from '../../components/HeliosLogo'
@@ -122,7 +123,7 @@ export function MissionsHubPage() {
           {!loading && items.length === 0 ? (
             <p>{en ? 'You have no active missions yet.' : 'Todavía no tenés misiones activas.'}</p>
           ) : null}
-          {error ? <p className="plat-error">{error}</p> : null}
+          {error ? <p className="plat-error">{systemText(error)}</p> : null}
           <div className="plat-list mission-hub-list">
             {items.map((row) => {
               const pct = Number(row.mission.prepPercent) || 0
@@ -130,7 +131,7 @@ export function MissionsHubPage() {
                 <article className="mission-hub-card" key={row.mission.id}>
                   <div className="mission-hub-main">
                     <div className="mission-hub-title">
-                      <strong>{row.mission.name}</strong>
+                      <strong>{systemText(row.mission.name)}</strong>
                       <span className="plat-chip">{row.mission.code}</span>
                     </div>
                     <p className="mission-hub-blurb">{stageBlurb(row.mission.stage, en)}</p>

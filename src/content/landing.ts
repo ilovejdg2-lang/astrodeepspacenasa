@@ -451,7 +451,7 @@ export const DATA_SOURCES: DataSource[] = [
     institution: 'NASA CCMC',
     type: 'API en vivo',
     description: 'Base de eventos de clima espacial (llamaradas y relacionados).',
-    useInHelios: 'Dashboard · Alertas ambientales y Riesgos (radiación). Nest /api/nasa/donki.',
+    useInHelios: 'Misión · contexto de clima espacial. Nest /api/nasa/donki/events.',
     status: 'utilizado',
     href: 'https://ccmc.gsfc.nasa.gov/tools/DONKI/',
     versionNote: 'Consultado · 15 nov 2026',

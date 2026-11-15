@@ -1,8 +1,7 @@
+import { systemText } from '../../systemText'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { BodyMap } from '../../components/health/BodyMap'
 import { HealthIndicatorsPanel } from '../../components/health/HealthIndicatorsPanel'
-import { MissionRemindersPanel } from '../../components/health/MissionRemindersPanel'
 import { OfflineSyncBar } from '../../components/health/OfflineSyncBar'
 import { PlatformIndicatorCharts } from '../../components/health/PlatformIndicatorCharts'
 import { DailyCarePanel } from '../../components/role/DailyCarePanel'
@@ -17,7 +16,6 @@ import { RoleContextBar } from './RoleContextBar'
 import { useMissionWorkspace } from './useMissionWorkspace'
 
 type GrantRow = PlatformGrant & { id: string; granteeProfileId: string; categories: string[] }
-type SymptomRow = { description?: string; bodyRegion?: string | null; createdAt?: number }
 type ApptRow = { id: string; specialty?: string; status?: string; reason?: string }
 
 export function MyHealthPage() {
@@ -121,7 +119,6 @@ export function MyHealthPage() {
       {loading ? <p className="rd-muted">{en ? 'Loading…' : 'Cargando…'}</p> : null}
 
       <OfflineSyncBar />
-      <MissionRemindersPanel missionId={missionId} />
 
       <section className="rd-card">
         <h2>{en ? 'Demo review protocol' : 'Protocolo de revisión demo'}</h2>
@@ -141,8 +138,8 @@ export function MyHealthPage() {
         <h2>{en ? 'Mission routine' : 'Rutina de misión'}</h2>
         <p className="rd-muted">
           {en
-            ? 'Respects your wake time. An overdue reminder is pending work — not proof of illness or wellness.'
-            : 'Respeta tu hora de despertar. Un recordatorio vencido es pendiente — no prueba enfermedad ni bienestar.'}
+            ? 'Pending routine tasks are not proof of illness or wellness.'
+            : 'Las tareas pendientes de la rutina no demuestran enfermedad ni bienestar.'}
         </p>
         <ul className="health-mini-list">
           {routine.map((item) => (
@@ -170,11 +167,6 @@ export function MyHealthPage() {
           await reloadIndicators()
           await refresh({ silent: true })
         }}
-      />
-
-      <BodyMap
-        indicators={indicators}
-        symptoms={symptoms as SymptomRow[]}
       />
 
       <PlatformIndicatorCharts missionId={missionId} />
@@ -279,7 +271,7 @@ export function MyHealthPage() {
             {en ? 'Urgent help now' : 'Ayuda urgente ahora'}
           </button>
         </div>
-        {urgentNote ? <p className="rd-ok" role="status">{urgentNote}</p> : null}
+        {urgentNote ? <p className="rd-ok" role="status">{systemText(urgentNote)}</p> : null}
 
         <h3 style={{ margin: '14px 0 8px', fontSize: '0.95rem' }}>
           {en ? 'Active consents (you can revoke anytime)' : 'Consentimientos activos (podés revocar cuando quieras)'}

@@ -1,0 +1,46 @@
+import { expect, test } from '@playwright/test'
+
+test.use({ channel: process.env.PLAYWRIGHT_CHANNEL as 'chrome' | undefined })
+
+test('alerts group people and keep each person history inside a modal', async ({ page }) => {
+  const donkiRequests: string[] = []
+  page.on('request', (request) => {
+    if (request.url().includes('/api/nasa/donki/')) donkiRequests.push(request.url())
+  })
+  await page.route('**/api/nasa/**', (route) => route.fulfill({ status: 503, json: { message: 'Unavailable' } }))
+  await page.goto('/entrar')
+  await page.getByRole('button', { name: 'ES', exact: true }).click()
+  await page.getByRole('button', { name: 'Explorar como jefe', exact: true }).click()
+  await page.getByRole('button', { name: 'Entrar al tablero', exact: true }).first().click()
+  donkiRequests.length = 0
+  await page.goto('/app/alertas')
+  const person = page.getByTestId('alerts-person-elena-torres')
+  await expect(person).toHaveCount(1)
+  await expect(page.getByTestId('donki-alerts')).toHaveCount(0)
+  await expect(page.getByRole('main')).not.toContainText('NASA DONKI')
+  await person.click()
+  const dialog = page.getByRole('dialog', { name: 'Elena Torres', exact: true })
+  await expect(dialog).toBeVisible()
+  await expect(dialog.getByRole('heading', { name: /Historial de alertas/ })).toBeVisible()
+  await expect(dialog.getByRole('heading', { name: 'Mateo Ruiz' })).toHaveCount(0)
+  const events = dialog.locator('.alert-card')
+  expect(await events.count()).toBeGreaterThan(1)
+  await events.last().click()
+  await expect(events.last()).toHaveAttribute('aria-pressed', 'true')
+  await expect(dialog.getByRole('button', { name: 'Confirmar aviso' })).toBeVisible()
+  await expect(dialog.getByRole('link', { name: 'Abrir análisis' })).toBeVisible()
+  await page.screenshot({ path: 'test-results/alerts-person-desktop.png' })
+  await page.setViewportSize({ width: 390, height: 844 })
+  await expect(dialog).toBeVisible()
+  expect(await dialog.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true)
+  await page.screenshot({ path: 'test-results/alerts-person-mobile.png' })
+  await page.keyboard.press('Escape')
+  await expect(dialog).not.toBeVisible()
+  await expect(person).toBeFocused()
+  expect(donkiRequests).toEqual([])
+  const missionDonki = page.waitForRequest('**/api/nasa/donki/events*')
+  await page.goto('/app/mision')
+  await missionDonki
+  await expect(page.getByRole('region', { name: 'Clima espacial', exact: true })).toBeVisible()
+  expect(donkiRequests.length).toBeGreaterThan(0)
+})

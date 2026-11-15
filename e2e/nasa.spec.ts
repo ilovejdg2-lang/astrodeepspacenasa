@@ -37,18 +37,8 @@ test('NASA environmental panels isolate data and expose missing quantities', asy
     }),
   )
   await page.goto('/app/alertas', { waitUntil: 'domcontentloaded' })
-  await expect(
-    page.getByRole('heading', {
-      name: /Actividad espacial registrada por NASA|Space activity recorded by NASA/,
-    }),
-  ).toBeVisible()
-  await expect(page.getByTestId('donki-alerts')).toBeVisible()
-  await expect(
-    page.getByRole('button', { name: /Ver detalles|View details/ }),
-  ).toBeVisible()
-  await expect(
-    page.getByText(/Información de contexto espacial|Space-context information/),
-  ).toBeVisible()
+  await expect(page.getByTestId('donki-alerts')).toHaveCount(0)
+  await expect(page.getByRole('main')).not.toContainText('NASA DONKI')
 
   await page.goto('/app/mision', { waitUntil: 'domcontentloaded' })
   await expect(

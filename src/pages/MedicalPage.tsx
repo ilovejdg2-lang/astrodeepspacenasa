@@ -1,3 +1,4 @@
+import { systemText } from '../systemText'
 import { FileText, Inbox, Send } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { answerLocal } from '../domain/analysis'
@@ -204,7 +205,7 @@ export function MedicalPage() {
         </section>
         <section className="panel">
           <h2>{en ? 'Recent audit' : 'Auditoría reciente'}</h2>
-          <ul>{state.audit.slice(-8).reverse().map((item) => <li key={item.id}>{formatMission(item.at)} · {roleLabel(item.actor)} · {auditActionLabel(item.action)} · {item.detail}</li>)}</ul>
+          <ul>{state.audit.slice(-8).reverse().map((item) => <li key={item.id}>{formatMission(item.at)} · {roleLabel(item.actor)} · {auditActionLabel(item.action)} · {systemText(item.detail)}</li>)}</ul>
         </section>
       </div>
       <Modal
@@ -231,7 +232,7 @@ function draftFor(state: AppState, crewId: AppState['selectedCrewId'], episodeId
 
 function defaultSubject(episode: Episode | null, crewName: string, en: boolean): string {
   const prefix = en ? 'Review' : 'Revisión'
-  return `${prefix} - ${episode?.title ?? crewName}`
+  return `${prefix} - ${systemText(episode?.title ?? crewName)}`
 }
 
 function statusLabel(status: string, en: boolean): string {

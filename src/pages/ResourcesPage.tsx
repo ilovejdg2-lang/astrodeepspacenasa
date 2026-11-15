@@ -1,16 +1,16 @@
+import { systemText } from '../systemText'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { DEMO_PROTOCOLS, type DemoProtocol } from '../../shared/protocols'
 import type { Resource } from '../../shared/types'
-import { PrepAiPanel } from '../components/resources/PrepAiPanel'
+import { useSearchParams } from 'react-router-dom'
+import { MissionChecklist } from '../components/resources/MissionChecklist'
 import { Empty, Field, Modal } from '../components/ui'
 import { planResourceUse } from '../domain/inventory'
 import { formatMission, movementLabel, roleLabel } from '../domain/format'
 import { useLocale } from '../i18n'
-import { platformApi } from '../platform/api'
-import { getActiveMissionId } from '../platform/session'
 import { useApp } from '../state/store'
 
-type Tab = 'equipment' | 'supply' | 'protocol'
+type Tab = 'equipment' | 'supply' | 'protocol' | 'checklist'
 
 function stockLabel(quantity: number, english: boolean) {
   if (english) return quantity === 1 ? '1 unit' : `${quantity} units`
@@ -26,15 +26,20 @@ export function ResourcesPage() {
   const { lang } = useLocale()
   const en = lang === 'en'
   const { state } = useApp()
-  const [tab, setTab] = useState<Tab>('equipment')
+  const [params, setParams] = useSearchParams()
+  const requestedTab = params.get('tab')
+  const tab: Tab = requestedTab === 'supply' || requestedTab === 'protocol' || requestedTab === 'checklist' ? requestedTab : 'equipment'
+  function setTab(next: Tab) {
+    const updated = new URLSearchParams(params)
+    updated.set('tab', next)
+    setParams(updated)
+  }
   const [selected, setSelected] = useState('oximeter')
   const [protocolId, setProtocolId] = useState(DEMO_PROTOCOLS[0]?.id ?? '')
   const [useOpen, setUseOpen] = useState(false)
   const [addOpen, setAddOpen] = useState(false)
   const [editOpen, setEditOpen] = useState(false)
   const [consult, setConsult] = useState<DemoProtocol | null>(null)
-  const [missionStage, setMissionStage] = useState<string | undefined>()
-  const [analysisStale, setAnalysisStale] = useState(false)
   const rows = useMemo(
     () => state.resources.filter((item) => (tab === 'protocol' ? false : item.category === tab)),
     [state.resources, tab],
@@ -48,31 +53,6 @@ export function ResourcesPage() {
     setSelected(rows[0]?.id ?? '')
   }, [rows, selected, tab])
 
-  useEffect(() => {
-    const missionId = getActiveMissionId()
-    if (!missionId) return
-    let alive = true
-    platformApi.mission(missionId)
-      .then((data) => {
-        if (!alive) return
-        setMissionStage(data.mission.stage)
-        setAnalysisStale(Boolean(data.mission.analysisStale))
-      })
-      .catch(() => undefined)
-    return () => { alive = false }
-  }, [])
-
-  function refreshMissionMeta() {
-    const missionId = getActiveMissionId()
-    if (!missionId) return
-    platformApi.mission(missionId)
-      .then((data) => {
-        setMissionStage(data.mission.stage)
-        setAnalysisStale(Boolean(data.mission.analysisStale))
-      })
-      .catch(() => undefined)
-  }
-
   const registered = state.resources.length
   const review = state.resources.filter((item) => item.status === 'review').length
   const movements = state.movements.length
@@ -83,34 +63,31 @@ export function ResourcesPage() {
         <div className="inv-head-row">
           <div>
             <p className="inv-kicker">{en ? 'Resources' : 'Recursos'}</p>
-            <h1>{en ? 'Ship inventory' : 'Inventario de la nave'}</h1>
+            <h1>{tab === 'checklist' ? (en ? 'Mission preparation' : 'Preparación de la misión') : (en ? 'Ship inventory' : 'Inventario de la nave')}</h1>
           </div>
-          {tab !== 'protocol' ? (
+          {tab !== 'protocol' && tab !== 'checklist' ? (
             <button className="inv-add-btn" type="button" onClick={() => setAddOpen(true)}>
               {en ? 'Add' : 'Añadir'}
             </button>
           ) : null}
         </div>
-        <p className="inv-lede">
+        {tab === 'checklist' ? <p className="inv-lede">{en ? 'Review the plan, prepare resources and complete the checklist here before takeoff.' : 'Revisá el plan, prepará los recursos y completá el checklist aquí antes de despegar.'}</p> : <p className="inv-lede">
           {en ? 'Reusable equipment is not deducted when used. A supply cannot go below zero.' : 'El equipo reutilizable no se descuenta al usarlo. Un suministro no puede quedar'}
           <br />
           {en ? 'Having it on board is not a medical indication.' : 'bajo cero. Tenerlo a bordo no es una indicación médica.'}
-        </p>
+        </p>}
       </header>
       <div className="inv-cats" role="tablist" aria-label={en ? 'Categories' : 'Categorías'}>
         {([
           ['equipment', en ? 'Equipment' : 'Equipos'],
           ['supply', en ? 'Supplies' : 'Suministros'],
           ['protocol', en ? 'Protocols' : 'Protocolos'],
+          ['checklist', en ? 'Checklist' : 'Checklist'],
         ] as const).map(([id, label]) => (
           <button key={id} type="button" role="tab" aria-selected={tab === id} onClick={() => setTab(id)}>{label}</button>
         ))}
       </div>
-      <PrepAiPanel
-        stage={missionStage}
-        analysisStale={analysisStale}
-        onSaved={refreshMissionMeta}
-      />
+      {tab === 'checklist' ? <MissionChecklist /> : <>
       <dl className="inv-metrics">
         <div><dt>{en ? 'Registered' : 'Registrados'}</dt><dd>{registered}</dd></div>
         <div><dt>{en ? 'To review' : 'Por revisar'}</dt><dd>{review}</dd></div>
@@ -144,12 +121,12 @@ export function ResourcesPage() {
                   <tr key={item.id} data-testid={`resource-${item.id}`} className={item.id === resource?.id ? 'is-selected' : undefined}>
                     <td>
                       <span className="inv-res">
-                        <button type="button" aria-pressed={item.id === resource?.id} onClick={() => setSelected(item.id)}>{item.name}</button>
+                        <button type="button" aria-pressed={item.id === resource?.id} onClick={() => setSelected(item.id)}>{systemText(item.name)}</button>
                         <span>{kindLabel(item.kind, en)}</span>
                       </span>
                     </td>
                     <td>{stockLabel(item.quantity, en)}</td>
-                    <td>{item.location}</td>
+                    <td>{systemText(item.location)}</td>
                     <td><span className={item.status === 'review' ? 'inv-state is-review' : 'inv-state'}>{item.status === 'ready' ? (en ? 'Ready' : 'Listo') : (en ? 'Review' : 'Revisar')}</span></td>
                   </tr>
                 ))}
@@ -159,8 +136,8 @@ export function ResourcesPage() {
         )}
         {tab === 'protocol' && protocol ? (
           <aside className="inv-detail">
-            <h2>{protocol.title}</h2>
-            <p>{protocol.summary}</p>
+            <h2>{systemText(protocol.title)}</h2>
+            <p>{systemText(protocol.summary)}</p>
             <div className="inv-detail-space" />
             <div className="inv-detail-actions">
               <button type="button" className="inv-btn is-sky" onClick={() => setConsult(protocol)}>{en ? 'Consult' : 'Consultar'}</button>
@@ -168,8 +145,8 @@ export function ResourcesPage() {
           </aside>
         ) : resource ? (
           <aside className="inv-detail">
-            <h2>{resource.name}</h2>
-            <p>{stockLabel(resource.quantity, en)} - {resource.location}</p>
+            <h2>{systemText(resource.name)}</h2>
+            <p>{stockLabel(resource.quantity, en)} - {systemText(resource.location)}</p>
             <div className="inv-detail-space" />
             <div className="inv-detail-actions">
               <button type="button" className="inv-btn is-pink" data-testid="open-use" onClick={() => setUseOpen(true)}>{en ? 'Record use' : 'Registrar uso'}</button>
@@ -207,9 +184,10 @@ export function ResourcesPage() {
       {resource ? <UseDialog open={useOpen} resource={resource} onClose={() => setUseOpen(false)} /> : null}
       <AddDialog open={addOpen} onClose={() => setAddOpen(false)} />
       {resource ? <EditDialog open={editOpen} resource={resource} onClose={() => setEditOpen(false)} /> : null}
-      <Modal open={consult !== null} title={consult?.title ?? ''} description={consult?.limitation} onClose={() => setConsult(null)}>
-        {consult ? <ol>{consult.steps.map((step) => <li key={step}>{step}</li>)}</ol> : null}
+      <Modal open={consult !== null} title={systemText(consult?.title ?? '')} description={consult ? systemText(consult.limitation) : undefined} onClose={() => setConsult(null)}>
+        {consult ? <ol>{consult.steps.map((step) => <li key={step}>{systemText(step)}</li>)}</ol> : null}
       </Modal>
+      </>}
     </div>
   )
 }
@@ -229,10 +207,10 @@ function ProtocolTable({ english, selectedId, onSelect }: { english: boolean; se
           {DEMO_PROTOCOLS.map((protocol) => (
             <tr key={protocol.id} className={protocol.id === selectedId ? 'is-selected' : undefined}>
               <td>
-                <button type="button" aria-pressed={protocol.id === selectedId} onClick={() => onSelect(protocol.id)}>{protocol.title}</button>
+                <button type="button" aria-pressed={protocol.id === selectedId} onClick={() => onSelect(protocol.id)}>{systemText(protocol.title)}</button>
               </td>
               <td>{english ? 'Demonstration' : 'Demostración'}</td>
-              <td>{protocol.limitation}</td>
+              <td>{systemText(protocol.limitation)}</td>
             </tr>
           ))}
         </tbody>
@@ -257,8 +235,8 @@ function UseDialog({ open, resource, onClose }: { open: boolean; resource: Resou
     key.current = `use-${resource.id}-${crypto.randomUUID()}`
   }, [open, resource.id])
   return (
-    <Modal open={open} title={`${en ? 'Record use' : 'Registrar uso'} · ${resource.name}`} description={resource.kind === 'reusable' ? (en ? 'This equipment does not lose units. Availability is not a medical indication.' : 'Este equipo no pierde unidades. Tenerlo disponible no es una indicación médica.') : (en ? 'Consumption is deducted once and cannot go below zero.' : 'El consumo se descuenta una sola vez y no puede dejar la existencia bajo cero.')} onClose={onClose}>
-      <Field id="use-quantity" label={en ? 'Quantity' : 'Cantidad'} error={error}>
+    <Modal open={open} title={`${en ? 'Record use' : 'Registrar uso'} · ${systemText(resource.name)}`} description={resource.kind === 'reusable' ? (en ? 'This equipment does not lose units. Availability is not a medical indication.' : 'Este equipo no pierde unidades. Tenerlo disponible no es una indicación médica.') : (en ? 'Consumption is deducted once and cannot go below zero.' : 'El consumo se descuenta una sola vez y no puede dejar la existencia bajo cero.')} onClose={onClose}>
+      <Field id="use-quantity" label={en ? 'Quantity' : 'Cantidad'} error={systemText(error)}>
         <input id="use-quantity" data-testid="use-quantity" inputMode="numeric" value={quantity} aria-invalid={Boolean(error)} aria-describedby={error ? 'use-quantity-error' : undefined} onChange={(event) => setQuantity(event.target.value)} />
       </Field>
       <button className="btn btn-primary" type="button" data-testid="save-use" disabled={busy} onClick={() => {
@@ -292,7 +270,7 @@ function AddDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
   const [error, setError] = useState('')
   return (
     <Modal open={open} title={en ? 'Add resource' : 'Añadir recurso'} onClose={onClose}>
-      <Field id="res-name" label={en ? 'Name' : 'Nombre'} error={error}><input id="res-name" value={name} aria-invalid={Boolean(error)} aria-describedby={error ? 'res-name-error' : undefined} onChange={(event) => setName(event.target.value)} /></Field>
+      <Field id="res-name" label={en ? 'Name' : 'Nombre'} error={systemText(error)}><input id="res-name" value={name} aria-invalid={Boolean(error)} aria-describedby={error ? 'res-name-error' : undefined} onChange={(event) => setName(event.target.value)} /></Field>
       <Field id="res-location" label={en ? 'Location' : 'Ubicación'}><input id="res-location" value={location} onChange={(event) => setLocation(event.target.value)} /></Field>
       <Field id="res-qty" label={en ? 'Starting quantity' : 'Cantidad inicial'}><input id="res-qty" inputMode="numeric" value={quantity} onChange={(event) => setQuantity(event.target.value)} /></Field>
       <Field id="res-kind" label={en ? 'Type' : 'Tipo'}>
@@ -332,11 +310,11 @@ function EditDialog({ open, resource, onClose }: { open: boolean; resource: Reso
   }, [open, resource])
   return (
     <Modal open={open} title={en ? 'Edit record' : 'Editar ficha'} description={en ? 'Changing the quantity creates an adjustment. Earlier movements stay in the history.' : 'Cambiar la cantidad crea un ajuste. Los movimientos anteriores se conservan.'} onClose={onClose}>
-      <Field id="edit-name" label={en ? 'Name' : 'Nombre'} error={error}><input id="edit-name" value={name} aria-invalid={Boolean(error)} onChange={(event) => setName(event.target.value)} /></Field>
+      <Field id="edit-name" label={en ? 'Name' : 'Nombre'} error={systemText(error)}><input id="edit-name" value={name === resource.name ? systemText(name) : name} aria-invalid={Boolean(error)} onChange={(event) => setName(event.target.value)} /></Field>
       <Field id="edit-category" label={en ? 'Category' : 'Categoría'}>
         <input id="edit-category" value={resource.category === 'supply' ? (en ? 'Supply' : 'Suministro') : (en ? 'Equipment' : 'Equipo')} readOnly />
       </Field>
-      <Field id="edit-location" label={en ? 'Location' : 'Ubicación'}><input id="edit-location" value={location} onChange={(event) => setLocation(event.target.value)} /></Field>
+      <Field id="edit-location" label={en ? 'Location' : 'Ubicación'}><input id="edit-location" value={location === resource.location ? systemText(location) : location} onChange={(event) => setLocation(event.target.value)} /></Field>
       <Field id="edit-status" label={en ? 'Review status' : 'Estado de revisión'}>
         <select id="edit-status" value={status} onChange={(event) => setStatus(event.target.value as Resource['status'])}>
           <option value="ready">{en ? 'Ready' : 'Listo'}</option>

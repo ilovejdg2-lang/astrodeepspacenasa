@@ -1,3 +1,7 @@
+import { uiLang, type Lang } from '../locale'
+import { systemText } from '../systemText'
+import { alertReasonLabel, alertKindLabel } from './alertCopy'
+import { crewById } from './crew'
 import type { AlertStatus, AppState, CommStatus, CrewId } from '../../shared/types'
 import { formatMission, integrityLabel, kindLabel, movementLabel } from './format'
 
@@ -10,7 +14,8 @@ export interface HistoryRow {
   detail: string
 }
 
-export function historyRows(state: AppState): HistoryRow[] {
+export function historyRows(state: AppState, lang: Lang = uiLang()): HistoryRow[] {
+  const en = lang === 'en'
   const rows: HistoryRow[] = [
     ...state.measurements.map((item) => ({
       id: item.id,
@@ -18,14 +23,14 @@ export function historyRows(state: AppState): HistoryRow[] {
       crewId: item.crewId,
       type: 'measurement' as const,
       title: kindLabel(item.kind),
-      detail: `${item.value} ${item.unit}. Integridad ${integrityLabel(item.integrity).toLowerCase()}. Medida ${formatMission(item.measuredAt)}. Recibida ${formatMission(item.receivedAt)}.`,
+      detail: `${item.value} ${en && item.unit === 'lpm' ? 'bpm' : item.unit}. ${en ? 'Integrity' : 'Integridad'} ${integrityLabel(item.integrity).toLowerCase()}. ${en ? 'Measured' : 'Medida'} ${formatMission(item.measuredAt)}. ${en ? 'Received' : 'Recibida'} ${formatMission(item.receivedAt)}.`,
     })),
     ...state.symptoms.map((item) => ({
       id: item.id,
       at: item.reportedAt,
       crewId: item.crewId,
       type: 'symptom' as const,
-      title: 'Síntomas',
+      title: en ? 'Symptoms' : 'Síntomas',
       detail: `${item.symptoms.join(', ')}. ${item.note}`,
     })),
     ...state.alerts.map((item) => ({
@@ -33,8 +38,8 @@ export function historyRows(state: AppState): HistoryRow[] {
       at: item.openedAt,
       crewId: item.crewId,
       type: 'alert' as const,
-      title: item.title,
-      detail: `${ALERT_STATUS[item.status]}. ${item.reason}`,
+      title: alertKindLabel(item.type, item.title, en),
+      detail: `${systemText(ALERT_STATUS[item.status], lang)}. ${alertReasonLabel(item, item.crewId ? crewById(item.crewId).name : undefined, en)}`,
     })),
     ...state.movements.map((item) => ({
       id: item.id,
@@ -50,14 +55,14 @@ export function historyRows(state: AppState): HistoryRow[] {
       crewId: item.crewId,
       type: 'communication' as const,
       title: item.subject,
-      detail: `${COMM_STATUS[item.status]}. ${item.body}`,
+      detail: `${systemText(COMM_STATUS[item.status], lang)}. ${item.body}`,
     })),
     ...state.analyses.map((item) => ({
       id: item.id,
       at: item.createdAt,
       crewId: item.crewId,
       type: 'analysis' as const,
-      title: item.source === 'model' ? 'IA conectada' : 'Motor de análisis simulado',
+      title: systemText(item.source === 'model' ? 'IA conectada' : 'Motor de análisis simulado'),
       detail: item.result.summary,
     })),
   ]

@@ -1,10 +1,11 @@
+import { systemText } from '../systemText'
 import { SpaceWeatherPanel } from '../components/NasaEnvironment'
-import { CheckCircle2, CircleHelp, ClipboardList, Rocket } from 'lucide-react'
+import { CheckCircle2, CircleHelp, Rocket } from 'lucide-react'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { MISSION_STAGE_LABEL, PREP_STATUS_LABEL } from '../../shared/mission'
-import { RISK_CATEGORY_LABEL, riskById } from '../../shared/risks'
+import { MISSION_STAGE_LABEL } from '../../shared/mission'
 import type { MissionStage, PrepStatus } from '../../shared/types'
+import { QUIRON_LOCALE } from '../ai/locale'
 import { answerMissionLocal } from '../domain/analysis'
 import { formatMission } from '../domain/format'
 import { useLocale } from '../i18n'
@@ -38,7 +39,6 @@ export function MissionPage() {
   const [answer, setAnswer] = useState('')
   const openEpisodes = state.episodes.filter((item) => item.status !== 'closed')
   const canEdit = state.role === 'medical' || state.role === 'ops'
-  const canEditPrep = canEdit && state.mission.stage === 'preembarque'
   const counts = Object.fromEntries(
     (['propuesto', 'pendiente_revision', 'aprobado', 'disponible', 'faltante', 'cargado_verificado'] as PrepStatus[]).map((status) => [
       status,
@@ -51,7 +51,7 @@ export function MissionPage() {
       <header className="page-head">
         <div>
           <p className="kicker"><Rocket aria-hidden="true" size={16} strokeWidth={1.75} /> {en ? 'Mission' : 'Misión'}</p>
-          <h1>{state.mission.name}</h1>
+          <h1>{systemText(state.mission.name)}</h1>
           <p className="lede">
             {en ? 'HELIOS adapts support to the stage. Changing stage keeps the history and does not close open health episodes.' : 'HELIOS adapta el acompañamiento a la etapa. Cambiar de etapa conserva el historial y no cierra episodios de salud pendientes.'}
           </p>
@@ -64,11 +64,11 @@ export function MissionPage() {
       <section className="panel">
         <h2>{en ? 'Mission data' : 'Datos de la misión'}</h2>
         <dl className="quiet-metrics">
-          <div className="metric"><dt>{en ? 'Destination' : 'Destino'}</dt><dd>{state.mission.destination}</dd></div>
+          <div className="metric"><dt>{en ? 'Destination' : 'Destino'}</dt><dd>{systemText(state.mission.destination)}</dd></div>
           <div className="metric"><dt>{en ? 'Duration' : 'Duración'}</dt><dd>{state.mission.durationDays} {en ? 'days' : 'días'}</dd></div>
           <div className="metric"><dt>{en ? 'Crew' : 'Tripulación'}</dt><dd>{state.mission.crewCount}</dd></div>
         </dl>
-        <p className="muted">{en ? 'Planned activities' : 'Actividades previstas'}: {state.mission.activities.join(' · ')}</p>
+        <p className="muted">{en ? 'Planned activities' : 'Actividades previstas'}: {state.mission.activities.map((activity) => systemText(activity)).join(' · ')}</p>
         <p className="muted">{en ? 'Stage updated' : 'Etapa actualizada'} {formatMission(state.mission.stageChangedAt)} UTC · {en ? 'open episodes' : 'episodios abiertos'}: {openEpisodes.length}</p>
       </section>
 
@@ -112,75 +112,33 @@ export function MissionPage() {
 
       <section className="panel">
         <div className="spread">
-          <h2><ClipboardList aria-hidden="true" size={18} strokeWidth={1.75} /> {en ? 'Preparation list' : 'Lista de preparación'}</h2>
-          <Link className="btn" to="/app/riesgos">{en ? 'View NASA risks' : 'Ver riesgos NASA'}</Link>
-        </div>
-        <p className="lede">{en ? 'Quirón Bot proposes categories and reviews. Authorized staff define products, quantities, and conditions.' : 'Quirón Bot propone categorías y revisiones. El personal autorizado define productos, cantidades y condiciones.'}</p>
-        <dl className="quiet-metrics">
-          {(Object.keys(counts) as PrepStatus[]).map((status) => (
-            <div key={status} className="metric"><dt>{PREP_STATUS_LABEL[status]}</dt><dd>{counts[status]}</dd></div>
-          ))}
-        </dl>
-        <div className="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>{en ? 'Item' : 'Elemento'}</th>
-                <th>{en ? 'Category' : 'Categoría'}</th>
-                <th>{en ? 'Status' : 'Estado'}</th>
-                <th>{en ? 'Risks' : 'Riesgos'}</th>
-                <th>{en ? 'Note' : 'Nota'}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {state.prepItems.map((item) => (
-                <tr key={item.id} data-testid={`prep-${item.id}`}>
-                  <td>{item.title}</td>
-                  <td>{RISK_CATEGORY_LABEL[item.category]}</td>
-                  <td>
-                    <label className="sr-only" htmlFor={`prep-status-${item.id}`}>Estado de {item.title}</label>
-                    <select
-                      id={`prep-status-${item.id}`}
-                      value={item.status}
-                      disabled={!canEditPrep}
-                      onChange={(event) => dispatch({ type: 'setPrepStatus', prepId: item.id, status: event.target.value as PrepStatus })}
-                    >
-                      {(Object.keys(PREP_STATUS_LABEL) as PrepStatus[]).map((status) => (
-                        <option key={status} value={status}>{PREP_STATUS_LABEL[status]}</option>
-                      ))}
-                    </select>
-                  </td>
-                  <td>{item.riskIds.map((id) => riskById(id)?.title ?? id).join('; ')}</td>
-                  <td>{item.note}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <h2>{en ? 'Mission preparation' : 'Preparación de la misión'}</h2>
+          <Link className="btn btn-primary" to="/app/recursos?tab=checklist">{en ? 'Open checklist in Resources' : 'Abrir checklist en Recursos'}</Link>
         </div>
       </section>
 
       {state.mission.stage === 'posmision' ? (
         <section className="panel" data-testid="postmission-summary">
-          <h2>Seguimiento de posmisión</h2>
+          <h2>{en ? 'Post-mission follow-up' : 'Seguimiento de posmisión'}</h2>
           <p className="lede">
-            Resumen organizado para el personal autorizado. Las decisiones de recuperación corresponden a profesionales responsables.
+            {en ? 'Summary for authorized staff. Responsible professionals make recovery decisions.' : 'Resumen organizado para el personal autorizado. Las decisiones de recuperación corresponden a profesionales responsables.'}
           </p>
           <dl className="quiet-metrics">
-            <div className="metric"><dt>Episodios abiertos</dt><dd>{openEpisodes.length}</dd></div>
-            <div className="metric"><dt>Alertas activas</dt><dd>{state.alerts.filter((item) => item.status !== 'closed').length}</dd></div>
-            <div className="metric"><dt>Síntomas registrados</dt><dd>{state.symptoms.length}</dd></div>
-            <div className="metric"><dt>Movimientos de inventario</dt><dd>{state.movements.length}</dd></div>
-            <div className="metric"><dt>Comunicaciones</dt><dd>{state.communications.length}</dd></div>
-            <div className="metric"><dt>Revisiones prep. pendientes</dt><dd>{counts.propuesto + counts.pendiente_revision + counts.faltante}</dd></div>
+            <div className="metric"><dt>{en ? 'Open episodes' : 'Episodios abiertos'}</dt><dd>{openEpisodes.length}</dd></div>
+            <div className="metric"><dt>{en ? 'Active alerts' : 'Alertas activas'}</dt><dd>{state.alerts.filter((item) => item.status !== 'closed').length}</dd></div>
+            <div className="metric"><dt>{en ? 'Recorded symptoms' : 'Síntomas registrados'}</dt><dd>{state.symptoms.length}</dd></div>
+            <div className="metric"><dt>{en ? 'Inventory movements' : 'Movimientos de inventario'}</dt><dd>{state.movements.length}</dd></div>
+            <div className="metric"><dt>{en ? 'Communications' : 'Comunicaciones'}</dt><dd>{state.communications.length}</dd></div>
+            <div className="metric"><dt>{en ? 'Pending preparation reviews' : 'Revisiones prep. pendientes'}</dt><dd>{counts.propuesto + counts.pendiente_revision + counts.faltante}</dd></div>
           </dl>
           {openEpisodes.length > 0 ? (
             <ul>
               {openEpisodes.map((item) => (
-                <li key={item.id}>{item.title} · {item.status}</li>
+                <li key={item.id}>{systemText(item.title)} · {item.status}</li>
               ))}
             </ul>
           ) : (
-            <p className="muted">No hay episodios abiertos. El historial de la misión se conserva.</p>
+            <p className="muted">{en ? 'No open episodes. The mission history is preserved.' : 'No hay episodios abiertos. El historial de la misión se conserva.'}</p>
           )}
         </section>
       ) : null}
@@ -188,27 +146,21 @@ export function MissionPage() {
       <section className="panel">
         <h2>{en ? 'Quirón Bot · stage questions' : 'Quirón Bot · preguntas de etapa'}</h2>
         <div className="questions">
-          {(en ? [
+          {[
             'What should I review before boarding?',
             'Which proposed resources are still pending approval?',
             'What follow-up is still open after I return?',
             'Which NASA risks apply to this mission?',
             'What does the literature say about metabolic effort in EVA?',
-          ] : [
-            '¿Qué debo revisar antes de abordar?',
-            '¿Qué recursos propuestos siguen pendientes de aprobación?',
-            '¿Qué seguimiento tengo pendiente después de regresar?',
-            '¿Qué riesgos NASA aplican a esta misión?',
-            '¿Qué dice la literatura sobre esfuerzo metabólico en EVA?',
-          ]).map((question) => (
-            <button key={question} type="button" className="btn btn-ghost" onClick={() => setAnswer(answerMissionLocal(state, question))}>
+          ].map((question) => (
+            <button key={question} type="button" className="btn btn-ghost" onClick={() => setAnswer(answerMissionLocal(state, question, QUIRON_LOCALE))}>
               <CircleHelp aria-hidden="true" size={16} strokeWidth={1.75} /> {question}
             </button>
           ))}
         </div>
         {answer ? (
           <p className="callout callout-ok" data-testid="mission-answer">
-            <CheckCircle2 aria-hidden="true" size={16} strokeWidth={1.75} /> {answer}
+            <CheckCircle2 aria-hidden="true" size={16} strokeWidth={1.75} /> {systemText(answer, QUIRON_LOCALE)}
           </p>
         ) : null}
       </section>

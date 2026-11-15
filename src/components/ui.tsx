@@ -1,32 +1,38 @@
 import * as Dialog from '@radix-ui/react-dialog'
 import { X } from 'lucide-react'
 import type { ReactNode } from 'react'
+import { useLocale } from '../i18n'
 
 export function Modal({
   open,
   title,
   description,
+  className,
+  onCloseAutoFocus,
   onClose,
   children,
 }: {
   open: boolean
   title: string
   description?: string
+  className?: string
+  onCloseAutoFocus?: (event: Event) => void
   onClose: () => void
   children: ReactNode
 }) {
+  const { lang } = useLocale()
   return (
     <Dialog.Root open={open} onOpenChange={(next) => { if (!next) onClose() }}>
       <Dialog.Portal>
         <Dialog.Overlay className="overlay" />
-        <Dialog.Content className="modal" aria-describedby={description ? 'dialog-description' : undefined}>
+        <Dialog.Content onCloseAutoFocus={onCloseAutoFocus} className={className ? `modal ${className}` : 'modal'} aria-describedby={description ? 'dialog-description' : undefined}>
           <div className="spread">
             <Dialog.Title asChild><h2>{title}</h2></Dialog.Title>
-            <Dialog.Close className="btn icon-btn" aria-label="Cerrar">
+            <Dialog.Close className="btn icon-btn" aria-label={lang === 'en' ? 'Close' : 'Cerrar'}>
               <X aria-hidden="true" size={18} strokeWidth={1.75} />
             </Dialog.Close>
           </div>
-          {description ? <Dialog.Description id="dialog-description" className="muted">{description}</Dialog.Description> : <Dialog.Description className="sr-only">Formulario</Dialog.Description>}
+          {description ? <Dialog.Description id="dialog-description" className="muted">{description}</Dialog.Description> : <Dialog.Description className="sr-only">{lang === 'en' ? 'Details' : 'Detalles'}</Dialog.Description>}
           <div style={{ marginTop: 12 }}>{children}</div>
         </Dialog.Content>
       </Dialog.Portal>

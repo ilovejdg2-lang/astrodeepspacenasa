@@ -6,7 +6,7 @@ import type {
   Measurement,
   MeasurementKind,
 } from '../../shared/types';
-import { uiLang } from '../locale';
+import { uiLang, type Lang } from '../locale';
 import { FRESH_MS, SLEEP_FRESH_MS, STALE_GAP_MS } from './constants';
 import { crewById } from './crew';
 
@@ -80,7 +80,7 @@ export function openEpisode(
   );
 }
 
-export function crewPosture(state: AppState, crewId: CrewId): CrewPosture {
+export function crewPosture(state: AppState, crewId: CrewId, locale: Lang = uiLang()): CrewPosture {
   const profile = crewById(crewId);
   const reliable = latestReliable(state, crewId, 'heart_rate');
   const latest = latestMeasurement(state, crewId, 'heart_rate');
@@ -100,7 +100,7 @@ export function crewPosture(state: AppState, crewId: CrewId): CrewPosture {
       (item) => item.sensorId === latest?.sensorId && item.reason === 'altered',
     );
 
-  const english = uiLang() === 'en';
+  const english = locale === 'en';
   if (!reliable) {
     return {
       observed: 'no_recent_evaluation',

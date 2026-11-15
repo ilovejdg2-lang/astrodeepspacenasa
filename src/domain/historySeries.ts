@@ -1,3 +1,4 @@
+import { uiLang, type Lang } from '../locale'
 import type { AppState, CrewId, Measurement } from '../../shared/types'
 import { CREW } from './crew'
 import { integrityLabel, kindLabel } from './format'
@@ -16,7 +17,7 @@ const PULSE_STEP = 25
 const SLEEP_CAP = 8
 const SLEEP_STEP = 2
 
-export function dailyTrends(measurements: Measurement[], crewId: CrewId | 'all'): { pulse: TrendPoint[]; sleep: TrendPoint[] } {
+export function dailyTrends(measurements: Measurement[], crewId: CrewId | 'all', lang: Lang = uiLang()): { pulse: TrendPoint[]; sleep: TrendPoint[] } {
   const seen = new Set<string>()
   const pulseByDay = new Map<string, Map<string, number[]>>()
   const sleepByDay = new Map<string, Map<string, { at: number; value: number }>>()
@@ -50,8 +51,8 @@ export function dailyTrends(measurements: Measurement[], crewId: CrewId | 'all')
   if (!first || !last) return { pulse: [], sleep: [] }
   const range = eachUtcDay(first, last)
   return {
-    pulse: range.map((day) => toPoint(day, meanOf(pulseByDay.get(day), (values) => values.reduce((sum, value) => sum + value, 0) / values.length), true)),
-    sleep: range.map((day) => toPoint(day, meanOf(sleepByDay.get(day), (entry) => entry.value), false)),
+    pulse: range.map((day) => toPoint(day, meanOf(pulseByDay.get(day), (values) => values.reduce((sum, value) => sum + value, 0) / values.length), true, lang)),
+    sleep: range.map((day) => toPoint(day, meanOf(sleepByDay.get(day), (entry) => entry.value), false, lang)),
   }
 }
 
@@ -63,9 +64,9 @@ function meanOf<T>(bucket: Map<string, T> | undefined, pick: (value: T) => numbe
   return { value: mean, people: values.length }
 }
 
-function toPoint(day: string, aggregate: { value: number | null; people: number }, pulse: boolean): TrendPoint {
+function toPoint(day: string, aggregate: { value: number | null; people: number }, pulse: boolean, lang: Lang): TrendPoint {
   const value = aggregate.value === null ? null : pulse ? Math.round(aggregate.value) : Math.round(aggregate.value * 10) / 10
-  return { day, label: axisLabel(day), value, people: aggregate.people, title: dayTitle(day) }
+  return { day, label: axisLabel(day), value, people: aggregate.people, title: dayTitle(day, lang) }
 }
 
 function axisLabel(day: string): string {
@@ -73,9 +74,9 @@ function axisLabel(day: string): string {
   return `${date}-${month}`
 }
 
-function dayTitle(day: string): string {
+function dayTitle(day: string, lang: Lang): string {
   const at = Date.parse(`${day}T00:00:00Z`)
-  return new Intl.DateTimeFormat('es', { timeZone: 'UTC', day: '2-digit', month: 'short', year: 'numeric' }).format(at).replace('.', '')
+  return new Intl.DateTimeFormat(lang === 'en' ? 'en-US' : 'es', { timeZone: 'UTC', day: '2-digit', month: 'short', year: 'numeric' }).format(at).replace('.', '')
 }
 
 function eachUtcDay(start: string, end: string): string[] {
@@ -170,13 +171,13 @@ export function exportDocument(
   return JSON.stringify(
     {
       simulation: true,
-      disclaimer: 'Simulación. Datos ficticios. No es un registro clínico.',
+      disclaimer: uiLang() === 'en' ? 'Simulation. Fictional data. This is not a clinical record.' : 'Simulación. Datos ficticios. No es un registro clínico.',
       scenarioId: state.scenarioId,
       exportedAt: new Date().toISOString(),
       filters: filter,
       period: stamps.length === 0 ? null : { from: new Date(Math.min(...stamps)).toISOString(), to: new Date(Math.max(...stamps)).toISOString() },
-      units: { heart_rate: 'lpm', sleep_hours: 'h' },
-      aggregation: 'El pulso diario es la media de las frecuencias válidas de cada persona. Con toda la tripulación, el punto es la media de esas medias. El descanso usa el último registro de cada persona en el día, sin sumar intervalos, y con toda la tripulación se promedian esas personas. Un día sin registros no se dibuja como cero.',
+      units: { heart_rate: uiLang() === 'en' ? 'bpm' : 'lpm', sleep_hours: 'h' },
+      aggregation: uiLang() === 'en' ? 'Daily heart rate is the mean of each person’s valid readings. For the whole crew, the point is the mean across people. Sleep uses each person’s latest record of the day, without adding intervals, and averages across people for the whole crew. Missing days are not plotted as zero.' : 'El pulso diario es la media de las frecuencias válidas de cada persona. Con toda la tripulación, el punto es la media de esas medias. El descanso usa el último registro de cada persona en el día, sin sumar intervalos, y con toda la tripulación se promedian esas personas. Un día sin registros no se dibuja como cero.',
       timezone: 'UTC',
       aggregates: {
         pulse: pulse.filter((point) => point.value !== null),

@@ -15,7 +15,7 @@ import { dialogueContextKey } from '../../../shared/dialogueSchema'
 import { recentSpaceMessages } from '../../ai/spaceMemory'
 import type { AppState } from '../../../shared/types'
 import { dashboardSuggestions, isPresetQuestion, publicSuggestions } from '../../domain/quironPublic'
-import { useLocale } from '../../i18n'
+import { QUIRON_LOCALE } from '../../ai/locale'
 import { platformApi } from '../../platform/api'
 import { getActiveMissionId, getStoredProfile } from '../../platform/session'
 import { useWorkspaceRole } from '../../platform/workspace'
@@ -48,7 +48,7 @@ function mapCareMessages(conversation: CareConversation): QuironMessage[] {
 }
 
 export function QuironChat({ mode, state = null }: { mode: QuironMode; state?: AppState | null }) {
-  const { lang } = useLocale()
+  const lang = QUIRON_LOCALE
   const en = lang === 'en'
   const location = useLocation()
   const dialogId = useId()
@@ -478,6 +478,7 @@ export function QuironChat({ mode, state = null }: { mode: QuironMode; state?: A
 
   const ui = (
     <div
+      lang={lang}
       className={`quiron-root${open ? ' is-open' : ''}${mode === 'dashboard' ? ' is-dashboard' : ''}`}
       data-page={location.pathname}
       data-mode={mode}
