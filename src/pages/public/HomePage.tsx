@@ -201,7 +201,6 @@ export function HomePage() {
               role="listitem"
             >
               <figure className="team-gallery-photo">
-                <span className="team-orbit-mark" aria-hidden="true" />
                 <TeamPhoto member={member} />
               </figure>
               <div>

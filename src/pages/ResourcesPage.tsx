@@ -34,7 +34,7 @@ export function ResourcesPage() {
   const [editOpen, setEditOpen] = useState(false)
   const [consult, setConsult] = useState<DemoProtocol | null>(null)
   const [missionStage, setMissionStage] = useState<string | undefined>()
-  const [rosterLocked, setRosterLocked] = useState(false)
+  const [analysisStale, setAnalysisStale] = useState(false)
   const rows = useMemo(
     () => state.resources.filter((item) => (tab === 'protocol' ? false : item.category === tab)),
     [state.resources, tab],
@@ -56,11 +56,22 @@ export function ResourcesPage() {
       .then((data) => {
         if (!alive) return
         setMissionStage(data.mission.stage)
-        setRosterLocked(Boolean(data.mission.rosterLocked))
+        setAnalysisStale(Boolean(data.mission.analysisStale))
       })
       .catch(() => undefined)
     return () => { alive = false }
   }, [])
+
+  function refreshMissionMeta() {
+    const missionId = getActiveMissionId()
+    if (!missionId) return
+    platformApi.mission(missionId)
+      .then((data) => {
+        setMissionStage(data.mission.stage)
+        setAnalysisStale(Boolean(data.mission.analysisStale))
+      })
+      .catch(() => undefined)
+  }
 
   const registered = state.resources.length
   const review = state.resources.filter((item) => item.status === 'review').length
@@ -97,8 +108,8 @@ export function ResourcesPage() {
       </div>
       <PrepAiPanel
         stage={missionStage}
-        rosterLocked={rosterLocked}
-        onLocked={() => setRosterLocked(true)}
+        analysisStale={analysisStale}
+        onSaved={refreshMissionMeta}
       />
       <dl className="inv-metrics">
         <div><dt>{en ? 'Registered' : 'Registrados'}</dt><dd>{registered}</dd></div>

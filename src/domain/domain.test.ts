@@ -117,6 +117,16 @@ describe('misión HELIOS', () => {
     expect(reset.prepItems.find((item) => item.id === 'prep-sleep')?.status).toBe('aprobado')
   })
 
+  it('no permite volver de posmisión al checklist de preembarque', () => {
+    let state = createInitialState('baseline')
+    state = reduce(state, { type: 'setMissionStage', stage: 'posmision' })
+    expect(state.mission.stage).toBe('posmision')
+    state = reduce(state, { type: 'setMissionStage', stage: 'preembarque' })
+    expect(state.mission.stage).toBe('posmision')
+    expect(state.notice?.tone).toBe('err')
+    expect(state.notice?.text.toLowerCase()).toMatch(/no se puede volver|checklist/)
+  })
+
   it('el astronauta no cambia etapa ni preparación', () => {
     let state = reduce(createInitialState('baseline'), { type: 'setRole', role: 'astronaut', sessionCrewId: 'elena-torres' })
     state = reduce(state, { type: 'setMissionStage', stage: 'posmision' })

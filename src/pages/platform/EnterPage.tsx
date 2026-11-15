@@ -113,12 +113,17 @@ export function EnterPage() {
 
       <main className="enter-main">
         <div className="enter-hero">
-          <p className="enter-badge">{en ? 'Demonstration' : 'Demostración'}</p>
+          <p className="enter-badge">{en ? 'Space Apps · role demo' : 'Space Apps · demo por rol'}</p>
           <h1>{en ? 'How do you want to explore the mission?' : '¿Cómo querés explorar la misión?'}</h1>
           <p className="enter-lead">
             {en
-              ? 'Each role has different tools and responsibilities. Pick an experience to learn HELIOS.'
-              : 'Cada rol tiene herramientas y responsabilidades diferentes. Elegí una experiencia para conocer HELIOS.'}
+              ? 'HELIOS separates chief, crew, medic, and psychologist with consent. Technology serves the human problem — pick a role to prove it.'
+              : 'HELIOS separa jefe, tripulante, médica y psicólogo con consentimiento. La tecnología sirve al problema humano — elegí un rol para demostrarlo.'}
+          </p>
+          <p className="enter-lead">
+            <Link className="enter-link" to="/misiones/evidencia">
+              {en ? 'Open NASA evidence →' : 'Abrir evidencia NASA →'}
+            </Link>
           </p>
           <div className="enter-quiron" aria-hidden="true">
             <QuironFigure className="enter-quiron-fig" />

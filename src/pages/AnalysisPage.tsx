@@ -10,6 +10,7 @@ import { SciencePanel } from '../components/SciencePanel'
 import { CREW } from '../domain/crew'
 import { briefForCrew } from '../domain/scienceBrief'
 import { useLocale } from '../i18n'
+import { alertKindLabel, alertReasonLabel } from '../domain/alertCopy'
 
 const QUESTIONS_ES = [
   '¿Qué cambió respecto a las últimas mediciones?',
@@ -129,7 +130,7 @@ export function AnalysisPage() {
   }
 
   const emptyText = linked
-    ? `${linkedName ? `${linkedName}: ` : ''}${linked.title}. ${linked.reason} ${en ? 'A sensor alert, on its own, does not open a health episode.' : 'Una alerta de sensor, por sí sola, no abre un episodio de salud.'}`
+    ? `${linkedName ? `${linkedName}: ` : ''}${alertKindLabel(linked.type, linked.title, en)}. ${alertReasonLabel(linked, linkedName, en)} ${en ? 'A sensor alert, on its own, does not open a health episode.' : 'Una alerta de sensor, por sí sola, no abre un episodio de salud.'}`
     : (en ? 'There is no open health episode. A sensor alert, on its own, does not create one.' : 'No hay un episodio de salud abierto. Una alerta de sensor, por sí sola, no crea uno.')
 
   return (

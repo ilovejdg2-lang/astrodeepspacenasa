@@ -1,11 +1,12 @@
-import { SpaceWeatherPanel } from '../components/NasaEnvironment'
+import { DonkiAlertsPanel } from '../components/DonkiAlertsPanel'
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import type { Alert, AlertStatus, AlertType } from '../../shared/types'
+import type { Alert, AlertStatus } from '../../shared/types'
 import { SciencePanel } from '../components/SciencePanel'
 import { Empty } from '../components/ui'
 import { isSensorAlert } from '../domain/access'
 import { CREW } from '../domain/crew'
+import { alertKindLabel, alertReasonLabel } from '../domain/alertCopy'
 import { alertTypeLabel, auditActionLabel, formatMission, integrityLabel, rejectLabel, roleLabel } from '../domain/format'
 import { briefForCrew } from '../domain/scienceBrief'
 import { useLocale } from '../i18n'
@@ -17,26 +18,20 @@ const FILTERS: { status: AlertStatus; es: string; en: string }[] = [
   { status: 'closed', es: 'Cerradas', en: 'Closed' },
 ]
 
-function kindLine(type: AlertType, title: string, english = false) {
-  if (type === 'missing') return english ? 'Data not received' : 'Datos no recibidos'
-  if (type === 'change') return english ? 'Change in signs' : 'Cambio de signos'
-  if (type === 'symptom') return english ? 'Reported symptoms' : 'Síntomas reportados'
-  return title
-}
-
 function reasonLines(reason: string) {
   const clean = reason.replace(/por encima de su encima de su/g, 'por encima de su')
   return clean.split(/(?<=\.)\s+/).map((line) => line.trim()).filter(Boolean)
 }
 
-function stamp(ms: number) {
-  const day = new Intl.DateTimeFormat('es', { timeZone: 'UTC', day: '2-digit', month: 'short' })
+function stamp(ms: number, en = true) {
+  const locale = en ? 'en-GB' : 'es'
+  const day = new Intl.DateTimeFormat(locale, { timeZone: 'UTC', day: '2-digit', month: 'short' })
     .format(ms)
     .replace(/\./g, '')
     .replace(/\s+/g, ' ')
     .trim()
     .toLowerCase()
-  const time = new Intl.DateTimeFormat('es', { timeZone: 'UTC', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(ms)
+  const time = new Intl.DateTimeFormat(locale, { timeZone: 'UTC', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(ms)
   return { day, time }
 }
 
@@ -46,13 +41,14 @@ function pickInitial(alerts: Alert[]) {
 }
 
 export function AlertsPage() {
-  const { state, dispatch } = useApp()
+  const { state, dispatch, backendMode } = useApp()
   const { lang } = useLocale()
   const en = lang === 'en'
   const navigate = useNavigate()
   const [tab, setTab] = useState<AlertStatus>('active')
   const [selectedId, setSelectedId] = useState(() => pickInitial(state.alerts))
   const [busy, setBusy] = useState<string | null>(null)
+  const nestAlerts = backendMode === 'connected'
   const counts = { active: 0, following: 0, closed: 0 }
   for (const alert of state.alerts) counts[alert.status] += 1
   const rows = state.alerts
@@ -94,75 +90,95 @@ export function AlertsPage() {
           {en ? 'Two equal readings are not presented as an attack.' : 'Dos lecturas iguales no se presentan como ataque'}
         </p>
       </header>
-      <div className="alerts-filters" role="group" aria-label={en ? 'Alert status' : 'Estado de las alertas'}>
-        {FILTERS.map((filter) => (
-          <button
-            key={filter.status}
-            type="button"
-            aria-pressed={tab === filter.status}
-            data-testid={`filter-${filter.status}`}
-            onClick={() => setTab(filter.status)}
-          >
-            {(en ? filter.en : filter.es)} ({counts[filter.status]})
-          </button>
-        ))}
-      </div>
-      <div className={`alerts-layout${selected ? ' has-selection' : ''}`}>
-        <div className="alerts-list" id="alerts-list">
-          {rows.length === 0 ? (
-            <Empty title={en ? 'No alerts in this state' : 'No hay alertas en este estado'} text={en ? 'When an action or the scenario leaves a notice here, it will show up in this list.' : 'Cuando una acción o el escenario deje un aviso aquí, va a aparecer en esta lista.'} />
-          ) : (
-            rows.map((alert) => {
-              const when = stamp(alert.openedAt)
-              return (
-                <button
-                  key={alert.id}
-                  type="button"
-                  className={`alert-card${alert.type === 'symptom' ? ' is-muted' : ''}`}
-                  data-testid={`alert-${alert.id}`}
-                  aria-pressed={alert.id === selected?.id}
-                  onClick={() => setSelectedId(alert.id)}
-                >
-                  <span className="alert-card-copy">
-                    <span className="alert-card-name">{crewName(alert.crewId)}</span>
-                    <span className="alert-card-kind">{kindLine(alert.type, alert.title, en)}</span>
-                    <span className="sr-only">{alert.title}</span>
-                    <span className={`alert-badge is-${alert.type}`}>{alertTypeLabel(alert.type)}</span>
-                  </span>
-                  <span className="alert-card-when">
-                    <b>{when.day}</b>
-                    <span>{when.time}</span>
-                  </span>
-                </button>
-              )
-            })
-          )}
+
+      <section className="alerts-health" aria-labelledby="alerts-health-title">
+        <div className="alerts-section-label">
+          <p className="donki-kicker">{en ? 'Health and follow-up' : 'Salud y seguimiento'}</p>
+          <h2 id="alerts-health-title" className="alerts-section-title">
+            {en ? 'Clinical notices' : 'Avisos clínicos'}
+          </h2>
+          <p className="alerts-section-lede">
+            {en
+              ? 'Active, follow-up, and closed health alerts. Space-weather events are listed separately and do not change these counts.'
+              : 'Alertas de salud activas, en seguimiento y cerradas. Los eventos de clima espacial se listan aparte y no modifican estos contadores.'}
+            {nestAlerts
+              ? (en
+                ? ' Confirm / follow / close use Nest /api/alerts.'
+                : ' Confirmar / seguimiento / cerrar usan Nest /api/alerts.')
+              : ''}
+          </p>
         </div>
-        <article className="alerts-detail" aria-live="polite">
-          {selected ? (
-            <AlertDetail
-              alert={selected}
-              name={crewName(selected.crewId)}
-              busy={busy}
-              audit={state.audit.filter((item) => item.entityId === selected.id)}
-              onAck={() => run('ack', () => dispatch({ type: 'ackAlert', alertId: selected.id }))}
-              onFollow={() => run('follow', () => dispatch({ type: 'setAlertStatus', alertId: selected.id, status: 'following' }))}
-              onClose={() => run('close', () => dispatch(isSensorAlert(selected.type)
-                ? { type: 'resolveSensorAlert', alertId: selected.id }
-                : { type: 'setAlertStatus', alertId: selected.id, status: 'closed' }))}
-              onAnalysis={() => openAnalysis(selected)}
-              onBack={() => setSelectedId('')}
-              english={en}
-            />
-          ) : (
-            <div className="alerts-detail-empty">
-              <h2>{en ? 'No alert selected' : 'Sin alerta seleccionada'}</h2>
-              <p>{en ? 'Choose a notice from the list to see the detail, the actions, and the timeline.' : 'Elegí un aviso de la lista para ver el detalle, las acciones y la línea de tiempo.'}</p>
-            </div>
-          )}
-        </article>
-      </div>
-      <SpaceWeatherPanel notices />
+        <div className="alerts-filters" role="group" aria-label={en ? 'Alert status' : 'Estado de las alertas'}>
+          {FILTERS.map((filter) => (
+            <button
+              key={filter.status}
+              type="button"
+              aria-pressed={tab === filter.status}
+              data-testid={`filter-${filter.status}`}
+              onClick={() => setTab(filter.status)}
+            >
+              {(en ? filter.en : filter.es)} ({counts[filter.status]})
+            </button>
+          ))}
+        </div>
+        <div className={`alerts-layout${selected ? ' has-selection' : ''}`}>
+          <div className="alerts-list" id="alerts-list">
+            {rows.length === 0 ? (
+              <Empty title={en ? 'No alerts in this state' : 'No hay alertas en este estado'} text={en ? 'When an action or the scenario leaves a notice here, it will show up in this list.' : 'Cuando una acción o el escenario deje un aviso aquí, va a aparecer en esta lista.'} />
+            ) : (
+              rows.map((alert) => {
+                const when = stamp(alert.openedAt, en)
+                return (
+                  <button
+                    key={alert.id}
+                    type="button"
+                    className={`alert-card${alert.type === 'symptom' ? ' is-muted' : ''}`}
+                    data-testid={`alert-${alert.id}`}
+                    aria-pressed={alert.id === selected?.id}
+                    onClick={() => setSelectedId(alert.id)}
+                  >
+                    <span className="alert-card-copy">
+                      <span className="alert-card-name">{crewName(alert.crewId)}</span>
+                      <span className="alert-card-kind">{alertKindLabel(alert.type, alert.title, en)}</span>
+                      <span className="sr-only">{alert.title}</span>
+                      <span className={`alert-badge is-${alert.type}`}>{alertTypeLabel(alert.type)}</span>
+                    </span>
+                    <span className="alert-card-when">
+                      <b>{when.day}</b>
+                      <span>{when.time}</span>
+                    </span>
+                  </button>
+                )
+              })
+            )}
+          </div>
+          <article className="alerts-detail" aria-live="polite">
+            {selected ? (
+              <AlertDetail
+                alert={selected}
+                name={crewName(selected.crewId)}
+                busy={busy}
+                audit={state.audit.filter((item) => item.entityId === selected.id)}
+                onAck={() => run('ack', () => dispatch({ type: 'ackAlert', alertId: selected.id }))}
+                onFollow={() => run('follow', () => dispatch({ type: 'setAlertStatus', alertId: selected.id, status: 'following' }))}
+                onClose={() => run('close', () => dispatch(isSensorAlert(selected.type)
+                  ? { type: 'resolveSensorAlert', alertId: selected.id }
+                  : { type: 'setAlertStatus', alertId: selected.id, status: 'closed' }))}
+                onAnalysis={() => openAnalysis(selected)}
+                onBack={() => setSelectedId('')}
+                english={en}
+              />
+            ) : (
+              <div className="alerts-detail-empty">
+                <h2>{en ? 'No alert selected' : 'Sin alerta seleccionada'}</h2>
+                <p>{en ? 'Choose a notice from the list to see the detail, the actions, and the timeline.' : 'Elegí un aviso de la lista para ver el detalle, las acciones y la línea de tiempo.'}</p>
+              </div>
+            )}
+          </article>
+        </div>
+      </section>
+
+      <DonkiAlertsPanel />
       {selected ? <SciencePanel brief={briefForCrew(state, selected.crewId, lang, selected)} /> : null}
       <section className="panel alerts-integrity">
         <h2>{en ? 'Recent integrity' : 'Integridad reciente'}</h2>
@@ -207,16 +223,16 @@ function AlertDetail({
   onBack: () => void
   english: boolean
 }) {
-  const opened = stamp(alert.openedAt)
-  const updated = stamp(alert.updatedAt)
+  const opened = stamp(alert.openedAt, english)
+  const updated = stamp(alert.updatedAt, english)
   return (
     <>
       <button className="alerts-back" type="button" onClick={onBack}>
         {english ? 'Back to the list' : 'Volver a la lista'}
       </button>
-      <p className="alerts-detail-kind">{kindLine(alert.type, alert.title, english)}</p>
+      <p className="alerts-detail-kind">{alertKindLabel(alert.type, alert.title, english)}</p>
       <h2>{name}</h2>
-      {reasonLines(alert.reason).map((line) => <p key={line} className="alerts-detail-reason">{line}</p>)}
+      {reasonLines(alertReasonLabel(alert, name, english)).map((line) => <p key={line} className="alerts-detail-reason">{line}</p>)}
       <p className="alerts-meta">
         {english ? 'Opened' : 'Abierta'} {opened.day}, {opened.time} - {english ? 'Updated' : 'Actualizada'} {updated.day}, {updated.time} - {alert.astronautAck ? (english ? 'Notice confirmed' : 'Aviso confirmado') : (english ? 'Notice not confirmed' : 'Aviso sin confirmar')}
       </p>
@@ -242,7 +258,7 @@ function AlertDetail({
           <ul>
             {audit.map((item) => (
               <li key={item.id}>
-                • {auditActionLabel(item.action)} · {stamp(item.at).day}, {stamp(item.at).time} · {roleLabel(item.actor)} · {item.detail}
+                • {auditActionLabel(item.action)} · {stamp(item.at, english).day}, {stamp(item.at, english).time} · {roleLabel(item.actor)} · {item.detail}
               </li>
             ))}
           </ul>

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { answerPublicLocal } from './quironPublic'
+import { answerPublicLocal, dashboardSuggestions, isPresetQuestion, publicSuggestions } from './quironPublic'
 
 describe('answerPublicLocal', () => {
   it.each([
@@ -45,5 +45,16 @@ describe('answerPublicLocal', () => {
     const answer = answerPublicLocal('What can I do in HELIOS?', 'en')
     expect(answer.demo).toBe(true)
     expect(answer.text).toMatch(/mission|dashboard|prototype/i)
+  })
+})
+
+describe('isPresetQuestion', () => {
+  it('matches suggestion chips and ignores free-form text', () => {
+    for (const item of [...publicSuggestions('en'), ...publicSuggestions('es'), ...dashboardSuggestions('en'), ...dashboardSuggestions('es')]) {
+      expect(isPresetQuestion(item)).toBe(true)
+      expect(isPresetQuestion(`  ${item}  `)).toBe(true)
+    }
+    expect(isPresetQuestion('How is Elena feeling today?')).toBe(false)
+    expect(isPresetQuestion('me duele la cabeza')).toBe(false)
   })
 })

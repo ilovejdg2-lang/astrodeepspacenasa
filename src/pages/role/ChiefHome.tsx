@@ -1,9 +1,12 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { UserPlus } from 'lucide-react'
+import { MissionProcessStrip } from '../../components/platform/MissionProcessStrip'
+import { AboardCheckInBoard } from '../../components/role/AboardCheckInBoard'
+import { ChiefLaunchPanel } from '../../components/role/ChiefLaunchPanel'
 import { useLocale } from '../../i18n'
 import { platformApi } from '../../platform/api'
-import { profileDisplayName, roleLabel } from '../../platform/copy'
+import { profileDisplayName, roleLabel, stageBlurb } from '../../platform/copy'
 import { getActiveMissionId } from '../../platform/session'
 import { MonitorPage } from '../MonitorPage'
 import { RoleContextBar } from './RoleContextBar'
@@ -14,9 +17,13 @@ import '../../platform/role-dash.css'
 export function ChiefHome() {
   const { lang } = useLocale()
   const en = lang === 'en'
-  const { detail, role, mode, loading, missionId, refresh, error: workspaceError } = useMissionWorkspace()
+  const { detail, role, mode, loading, missionId, refresh, prep, percent, error: workspaceError } = useMissionWorkspace()
   const activeMissionId = missionId || getActiveMissionId()
   const rosterLocked = Boolean(detail?.mission.rosterLocked)
+  const stage = detail?.mission.stage
+  const afterDeploy = stage === 'aboard' || stage === 'postmission' || stage === 'archived' || stage === 'cancelled'
+  const crewAddsBlocked = afterDeploy || rosterLocked
+  const analysisStale = Boolean(detail?.mission.analysisStale)
   const [inviteOpen, setInviteOpen] = useState(false)
   const [missionCode, setMissionCode] = useState(detail?.mission.code || '')
   const [busyId, setBusyId] = useState<string | null>(null)
@@ -43,11 +50,13 @@ export function ChiefHome() {
   }, [activeMissionId, missionCode])
 
   const pending = (detail?.members || []).filter((member) => member.status === 'pending')
-  const activeCount = (detail?.members || []).filter((member) => member.status === 'active').length
-  const planned = detail?.mission.plannedCrewCount
+  /** Personas del equipo visible (cascos): excluye mesa Ops. Default = 4. */
+  const crewSeatCount = (detail?.members || []).filter(
+    (member) => member.status === 'active' && member.role !== 'ops',
+  ).length
 
   async function decide(membershipId: string, accept: boolean) {
-    if (!activeMissionId || rosterLocked) return
+    if (!activeMissionId || (accept && crewAddsBlocked)) return
     setBusyId(membershipId)
     setError('')
     setNote('')
@@ -55,7 +64,9 @@ export function ChiefHome() {
       await platformApi.decideJoin(activeMissionId, membershipId, accept)
       await refresh({ silent: true })
       setNote(accept
-        ? (en ? 'Join request accepted.' : 'Solicitud aceptada.')
+        ? (en
+          ? 'Join request accepted. Re-analyze before takeoff if the plan changed.'
+          : 'Solicitud aceptada. Volvé a analizar antes de despegar si cambió el plan.')
         : (en ? 'Join request rejected.' : 'Solicitud rechazada.'))
     } catch (err) {
       setError(err instanceof Error ? err.message : (en ? 'Could not update request' : 'No se pudo actualizar la solicitud'))
@@ -71,21 +82,28 @@ export function ChiefHome() {
           <p className="monitor-kicker">{en ? 'Mission center' : 'Centro de misión'}</p>
           <RoleContextBar
             missionName={detail?.mission.name}
-            stage={detail?.mission.stage}
+            stage={stage}
             role={role}
             mode={mode}
           />
+          {stage ? (
+            <>
+              <p className="muted chief-invite-note">{stageBlurb(stage, en)}</p>
+              <MissionProcessStrip stage={stage} en={en} compact />
+            </>
+          ) : null}
           {loading ? <p className="muted">{en ? 'Loading…' : 'Cargando…'}</p> : null}
-          <p className="muted chief-invite-note">
-            {en
-              ? `Active members: ${activeCount} / planned ${planned ?? '—'}`
-              : `Integrantes activos: ${activeCount} / previstos ${planned ?? '—'}`}
-          </p>
-          {rosterLocked ? (
+          {crewAddsBlocked ? (
             <p className="muted chief-invite-note">
               {en
-                ? 'Crew locked: AI checklist was saved. No member changes or new people.'
-                : 'Tripulación bloqueada: se guardó el checklist de IA. Sin cambios ni personas nuevas.'}
+                ? 'Mission deployed: no more astronauts can be added.'
+                : 'Misión desplegada: ya no se pueden agregar más astronautas.'}
+            </p>
+          ) : analysisStale ? (
+            <p className="muted chief-invite-note">
+              {en
+                ? 'Changes pending: run analysis again before takeoff.'
+                : 'Hay cambios pendientes: volvé a analizar antes de despegar.'}
             </p>
           ) : null}
           {workspaceError || error ? <p className="field-error" role="alert">{workspaceError || error}</p> : null}
@@ -95,9 +113,9 @@ export function ChiefHome() {
           <button
             type="button"
             className="btn btn-primary"
-            disabled={rosterLocked}
-            title={rosterLocked
-              ? (en ? 'Crew locked after AI checklist' : 'Tripulación bloqueada por checklist de IA')
+            disabled={crewAddsBlocked}
+            title={crewAddsBlocked
+              ? (en ? 'Crew locked after deploy' : 'Tripulación bloqueada tras el despliegue')
               : undefined}
             onClick={() => {
               setInviteOpen((value) => !value)
@@ -155,7 +173,7 @@ export function ChiefHome() {
                           <button
                             type="button"
                             className="btn btn-primary"
-                            disabled={rosterLocked || busyId === member.id}
+                            disabled={crewAddsBlocked || busyId === member.id}
                             onClick={() => void decide(member.id, true)}
                           >
                             {en ? 'Accept' : 'Aceptar'}
@@ -163,7 +181,7 @@ export function ChiefHome() {
                           <button
                             type="button"
                             className="btn"
-                            disabled={rosterLocked || busyId === member.id}
+                            disabled={busyId === member.id}
                             onClick={() => void decide(member.id, false)}
                           >
                             {en ? 'Reject' : 'Rechazar'}
@@ -178,6 +196,24 @@ export function ChiefHome() {
           ) : null}
         </div>
       </div>
+
+      {activeMissionId && stage === 'aboard' ? (
+        <AboardCheckInBoard missionId={activeMissionId} en={en} />
+      ) : null}
+
+      {activeMissionId ? (
+        <ChiefLaunchPanel
+          missionId={activeMissionId}
+          stage={stage}
+          plannedCrewCount={detail?.mission.plannedCrewCount}
+          teamSize={crewSeatCount || 4}
+          durationDays={detail?.mission.durationDays}
+          prep={prep}
+          percent={percent}
+          analysisStale={analysisStale}
+          onChanged={() => refresh({ silent: true })}
+        />
+      ) : null}
 
       <MonitorPage embedded />
     </div>

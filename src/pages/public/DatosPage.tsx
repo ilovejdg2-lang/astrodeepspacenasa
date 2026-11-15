@@ -25,11 +25,11 @@ export function DatosPage() {
     <>
       <header className="pub-page-hero">
         <p className="pub-kicker">{en ? 'Data and sources' : 'Datos y fuentes'}</p>
-        <h1>{en ? 'Simulation, lookup, and proposals' : 'Simulación, consulta y propuestas'}</h1>
+        <h1>{en ? 'Sources used in the dashboard' : 'Fuentes que usa el dashboard'}</h1>
         <p className="pub-lead">
           {en
-            ? 'We separate simulated data, consulted documentation, datasets actually used, and proposed integrations. HELIOS does not invent access to astronaut medical information or official NASA connections.'
-            : 'Diferenciamos datos simulados, documentación consultada, conjuntos realmente usados e integraciones propuestas. HELIOS no inventa acceso a información médica de astronautas ni conexiones oficiales con NASA.'}
+            ? 'Only public NASA and CSA sources the dashboard actually consults: risks, evidence, and live DONKI, OSDR, and RadLab lookups. They are context, not a diagnosis or personal dose.'
+            : 'Solo fuentes públicas de NASA y de la CSA que el dashboard consulta de verdad: riesgos, evidencia y consultas en vivo de DONKI, OSDR y RadLab. Son contexto, no un diagnóstico ni una dosis personal.'}
         </p>
       </header>
 
@@ -51,6 +51,11 @@ export function DatosPage() {
             ? 'Decorative figures on the public site and the hero are marked as simulated telemetry. The dashboard uses fictional scenarios for demonstration.'
             : 'Las cifras decorativas del sitio público y del hero se marcan como telemetría simulada. El dashboard usa escenarios ficticios para demostración.'}
         </p>
+        <p>
+          {en
+            ? 'Challenge alignment matrix (what is API vs document vs user measurement): see repository docs/CHALLENGE-ALIGNMENT-MATRIX-2026.md. Live indicators in My health always show origin (manual / sensor / import / simulation).'
+            : 'Matriz de alineación del reto (API vs documento vs medición de usuario): docs/CHALLENGE-ALIGNMENT-MATRIX-2026.md. Los indicadores en Mi salud muestran siempre el origen (manual / sensor / importación / simulación).'}
+        </p>
       </Reveal>
 
       <div className="data-grid">
@@ -66,6 +71,7 @@ export function DatosPage() {
             <p style={{ margin: 0 }}><strong>{en ? 'Use in HELIOS:' : 'Uso en HELIOS:'}</strong> {source.useInHelios}</p>
             <p className="pub-muted" style={{ margin: 0 }}><strong>{en ? 'Terms:' : 'Términos:'}</strong> {source.terms}</p>
             <p className="pub-muted" style={{ margin: 0 }}><strong>{en ? 'Limitations:' : 'Limitaciones:'}</strong> {source.limitations}</p>
+            <p style={{ margin: 0 }}><strong>APA 7:</strong> {source.citation}</p>
             <a className="pub-btn-ghost" href={source.href} target="_blank" rel="noreferrer">
               {en ? 'Open source' : 'Abrir fuente'} <ExternalLink size={16} aria-hidden="true" />
             </a>

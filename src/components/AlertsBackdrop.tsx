@@ -1,4 +1,4 @@
-/** Fondo del Centro de Alertas: degradado y triángulo de advertencia. No es la captura. */
+/** Fondo del Centro de Alertas: degradado y triángulo de advertencia. */
 export function AlertsBackdrop() {
   return (
     <div className="alerts-backdrop" aria-hidden="true">

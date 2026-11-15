@@ -3,7 +3,9 @@ import { SharedCareSummaries } from '../../components/quiron/SharedCareSummaries
 import { Link } from 'react-router-dom'
 import { useLocale } from '../../i18n'
 import { profileDisplayName } from '../../platform/copy'
+import { grantToSubject } from '../../platform/grants'
 import { MedicArt } from '../../components/role/RoleArt'
+import { AboardCheckInBoard } from '../../components/role/AboardCheckInBoard'
 import { RoleContextBar } from './RoleContextBar'
 import { useMissionWorkspace } from './useMissionWorkspace'
 import '../../platform/role-dash.css'
@@ -18,16 +20,13 @@ type CaseRow = {
 export function MedicHome() {
   const { lang } = useLocale()
   const en = lang === 'en'
-  const { profile, detail, appointments, grants, loading, error, role, mode } = useMissionWorkspace()
+  const { profile, detail, appointments, grants, loading, error, role, mode, missionId } = useMissionWorkspace()
   const [selected, setSelected] = useState<string | null>(() => sessionStorage.getItem('helios-medic-case'))
 
   const cases: CaseRow[] = useMemo(() => {
     const members = detail?.members.filter((m) => m.status === 'active' && m.profileId !== profile?.id) ?? []
     return members.map((m) => {
-      const granted = grants.some((g) => {
-        const row = g as { subjectProfileId?: string; granteeProfileId?: string; status?: string }
-        return row.subjectProfileId === m.profileId && row.granteeProfileId === profile?.id && row.status !== 'revoked'
-      })
+      const granted = grantToSubject(grants, m.profileId, profile?.id)
       return {
         id: m.profileId,
         label: profileDisplayName(m.profileId),
@@ -61,10 +60,14 @@ export function MedicHome() {
         />
         <p className="rd-muted">
           {en
-            ? 'Your own heart rate is not the hero of this workspace. Personal health lives under “My health”.'
-            : 'Tu frecuencia cardíaca no es el bloque protagonista de este espacio. La salud personal está en “Mi salud”.'}
+            ? 'Your own heart rate is not the hero of this workspace. Personal health lives under “My health”. After revoke, this list must show “Ask access” — that is the consent demo for judges.'
+            : 'Tu frecuencia cardíaca no es el bloque protagonista. La salud personal está en “Mi salud”. Tras revocar, esta lista debe decir “Pedir acceso”: esa es la demo de consentimiento para el jurado.'}
         </p>
       </header>
+
+      {missionId && detail?.mission.stage === 'aboard' ? (
+        <AboardCheckInBoard missionId={missionId} en={en} />
+      ) : null}
 
       {error ? <p className="plat-error">{error}</p> : null}
       {loading ? <p className="rd-muted">{en ? 'Loading…' : 'Cargando…'}</p> : null}

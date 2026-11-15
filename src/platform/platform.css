@@ -116,3 +116,150 @@
   .plat-shell { width: calc(100% - 1.5rem); padding-top: 16px; }
   .plat-row { flex-direction: column; align-items: stretch; }
 }
+
+/* —— Mission hub cards + process strip —— */
+.mission-hub-list { gap: 12px; }
+.mission-hub-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 14px 16px;
+  align-items: center;
+  padding: 14px 16px;
+  border-radius: 18px;
+  border: 1px solid color-mix(in srgb, currentColor 12%, transparent);
+  background: color-mix(in srgb, currentColor 4%, transparent);
+}
+.mission-hub-main { display: grid; gap: 8px; min-width: 0; }
+.mission-hub-title {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+}
+.mission-hub-title strong {
+  font-size: 1.05rem; letter-spacing: -0.02em;
+}
+.mission-hub-blurb {
+  margin: 0;
+  font-size: 0.9rem;
+  color: color-mix(in srgb, currentColor 68%, transparent);
+}
+.mission-hub-meta {
+  display: flex; flex-wrap: wrap; gap: 8px 12px;
+  font-size: 0.82rem;
+  color: color-mix(in srgb, currentColor 70%, transparent);
+}
+.mission-hub-stage {
+  font-weight: 750;
+  color: #f5004f;
+}
+.mission-hub-prep { display: grid; gap: 6px; max-width: 420px; }
+.mission-hub-prep-top {
+  display: flex; justify-content: space-between; gap: 10px;
+  font-size: 0.8rem; font-weight: 650;
+}
+.mission-hub-prep-top .is-ok { color: #0c6843; }
+:root[data-theme="dark"] .mission-hub-prep-top .is-ok { color: #6dcea0; }
+.mission-hub-bar {
+  position: relative;
+  height: 10px; border-radius: 999px; overflow: hidden;
+  background: color-mix(in srgb, currentColor 12%, transparent);
+}
+.mission-hub-bar > span {
+  display: block; height: 100%; border-radius: inherit;
+  background: linear-gradient(90deg, #f5004f, #ff6b9d);
+}
+.mission-hub-bar > i {
+  position: absolute; top: -2px; bottom: -2px; width: 2px;
+  background: color-mix(in srgb, currentColor 55%, transparent);
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.mission-process {
+  list-style: none;
+  margin: 12px 0 8px;
+  padding: 12px 14px;
+  display: grid;
+  gap: 10px;
+  border-radius: 16px;
+  border: 1px solid color-mix(in srgb, currentColor 10%, transparent);
+  background: color-mix(in srgb, currentColor 3%, transparent);
+}
+.mission-process li {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  min-width: 0;
+}
+.mission-process-dot {
+  width: 10px; height: 10px; border-radius: 50%;
+  border: 2px solid color-mix(in srgb, currentColor 28%, transparent);
+  background: transparent;
+  flex-shrink: 0;
+  align-self: center;
+}
+.mission-process li.is-done .mission-process-dot {
+  border-color: #f5004f; background: #f5004f;
+}
+.mission-process li.is-current .mission-process-dot {
+  border-color: #f5004f;
+  box-shadow: 0 0 0 4px color-mix(in srgb, #f5004f 22%, transparent);
+  background: #fff;
+}
+:root[data-theme="dark"] .mission-process li.is-current .mission-process-dot {
+  background: #12101c;
+}
+.mission-process-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 8px;
+  min-width: 0;
+}
+.mission-process-label {
+  margin: 0;
+  font-size: 0.84rem;
+  font-weight: 750;
+  color: color-mix(in srgb, currentColor 62%, transparent);
+  line-height: 1.3;
+  white-space: nowrap;
+}
+.mission-process-arrow {
+  flex: 0 0 auto;
+  font-size: 0.95rem;
+  font-weight: 700;
+  line-height: 1;
+  color: #f5004f;
+  opacity: 0.85;
+}
+.mission-process-hint {
+  margin: 0;
+  font-size: 0.78rem;
+  font-weight: 500;
+  line-height: 1.35;
+  color: color-mix(in srgb, currentColor 58%, transparent);
+}
+.mission-process li.is-done .mission-process-label,
+.mission-process li.is-current .mission-process-label {
+  color: inherit;
+}
+.mission-process li.is-current .mission-process-hint {
+  color: color-mix(in srgb, currentColor 82%, transparent);
+  font-weight: 650;
+}
+.mission-process li.is-current .mission-process-arrow {
+  opacity: 1;
+}
+.mission-process.is-compact {
+  max-width: 100%;
+  margin-top: 14px;
+  margin-bottom: 10px;
+}
+
+@media (max-width: 720px) {
+  .mission-hub-card {
+    grid-template-columns: 1fr;
+  }
+  .mission-hub-card .plat-btn { width: 100%; }
+  .mission-process { gap: 12px; padding: 12px; }
+  .mission-process-label { font-size: 0.8rem; }
+  .mission-process-hint { font-size: 0.74rem; }
+}

@@ -26,3 +26,7 @@ createRoot(root).render(
 if (import.meta.env.PROD) {
   void import('virtual:pwa-register').then(({ registerSW }) => registerSW({ immediate: true }))
 }
+
+void import('./platform/offlineQueue').then(({ startOfflineQueueListener }) => {
+  startOfflineQueueListener()
+})

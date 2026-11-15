@@ -1,6 +1,8 @@
 import { RadiationPanel } from '../components/NasaEnvironment'
 import { BookOpen, ExternalLink } from 'lucide-react'
 import { useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
+import { SPACE_HAZARDS } from '../domain/spaceHazards'
 import { EVA_METABOLIC_BANDS, NASA_SOURCES } from '../../shared/nasaSources'
 import { NASA_RISKS, RISK_CATEGORY_LABEL, type RiskCategory } from '../../shared/risks'
 import { ScientificInsights } from '../components/ScientificInsights'
@@ -34,8 +36,47 @@ export function RisksPage() {
               ? 'A selection from the Human Research Roadmap, OCHMO, NTRS (EVA), and OSDR. They ground the preparation. They do not become treatment instructions on their own.'
               : 'Selección del Human Research Roadmap, OCHMO, NTRS (EVA) y OSDR. Sirven de fundamento científico para la preparación. No se convierten automáticamente en instrucciones de tratamiento.'}
           </p>
+          <p className="muted">
+            <Link to="/misiones/evidencia">{en ? 'NASA evidence & live endpoints →' : 'Evidencia NASA y endpoints en vivo →'}</Link>
+          </p>
         </div>
       </header>
+
+      <section className="panel" style={{ marginBottom: 20 }}>
+        <h2>{en ? 'Five hazards of human spaceflight' : 'Cinco peligros del vuelo espacial humano'}</h2>
+        <p className="muted">
+          {en
+            ? 'Educational framing from NASA HRP. HELIOS links each hazard to records it can consult — without inventing direct clinical causation.'
+            : 'Marco educativo de NASA HRP. HELIOS vincula cada peligro con registros que puede consultar — sin inventar causalidad clínica directa.'}
+        </p>
+        <p>
+          <a href="https://www.nasa.gov/hrp/hazards/" target="_blank" rel="noreferrer">
+            <ExternalLink aria-hidden="true" size={16} strokeWidth={1.75} /> nasa.gov/hrp/hazards
+          </a>
+          {' · '}
+          <Link to="/app/mi-salud">{en ? 'Open my health' : 'Abrir mi salud'}</Link>
+        </p>
+        <div className="stack" style={{ marginTop: 12 }}>
+          {SPACE_HAZARDS.map((hazard) => (
+            <article key={hazard.id} className="panel" data-testid={`hazard-${hazard.id}`}>
+              <h3>{en ? hazard.title.en : hazard.title.es}</h3>
+              <p>{en ? hazard.summary.en : hazard.summary.es}</p>
+              <p className="muted"><strong>{en ? 'Related risks' : 'Riesgos relacionados'}:</strong> {en ? hazard.relatedRisks.en : hazard.relatedRisks.es}</p>
+              <p className="muted"><strong>{en ? 'HELIOS context' : 'Contexto HELIOS'}:</strong> {en ? hazard.heliosContext.en : hazard.heliosContext.es}</p>
+              <p className="callout callout-amber">{en ? hazard.limits.en : hazard.limits.es}</p>
+              <p className="muted">{en ? hazard.prepFollowUp.en : hazard.prepFollowUp.es}</p>
+              <ul>
+                {hazard.sources.map((source) => (
+                  <li key={source.url}>
+                    <a href={source.url} target="_blank" rel="noreferrer">{source.title}</a>
+                    <span className="muted"> · {source.institution}</span>
+                  </li>
+                ))}
+              </ul>
+            </article>
+          ))}
+        </div>
+      </section>
 
       <div className="spread">
         <div className="chips" role="group" aria-label={en ? 'Risk category' : 'Categoría de riesgo'}>

@@ -15,19 +15,37 @@ const provenance = z.object({
   cached: z.boolean(),
   historical: z.boolean(),
   simulated: z.literal(false),
+  type: z.enum(['SEP', 'FLR', 'CME']).optional(),
+})
+export const weatherEventSchema = z.object({
+  id: z.string(),
+  type: z.enum(['SEP', 'FLR', 'CME']),
+  timestamp: z.string(),
+  beginTime: z.string().nullable().optional(),
+  peakTime: z.string().nullable().optional(),
+  endTime: z.string().nullable().optional(),
+  classification: z.string().nullable(),
+  description: z.string().nullable(),
+  sourceUrl: nasaUrl.nullable(),
+  instruments: z.array(z.string()).optional(),
+  sourceLocation: z.string().nullable().optional(),
+  activeRegion: z.string().nullable().optional(),
+  linkedEvents: z.array(z.string()).optional(),
+  catalog: z.string().nullable().optional(),
 })
 export const weatherSchema = z.object({
-  events: z.array(
-    z.object({
-      id: z.string(),
-      type: z.enum(['SEP', 'FLR', 'CME']),
-      timestamp: z.string(),
-      classification: z.string().nullable(),
-      description: z.string().nullable(),
-      sourceUrl: nasaUrl.nullable(),
-    }),
-  ),
+  events: z.array(weatherEventSchema),
   sources: z.array(provenance),
+  failures: z
+    .array(z.object({ type: z.string(), message: z.string() }))
+    .optional(),
+  query: z
+    .object({
+      startDate: z.string(),
+      endDate: z.string(),
+      type: z.enum(['SEP', 'FLR', 'CME']).optional(),
+    })
+    .optional(),
 })
 export const radiationSchema = provenance.extend({
   example: z.boolean().optional(),
@@ -45,6 +63,7 @@ export const radiationSchema = provenance.extend({
     doseEquivalentRate: z.literal('µSv/h'),
   }),
 })
+export type WeatherEvent = z.infer<typeof weatherEventSchema>
 export type WeatherResponse = z.infer<typeof weatherSchema>
 export type RadiationResponse = z.infer<typeof radiationSchema>
 export async function fetchEnvironmental<T>(

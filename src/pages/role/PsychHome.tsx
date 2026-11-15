@@ -3,7 +3,9 @@ import { SharedCareSummaries } from '../../components/quiron/SharedCareSummaries
 import { Link } from 'react-router-dom'
 import { useLocale } from '../../i18n'
 import { profileDisplayName } from '../../platform/copy'
+import { grantToSubject } from '../../platform/grants'
 import { PsychArt } from '../../components/role/RoleArt'
+import { AboardCheckInBoard } from '../../components/role/AboardCheckInBoard'
 import { RoleContextBar } from './RoleContextBar'
 import { useMissionWorkspace } from './useMissionWorkspace'
 import '../../platform/role-dash.css'
@@ -11,21 +13,14 @@ import '../../platform/role-dash.css'
 export function PsychHome() {
   const { lang } = useLocale()
   const en = lang === 'en'
-  const { profile, detail, appointments, grants, loading, error, role, mode } = useMissionWorkspace()
+  const { profile, detail, appointments, grants, loading, error, role, mode, missionId } = useMissionWorkspace()
   const [selected, setSelected] = useState<string | null>(() => sessionStorage.getItem('helios-psych-case'))
 
   const people = useMemo(() => {
     const members = detail?.members.filter((m) => m.status === 'active' && m.profileId !== profile?.id) ?? []
     return members.map((m) => {
-      const granted = grants.some((g) => {
-        const row = g as { subjectProfileId?: string; granteeProfileId?: string; categories?: string[]; status?: string }
-        return (
-          row.subjectProfileId === m.profileId &&
-          row.granteeProfileId === profile?.id &&
-          row.status !== 'revoked' &&
-          (row.categories || []).some((c) => /emotion|psych|bienestar|mental/i.test(c))
-        )
-      })
+      // Active Nest grants use revokedAt (not status). Crew shares symptoms/sleep with psych.
+      const granted = grantToSubject(grants, m.profileId, profile?.id)
       return { id: m.profileId, label: profileDisplayName(m.profileId), granted }
     })
   }, [detail?.members, grants, profile?.id])
@@ -56,6 +51,10 @@ export function PsychHome() {
             : 'Esto no es el dashboard médico con etiquetas cambiadas. Priorizá agenda, resúmenes voluntarios y seguimiento emocional autorizado.'}
         </p>
       </header>
+
+      {missionId && detail?.mission.stage === 'aboard' ? (
+        <AboardCheckInBoard missionId={missionId} en={en} />
+      ) : null}
 
       {error ? <p className="plat-error">{error}</p> : null}
       {loading ? <p className="rd-muted">{en ? 'Loading…' : 'Cargando…'}</p> : null}

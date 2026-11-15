@@ -376,3 +376,232 @@
   display: grid; gap: 10px;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
 }
+
+/* —— Health indicators / body map (challenge alignment) —— */
+.health-card-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+.health-status-card {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border-radius: 16px;
+  border: 1px solid color-mix(in srgb, currentColor 12%, transparent);
+  background: color-mix(in srgb, currentColor 4%, transparent);
+  min-width: 0;
+}
+.health-status-card header {
+  display: flex; flex-wrap: wrap; gap: 8px;
+  align-items: center; justify-content: space-between;
+}
+.health-value { margin: 0; font-size: 1.25rem; font-weight: 750; letter-spacing: -0.02em; }
+.health-state {
+  display: inline-flex; align-items: center;
+  padding: 2px 8px; border-radius: 999px;
+  font-size: 0.72rem; font-weight: 750;
+  border: 1px solid color-mix(in srgb, currentColor 16%, transparent);
+}
+.health-state-no_data { color: color-mix(in srgb, currentColor 70%, transparent); }
+.health-state-available { color: #1a7a4c; border-color: color-mix(in srgb, #1a7a4c 35%, transparent); }
+.health-state-change_observed { color: #9a5b00; border-color: color-mix(in srgb, #9a5b00 35%, transparent); }
+.health-state-needs_check,
+.health-state-stale { color: #8a4b00; border-color: color-mix(in srgb, #8a4b00 35%, transparent); }
+.health-state-professional_review { color: #b3003a; border-color: color-mix(in srgb, #b3003a 35%, transparent); }
+:root[data-theme="dark"] .health-state-available { color: #6dcea0; }
+:root[data-theme="dark"] .health-state-change_observed,
+:root[data-theme="dark"] .health-state-needs_check,
+:root[data-theme="dark"] .health-state-stale { color: #f0b35a; }
+:root[data-theme="dark"] .health-state-professional_review { color: #ff6b9d; }
+.health-spark { width: 100%; height: 32px; color: var(--rd-accent, #f5004f); }
+.health-explain { display: grid; gap: 6px; margin: 0 0 12px; }
+.health-explain dt { font-weight: 750; margin-top: 6px; }
+.health-explain dd { margin: 0; color: color-mix(in srgb, currentColor 72%, transparent); }
+.health-mini-list { margin: 0; padding-left: 1.1rem; display: grid; gap: 6px; }
+.health-body-layout {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: minmax(140px, 200px) minmax(0, 1fr);
+  align-items: start;
+}
+.health-body-svg { width: 100%; height: auto; max-height: 360px; }
+.health-body-region {
+  fill: color-mix(in srgb, currentColor 10%, transparent);
+  stroke: color-mix(in srgb, currentColor 35%, transparent);
+  stroke-width: 2;
+  cursor: pointer;
+  outline: none;
+}
+.health-body-region:hover,
+.health-body-region:focus-visible { fill: color-mix(in srgb, #f5004f 22%, transparent); stroke: #f5004f; }
+.health-body-region.is-on { fill: color-mix(in srgb, #f5004f 28%, transparent); stroke: #f5004f; }
+.health-body-side { min-width: 0; display: grid; gap: 10px; }
+@media (max-width: 720px) {
+  .health-body-layout { grid-template-columns: 1fr; }
+  .health-body-svg { max-width: 180px; margin: 0 auto; }
+}
+
+/* —— Chief launch / prepare & take off —— */
+.chief-launch {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 14px;
+  padding: 16px 18px;
+  border-radius: 22px;
+  border: 1px solid color-mix(in srgb, #f5004f 28%, transparent);
+  background:
+    linear-gradient(145deg, color-mix(in srgb, #f5004f 10%, transparent), transparent 55%),
+    color-mix(in srgb, #fff 78%, transparent);
+}
+:root[data-theme="dark"] .chief-launch {
+  background:
+    linear-gradient(145deg, color-mix(in srgb, #f5004f 14%, transparent), transparent 55%),
+    rgba(255,255,255,0.04);
+}
+.chief-launch-head {
+  display: flex; flex-wrap: wrap; align-items: flex-start;
+  justify-content: space-between; gap: 10px;
+}
+.chief-launch-head h2 {
+  margin: 0 0 4px; font-size: 1.2rem; letter-spacing: -0.02em;
+}
+.chief-launch-chip {
+  display: inline-flex; align-items: center;
+  min-height: 28px; padding: 0 10px; border-radius: 999px;
+  background: color-mix(in srgb, #f5004f 14%, transparent);
+  color: #f5004f; font-size: 0.78rem; font-weight: 800;
+}
+.chief-launch-plan {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) auto;
+  align-items: end;
+}
+.chief-launch-field {
+  display: grid; gap: 6px; min-width: 0;
+  font-size: 0.82rem; font-weight: 700;
+}
+.chief-launch-field input {
+  min-height: 42px; border-radius: 12px;
+  border: 1px solid color-mix(in srgb, currentColor 16%, transparent);
+  background: color-mix(in srgb, currentColor 4%, transparent);
+  color: inherit; padding: 8px 12px; font: inherit;
+}
+.chief-launch-field input:disabled { opacity: 0.55; }
+.chief-launch-stale {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, #f5004f 35%, transparent);
+  background: color-mix(in srgb, #f5004f 12%, transparent);
+  color: #f5004f;
+  font-size: 0.88rem;
+  font-weight: 650;
+}
+.chief-launch-locked {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, currentColor 22%, transparent);
+  background: color-mix(in srgb, currentColor 6%, transparent);
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+.chief-launch.is-locked .chief-launch-list,
+.chief-launch.is-locked .chief-launch-plan,
+.chief-launch.is-locked .chief-launch-actions {
+  display: none !important;
+}
+.chief-launch-actions {
+  display: flex; flex-wrap: wrap; gap: 10px;
+}
+.chief-launch-go:disabled { opacity: 0.45; }
+.chief-launch-meter { display: grid; gap: 8px; }
+.chief-launch-meter-top {
+  display: flex; justify-content: space-between; gap: 10px;
+  align-items: baseline; font-size: 0.9rem;
+}
+.chief-launch-meter-top .is-ok { color: #0c6843; font-weight: 750; }
+.chief-launch-meter-top .is-warn { color: #f5004f; font-weight: 750; }
+:root[data-theme="dark"] .chief-launch-meter-top .is-ok { color: #6dcea0; }
+.chief-launch-bar {
+  position: relative;
+  height: 12px; border-radius: 999px; overflow: hidden;
+  background: color-mix(in srgb, currentColor 12%, transparent);
+}
+.chief-launch-bar > span {
+  display: block; height: 100%; border-radius: inherit;
+  background: linear-gradient(90deg, #f5004f, #ff6b9d);
+  transition: width 220ms ease;
+}
+.chief-launch-threshold {
+  position: absolute; top: -3px; bottom: -3px; width: 2px;
+  background: color-mix(in srgb, currentColor 60%, transparent);
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+.chief-launch-list {
+  list-style: none; margin: 0; padding: 0;
+  display: grid; gap: 8px;
+  max-height: 280px; overflow: auto;
+}
+.chief-launch-list label {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 10px; align-items: start;
+  padding: 10px 12px; border-radius: 14px;
+  border: 1px solid color-mix(in srgb, currentColor 12%, transparent);
+  background: color-mix(in srgb, currentColor 3%, transparent);
+  cursor: pointer;
+}
+.chief-launch-list label.is-on {
+  border-color: color-mix(in srgb, #f5004f 40%, transparent);
+  background: color-mix(in srgb, #f5004f 10%, transparent);
+}
+.chief-launch-list label span { display: grid; gap: 2px; }
+.chief-launch-list input { margin-top: 3px; accent-color: #f5004f; }
+.chief-launch-qty {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #f5004f;
+}
+.chief-launch-have {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+  font-size: 0.86rem;
+  font-weight: 650;
+}
+.chief-launch-have input {
+  width: 4.5rem;
+  min-height: 34px;
+  padding: 0 8px;
+  border-radius: 8px;
+  border: 1px solid color-mix(in srgb, currentColor 22%, transparent);
+  background: color-mix(in srgb, currentColor 4%, transparent);
+  color: inherit;
+  font: inherit;
+}
+.chief-launch-list li.is-partial label {
+  border-color: color-mix(in srgb, #e4a44c 45%, transparent);
+  background: color-mix(in srgb, #e4a44c 10%, transparent);
+}
+.chief-launch-desc {
+  font-size: 0.8rem;
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+:root[data-theme="dark"] .chief-launch-qty { color: #ff7aa8; }
+.chief-launch-list { max-height: min(52vh, 420px); }
+
+@media (max-width: 720px) {
+  .chief-launch-plan { grid-template-columns: 1fr; }
+  .chief-launch-actions .btn { flex: 1 1 auto; }
+}
