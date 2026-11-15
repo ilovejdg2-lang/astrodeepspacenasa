@@ -11,6 +11,8 @@ import { PlatformIndicatorCharts } from '../components/health/PlatformIndicatorC
 import { Empty } from '../components/ui'
 import type { CrewId } from '../../shared/types'
 
+const TIMELINE_PAGE_SIZE = 8
+
 export function HistoryPage() {
   const { lang } = useLocale()
   const en = lang === 'en'
@@ -21,7 +23,18 @@ export function HistoryPage() {
   const [exporting, setExporting] = useState<'json' | 'csv' | null>(null)
   const [exportError, setExportError] = useState<string | null>(null)
   const [nestEvents, setNestEvents] = useState<number | null>(null)
+  const [timelinePage, setTimelinePage] = useState(0)
   const rows = useMemo(() => filterHistory(historyRows(state), { crewId, type }), [state, crewId, type])
+  const timelinePages = Math.max(1, Math.ceil(rows.length / TIMELINE_PAGE_SIZE))
+  const safeTimelinePage = Math.min(timelinePage, timelinePages - 1)
+  const timelineRows = useMemo(
+    () => rows.slice(safeTimelinePage * TIMELINE_PAGE_SIZE, safeTimelinePage * TIMELINE_PAGE_SIZE + TIMELINE_PAGE_SIZE),
+    [rows, safeTimelinePage],
+  )
+
+  useEffect(() => {
+    setTimelinePage(0)
+  }, [crewId, type])
 
   useEffect(() => {
     if (backendMode !== 'connected') {
@@ -191,20 +204,64 @@ export function HistoryPage() {
         </tbody>
       </table>
       <div className="hist-log">
-        <section className="panel">
-          <h2>{en ? 'Timeline' : 'Cronología'}</h2>
+        <section className="panel hist-timeline-panel">
+          <div className="hist-timeline-head">
+            <h2>{en ? 'Timeline' : 'Cronología'}</h2>
+            {rows.length > 0 ? (
+              <p className="hist-timeline-meta" aria-live="polite">
+                {en
+                  ? `${safeTimelinePage * TIMELINE_PAGE_SIZE + 1}–${Math.min(rows.length, (safeTimelinePage + 1) * TIMELINE_PAGE_SIZE)} of ${rows.length}`
+                  : `${safeTimelinePage * TIMELINE_PAGE_SIZE + 1}–${Math.min(rows.length, (safeTimelinePage + 1) * TIMELINE_PAGE_SIZE)} de ${rows.length}`}
+              </p>
+            ) : null}
+          </div>
           {rows.length === 0 ? <Empty title={en ? 'No events' : 'Sin eventos'} text={en ? 'That filter has no records.' : 'Ese filtro no tiene registros.'} /> : (
-            <ol className="timeline">
-              {rows.slice(0, 40).map((row) => (
-                <li key={row.id}>
-                  <span className="dot" aria-hidden="true" />
-                  <button type="button" className="btn btn-ghost" onClick={() => row.type === 'symptom' || row.type === 'alert' ? setSelected(state.episodes.find((item) => item.crewId === row.crewId)?.id ?? selected) : undefined}>
-                    <strong>{formatMission(row.at)} · {label(row.type)}</strong>
-                    <span className="muted"> {row.detail}</span>
+            <>
+              <ol className="timeline">
+                {timelineRows.map((row) => (
+                  <li key={row.id}>
+                    <span className="dot" aria-hidden="true" />
+                    <button type="button" className="btn btn-ghost" onClick={() => row.type === 'symptom' || row.type === 'alert' ? setSelected(state.episodes.find((item) => item.crewId === row.crewId)?.id ?? selected) : undefined}>
+                      <strong>{formatMission(row.at)} · {label(row.type)}</strong>
+                      <span className="muted"> {row.detail}</span>
+                    </button>
+                  </li>
+                ))}
+              </ol>
+              {timelinePages > 1 ? (
+                <nav className="hist-pager no-print" aria-label={en ? 'Timeline pages' : 'Páginas de la cronología'}>
+                  <button
+                    type="button"
+                    className="hist-page-btn"
+                    disabled={safeTimelinePage <= 0}
+                    onClick={() => setTimelinePage((page) => Math.max(0, page - 1))}
+                  >
+                    {en ? 'Previous' : 'Anterior'}
                   </button>
-                </li>
-              ))}
-            </ol>
+                  <div className="hist-page-nums" role="group" aria-label={en ? 'Page number' : 'Número de página'}>
+                    {visiblePageIndexes(safeTimelinePage, timelinePages).map((index) => (
+                      <button
+                        key={index}
+                        type="button"
+                        className={index === safeTimelinePage ? 'hist-page-btn is-active' : 'hist-page-btn'}
+                        aria-current={index === safeTimelinePage ? 'page' : undefined}
+                        onClick={() => setTimelinePage(index)}
+                      >
+                        {index + 1}
+                      </button>
+                    ))}
+                  </div>
+                  <button
+                    type="button"
+                    className="hist-page-btn"
+                    disabled={safeTimelinePage >= timelinePages - 1}
+                    onClick={() => setTimelinePage((page) => Math.min(timelinePages - 1, page + 1))}
+                  >
+                    {en ? 'Next' : 'Siguiente'}
+                  </button>
+                </nav>
+              ) : null}
+            </>
           )}
         </section>
         <aside className="detail">
@@ -224,6 +281,16 @@ export function HistoryPage() {
 function label(type: HistoryRow['type']): string {
   const names = { measurement: 'Medición', symptom: 'Síntoma', alert: 'Alerta', inventory: 'Inventario', communication: 'Comunicación', analysis: 'Análisis' }
   return names[type]
+}
+
+/** Ventana corta de números para no saturar el pager. */
+function visiblePageIndexes(current: number, total: number, windowSize = 5): number[] {
+  if (total <= windowSize) return Array.from({ length: total }, (_, index) => index)
+  const half = Math.floor(windowSize / 2)
+  let start = Math.max(0, current - half)
+  const end = Math.min(total, start + windowSize)
+  start = Math.max(0, end - windowSize)
+  return Array.from({ length: end - start }, (_, index) => start + index)
 }
 
 function periodLabel(pulse: TrendPoint[], sleep: TrendPoint[], en: boolean): string {

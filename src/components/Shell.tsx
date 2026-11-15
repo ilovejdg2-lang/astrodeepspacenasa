@@ -16,7 +16,6 @@ import { HeliosLogo } from './HeliosLogo'
 import { Hint } from './Hint'
 import { MissionDemoButton } from './MissionDemo'
 import { PageEnter } from './PageEnter'
-import { SimClockControls } from './SimClockControls'
 
 const EcgBackdrop = lazy(() => import('./EcgBackdrop').then((m) => ({ default: m.EcgBackdrop })))
 const CrewBackdrop = lazy(() => import('./CrewBackdrop').then((m) => ({ default: m.CrewBackdrop })))
@@ -102,7 +101,7 @@ export function Shell({ children }: { children: ReactNode }) {
         : workspaceRole === 'psychologist'
           ? (en ? 'Wellbeing' : 'Bienestar')
           : (en ? 'My day' : 'Mi día')
-  const homeLink = { to: '/app', label: homeLabel, icon: Activity, end: true }
+  const homeLink = { to: '/app/centro', label: homeLabel, icon: Activity, end: false }
   const healthLink = { to: '/app/mi-salud', label: en ? 'My health' : 'Mi salud', icon: Heart, end: false }
   const monitorLink = { to: '/app/monitor', label: shell.monitor, icon: Activity, end: false }
   const crewLink = { to: '/app/tripulacion', label: shell.crew, icon: HelmetIcon, end: false }
@@ -111,20 +110,19 @@ export function Shell({ children }: { children: ReactNode }) {
   const historyLink = { to: '/app/historial', label: shell.history, icon: History, end: false }
   const analysisLink = { to: '/app/analisis', label: shell.analysis, icon: Brain, end: false }
   const medicalLink = { to: '/app/medico', label: shell.medical, icon: Stethoscope, end: false }
-  const primaryLinks =
-    workspaceRole === 'crew'
-      ? [homeLink, healthLink, monitorLink, alertsLink, resourcesLink]
-      : workspaceRole === 'medic'
-        ? [homeLink, medicalLink, healthLink, resourcesLink, historyLink, analysisLink]
-        : workspaceRole === 'psychologist'
-          ? [homeLink, healthLink, historyLink, resourcesLink, alertsLink]
-          : workspaceRole === 'chief'
-            ? [homeLink, healthLink, crewLink, alertsLink, resourcesLink, historyLink, analysisLink, medicalLink]
-            : [homeLink, crewLink, alertsLink, resourcesLink, historyLink, analysisLink, medicalLink]
+  // Chief already has Mission center (embeds the monitor). Keep Monitor only for other roles.
+  const primaryLinks = workspaceRole === 'chief'
+    ? [homeLink, alertsLink, crewLink]
+    : [alertsLink, monitorLink, crewLink]
   const extraLinks = [
+    ...(workspaceRole === 'chief' ? [] : [homeLink]),
+    healthLink,
+    analysisLink,
+    medicalLink,
+    resourcesLink,
+    historyLink,
     { to: '/app/mision', label: shell.mission, icon: Rocket, end: false },
     { to: '/app/riesgos', label: shell.risks, icon: BookOpen, end: false },
-    ...(workspaceRole === 'chief' || workspaceRole === 'medic' ? [monitorLink] : []),
   ]
   const spaceLink = { to: '/app/mi-espacio', label: shell.space, icon: Lock, end: false }
   const [open, setOpen] = useState(false)
@@ -141,7 +139,7 @@ export function Shell({ children }: { children: ReactNode }) {
   const heard = useRef<Set<string> | null>(null)
   const [badgePop, setBadgePop] = useState(false)
   const previousAlerts = useRef(alerts)
-  const isHome = location.pathname === '/app' || location.pathname === '/app/'
+  const isHome = location.pathname === '/app' || location.pathname === '/app/' || location.pathname.startsWith('/app/centro')
   const isMyHealth = location.pathname.startsWith('/app/mi-salud')
   const isMonitor = location.pathname.startsWith('/app/monitor')
   const isCrew = location.pathname.startsWith('/app/tripulacion')
@@ -228,15 +226,13 @@ export function Shell({ children }: { children: ReactNode }) {
       {open ? <button className="scrim" aria-label={shell.closeMenu} onClick={() => setOpen(false)} /> : null}
       <aside className={open ? 'sidebar open' : 'sidebar'}>
         <div className="sidebar-top">
-          <Link className="brand-mark" to="/" onClick={() => setOpen(false)} title={shell.presentation}>
+          <Link
+            className="brand-mark"
+            to={workspaceRole === 'chief' ? '/app/centro' : '/app'}
+            onClick={() => setOpen(false)}
+            title={workspaceRole === 'chief' ? homeLabel : (en ? 'Emergency monitor' : 'Monitor de emergencia')}
+          >
             <HeliosLogo variant="mark" size={112} />
-            <p className="brand-stack">
-              Health evaluation
-              <br />
-              &amp; life indicators
-              <br />
-              observation system
-            </p>
           </Link>
           <div className="sidebar-navs">
             <nav className="nav" aria-label={shell.sections}>
@@ -259,12 +255,8 @@ export function Shell({ children }: { children: ReactNode }) {
           </div>
         </div>
         <div className="sidebar-foot">
+          <MissionDemoButton />
           <HeliosLogo variant="wordmark" />
-          <p className="brand-foot">
-            Health evaluation &amp; life indicators
-            <br />
-            observation system
-          </p>
         </div>
       </aside>
       <div className={(isMonitor || (isHome && workspaceRole === 'chief')) ? 'workspace workspace-monitor' : isCrew ? 'workspace workspace-crew' : isAlerts ? 'workspace workspace-alerts' : isResources ? 'workspace workspace-resources' : isHistory ? 'workspace workspace-history' : isAnalysis ? 'workspace workspace-analysis' : isMedical ? 'workspace workspace-medical' : 'workspace'}>
@@ -278,7 +270,11 @@ export function Shell({ children }: { children: ReactNode }) {
           {isMedical ? <MedicalBackdrop /> : null}
         </Suspense>
         <header className="topbar">
-          <Link className="mobile-brand" to="/" aria-label={shell.presentation}>
+          <Link
+            className="mobile-brand"
+            to={workspaceRole === 'chief' ? '/app/centro' : '/app'}
+            aria-label={workspaceRole === 'chief' ? homeLabel : (en ? 'Emergency monitor' : 'Monitor de emergencia')}
+          >
             <HeliosLogo variant="wordmark" />
           </Link>
           <div className="row topbar-pills">
@@ -300,11 +296,6 @@ export function Shell({ children }: { children: ReactNode }) {
             {getStoredProfile() ? <RoleSwitcher /> : null}
           </div>
           <div className="top-actions">
-            <SimClockControls />
-            <MissionDemoButton />
-            <Link className="helios-pill" to="/misiones/evidencia" title={en ? 'Evidence hub' : 'Hub de evidencia'}>
-              {en ? 'Defense' : 'Defensa'}
-            </Link>
             <div className="lang-switch" role="group" aria-label={shell.language}>
               <button type="button" aria-pressed={lang === 'en'} onClick={() => setLang('en')}>EN</button>
               <button type="button" aria-pressed={lang === 'es'} onClick={() => setLang('es')}>ES</button>

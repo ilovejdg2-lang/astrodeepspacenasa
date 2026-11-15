@@ -2,22 +2,8 @@ import { lazy, Suspense, type ReactNode } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { RouteFallback } from './components/RouteFallback'
 import { Shell } from './components/Shell'
-import { PublicLayout } from './components/public/PublicLayout'
 import { AppProvider } from './state/store'
 import { MissionGate } from './pages/platform/MissionGate'
-
-const HomePage = lazy(() => import('./pages/public/HomePage').then((m) => ({ default: m.HomePage })))
-const ProyectoPage = lazy(() => import('./pages/public/ProyectoPage').then((m) => ({ default: m.ProyectoPage })))
-const ComoFuncionaPage = lazy(() =>
-  import('./pages/public/ComoFuncionaPage').then((m) => ({ default: m.ComoFuncionaPage })),
-)
-const NosotrosPage = lazy(() => import('./pages/public/NosotrosPage').then((m) => ({ default: m.NosotrosPage })))
-const PerfilPage = lazy(() => import('./pages/public/PerfilPage').then((m) => ({ default: m.PerfilPage })))
-const VideoPage = lazy(() => import('./pages/public/VideoPage').then((m) => ({ default: m.VideoPage })))
-const DocumentosPage = lazy(() =>
-  import('./pages/public/DocumentosPage').then((m) => ({ default: m.DocumentosPage })),
-)
-const DatosPage = lazy(() => import('./pages/public/DatosPage').then((m) => ({ default: m.DatosPage })))
 
 const EnterPage = lazy(() => import('./pages/platform/EnterPage').then((m) => ({ default: m.EnterPage })))
 const MissionsHubPage = lazy(() =>
@@ -33,7 +19,7 @@ const EvidencePage = lazy(() =>
 
 const RoleHome = lazy(() => import('./pages/role/RoleHome').then((m) => ({ default: m.RoleHome })))
 const MyHealthPage = lazy(() => import('./pages/role/MyHealthPage').then((m) => ({ default: m.MyHealthPage })))
-const MonitorPage = lazy(() => import('./pages/MonitorPage').then((m) => ({ default: m.MonitorPage })))
+const MonitorGate = lazy(() => import('./pages/role/MonitorGate').then((m) => ({ default: m.MonitorGate })))
 const MissionPage = lazy(() => import('./pages/MissionPage').then((m) => ({ default: m.MissionPage })))
 const CrewPage = lazy(() => import('./pages/CrewPage').then((m) => ({ default: m.CrewPage })))
 const ResourcesPage = lazy(() => import('./pages/ResourcesPage').then((m) => ({ default: m.ResourcesPage })))
@@ -55,8 +41,9 @@ function Dashboard() {
         <Shell>
           <LazyPage>
             <Routes>
-              <Route index element={<RoleHome />} />
-              <Route path="monitor" element={<MonitorPage />} />
+              <Route index element={<MonitorGate />} />
+              <Route path="centro" element={<RoleHome />} />
+              <Route path="monitor" element={<MonitorGate />} />
               <Route path="mi-salud" element={<MyHealthPage />} />
               <Route path="mision" element={<MissionPage />} />
               <Route path="tripulacion" element={<CrewPage />} />
@@ -80,24 +67,15 @@ export function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route element={<PublicLayout />}>
-          <Route index element={<HomePage />} />
-          <Route path="proyecto" element={<ProyectoPage />} />
-          <Route path="como-funciona" element={<ComoFuncionaPage />} />
-          <Route path="nosotros" element={<NosotrosPage />} />
-          <Route path="nosotros/:slug" element={<PerfilPage />} />
-          <Route path="video" element={<VideoPage />} />
-          <Route path="documentos" element={<DocumentosPage />} />
-          <Route path="datos" element={<DatosPage />} />
-        </Route>
         <Route
-          path="/entrar"
+          path="/"
           element={
             <LazyPage>
               <EnterPage />
             </LazyPage>
           }
         />
+        <Route path="/entrar" element={<Navigate to="/" replace />} />
         <Route
           path="/misiones"
           element={

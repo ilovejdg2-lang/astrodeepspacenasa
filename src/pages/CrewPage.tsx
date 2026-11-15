@@ -1,13 +1,12 @@
 import { Heart } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
 import { CarouselStrip } from '../components/CarouselStrip'
 import { CrewHelmet } from '../components/CrewHelmet'
 import { SpaceRequests } from '../components/SpaceRequests'
 import { Field } from '../components/ui'
 import { canReadPrivateWellbeing } from '../domain/access'
 import { CREW, crewById, crewDuty, crewPlace } from '../domain/crew'
-import { ageLabel, formatValue } from '../domain/format'
+import { formatValue } from '../domain/format'
 import { crewPosture, latestMeasurement } from '../domain/selectors'
 import type { EvidenceKind, ObservedKind } from '../domain/selectors'
 import { SIMULATED_PINS, simulatedPinMatches } from '../domain/spaceAccess'
@@ -231,12 +230,8 @@ export function CrewPage() {
           <section className="detail">
             <div className="spread">
               <h2>{selected.name}</h2>
-              <div className="row">
-                <Link className="btn btn-primary" to="/app/monitor">{en ? 'Open monitor' : 'Abrir monitor'}</Link>
-                <Link className="btn" to="/app/historial">{en ? 'View history' : 'Ver historial'}</Link>
-              </div>
             </div>
-            <p>{crewPlace(selected, lang)} · {en ? 'clock activity' : 'última actividad del reloj'} {ageLabel(state.clock.simulatedAt, state.clock.simulatedAt)}</p>
+            <p>{crewPlace(selected, lang)}</p>
             <p>{crewPosture(state, selected.id).summary}</p>
             <div className="callout">
               <strong>{en ? 'Private wellbeing' : 'Bienestar privado'}</strong>

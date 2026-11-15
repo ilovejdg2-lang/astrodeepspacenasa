@@ -1,16 +1,18 @@
-import { Brain, Check, ClipboardPlus, Heart, Package, RefreshCw } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { AlertTriangle, Brain, ClipboardPlus, Heart, Package, RefreshCw } from 'lucide-react'
+import { useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import type { MeasurementKind } from '../../shared/types'
-import { runLocalAnalysis } from '../domain/analysis'
+import { canRegisterSymptom, canUseInventory } from '../domain/access'
 import { CREW, crewDuty, crewPlace } from '../domain/crew'
 import { ageLabel, formatValue, kindLabel } from '../domain/format'
-import { crewPosture, isReliable, latestMeasurement, openEpisode } from '../domain/selectors'
+import { crewPosture, isReliable, latestMeasurement, measurementQuality, vitalTrends } from '../domain/selectors'
 import { CarouselStrip } from '../components/CarouselStrip'
 import { CrewHelmet } from '../components/CrewHelmet'
 import { useLocale } from '../i18n'
 import { HeartWave } from '../components/HeartWave'
 import { Badge, Field, Modal } from '../components/ui'
+import { roleLabel } from '../platform/copy'
+import { useWorkspaceRole, getWorkspaceMode } from '../platform/workspace'
 import { useApp } from '../state/store'
 
 const SYMPTOMS = ['cansancio', 'mareo', 'cefalea', 'nausea', 'otro'] as const
@@ -22,44 +24,71 @@ const SYMPTOM_LABEL = {
 
 export function MonitorPage({ embedded = false }: { embedded?: boolean } = {}) {
   const { lang } = useLocale()
-  const { state, dispatch, backendMode, monitoringLatest } = useApp()
+  const { state, dispatch } = useApp()
+  const workspaceRole = useWorkspaceRole()
+  const mode = getWorkspaceMode()
   const en = lang === 'en'
   const crew = CREW.find((item) => item.id === state.selectedCrewId) ?? CREW[0]
   const posture = crew ? crewPosture(state, crew.id) : null
   const hr = crew ? latestMeasurement(state, crew.id, 'heart_rate') : null
   const trusted = hr ? isReliable(hr, state.clock.simulatedAt) : false
-  const episode = crew ? openEpisode(state, crew.id) : null
-  const analysis = episode ? runLocalAnalysis(state, episode.id) : null
   const symptoms = crew ? state.symptoms.filter((item) => item.crewId === crew.id) : []
   const alerts = crew ? state.alerts.filter((item) => item.crewId === crew.id && item.status !== 'closed') : []
-  const resources = state.resources.filter((item) => item.quantity > 0).slice(0, 3)
   const unit = en ? 'bpm' : 'lpm'
   const baseline = crew ? `${crew.baseline.hrMin}-${crew.baseline.hrMax} ${unit}` : ''
   const hrAbove = Boolean(crew && hr && hr.value > crew.baseline.hrMax)
   const hrText = hr ? `${formatValue('heart_rate', hr.value)} ${unit}` : null
   const shellClass = embedded ? 'monitor-page monitor-embedded' : 'page monitor-page'
-  const [apiDelta, setApiDelta] = useState<string | null>(null)
 
-  useEffect(() => {
-    if (!crew || backendMode !== 'connected') {
-      setApiDelta(null)
-      return
-    }
-    let alive = true
-    void monitoringLatest(crew.id, 'heart_rate').then((data) => {
-      if (!alive || !data?.comparison || data.measurement == null) {
-        if (alive) setApiDelta(null)
-        return
-      }
-      const over = data.comparison.deltaFromMaximum
-      setApiDelta(
+  const nextSteps = useMemo(() => {
+    if (!crew || !posture) return [] as string[]
+    const quality = measurementQuality(state, crew.id)
+    const trend = vitalTrends(state, crew.id)
+    const steps: string[] = []
+    if (hrAbove && hrText) {
+      steps.push(
         en
-          ? `Nest monitoring: ${over > 0 ? `+${over.toFixed(0)} above baseline max` : `${Math.abs(over).toFixed(0)} within/under max`}`
-          : `Monitoreo Nest: ${over > 0 ? `+${over.toFixed(0)} sobre el máximo de línea base` : `${Math.abs(over).toFixed(0)} dentro/bajo el máximo`}`,
+          ? `HR ${hrText} above baseline ${baseline}${trend.deltaHr != null ? ` (Δ ${trend.deltaHr} ${unit})` : ''}.`
+          : `FC ${hrText} sobre línea base ${baseline}${trend.deltaHr != null ? ` (Δ ${trend.deltaHr} ${unit})` : ''}.`,
       )
-    })
-    return () => { alive = false }
-  }, [crew, backendMode, monitoringLatest, en, hr?.id])
+    } else {
+      steps.push(posture.summary)
+    }
+    if (quality.status !== 'ok' || !quality.restControl) {
+      steps.push(
+        en
+          ? 'Resting control missing or signal not ready for clinical certainty.'
+          : 'Falta control en reposo o la señal no alcanza certeza clínica.',
+      )
+    }
+    if (symptoms.length) {
+      const words = symptoms[0].symptoms
+        .map((id) => SYMPTOM_LABEL[lang][id as keyof typeof SYMPTOM_LABEL.en] ?? id)
+        .join(', ')
+      steps.push(en ? `Self-report: ${words || 'note'}.` : `Autorreporte: ${words || 'nota'}.`)
+    }
+    if (alerts.length) {
+      steps.push(en ? `${alerts.length} open alert(s) for this person.` : `${alerts.length} alerta(s) abierta(s) para esta persona.`)
+    }
+    return steps.slice(0, 4)
+  }, [alerts.length, baseline, crew, en, hrAbove, hrText, lang, posture, state, symptoms, unit])
+
+  const caps = useMemo(() => {
+    const ws = workspaceRole
+    const sim = state.role
+    const care = ws === 'medic' || sim === 'medical'
+    const lead = ws === 'chief' || sim === 'ops'
+    const flyer = ws === 'crew' || sim === 'astronaut'
+    const psych = ws === 'psychologist'
+    return {
+      symptoms: canRegisterSymptom(sim) || care || flyer || lead,
+      repeat: care || lead,
+      analysis: care || lead,
+      inventory: canUseInventory(sim) || care,
+      alerts: true,
+      psychOnly: psych && !care && !lead,
+    }
+  }, [state.role, workspaceRole])
 
   if (!crew || !posture) {
     return (
@@ -121,20 +150,12 @@ export function MonitorPage({ embedded = false }: { embedded?: boolean } = {}) {
           </div>
           <HeartWave />
           <div className="hr-foot">
-            <p>{trusted ? (en ? 'Recent heart-rate reading.' : 'Lectura reciente de frecuencia cardíaca.') : (en ? 'This number is not used as a current evaluation.' : 'Esta cifra no se usa como evaluación actual.')}</p>
-            <p className="muted">
-              {hr
-                ? en
-                  ? `Measured ${ageLabel(state.clock.simulatedAt, hr.measuredAt)} / received ${ageLabel(state.clock.simulatedAt, hr.receivedAt)} / Signal ${hr.signalQuality}/100`
-                  : `Medida ${ageLabel(state.clock.simulatedAt, hr.measuredAt)} / recibida ${ageLabel(state.clock.simulatedAt, hr.receivedAt)} / Señal ${hr.signalQuality}/100`
-                : en ? 'There is no pulse measurement.' : 'No hay una medición de pulso.'}
-            </p>
-            {apiDelta ? <p className="muted">{apiDelta}</p> : null}
+            <p>{trusted ? (en ? 'Use this reading.' : 'Usá esta lectura.') : (en ? 'Do not treat this number as current.' : 'No tomes esta cifra como actual.')}</p>
+            {hr ? <p className="muted">{en ? `Signal ${hr.signalQuality}/100 · ${ageLabel(state.clock.simulatedAt, hr.measuredAt)}` : `Señal ${hr.signalQuality}/100 · ${ageLabel(state.clock.simulatedAt, hr.measuredAt)}`}</p> : null}
           </div>
         </div>
         <div className="monitor-card-trust">
-          <h2>{en ? 'How reliable the data is' : 'Qué tan confiable son los datos'}</h2>
-          <p>{posture.evidenceDetail}</p>
+          <h2>{en ? 'Other vitals' : 'Otros signos'}</h2>
           <dl className="trust-metrics">
             <Vital stateNow={state.clock.simulatedAt} crewId={crew.id} kind="spo2" />
             <Vital stateNow={state.clock.simulatedAt} crewId={crew.id} kind="temperature" />
@@ -144,29 +165,78 @@ export function MonitorPage({ embedded = false }: { embedded?: boolean } = {}) {
       </section>
 
       <section className="monitor-actions panel" aria-label={en ? 'Monitor actions' : 'Acciones del monitor'}>
-        <div className="spread">
-          <h2>{en ? 'What you can do now' : 'Qué puedes hacer ahora'}</h2>
+        <div className="monitor-actions-head">
+          <div>
+            <h2>{en ? 'What you can do now' : 'Qué puedes hacer ahora'}</h2>
+            <p className="monitor-actions-role">
+              {en ? 'Role access' : 'Acceso por rol'}:{' '}
+              <strong>{workspaceRole ? roleLabel(workspaceRole, en) : roleLabel(state.role === 'medical' ? 'medic' : state.role === 'astronaut' ? 'crew' : 'chief', en)}</strong>
+              {' · '}
+              {mode === 'authorized' ? (en ? 'authorized' : 'autorizado') : (en ? 'demo explore' : 'demo exploración')}
+            </p>
+          </div>
           <Badge tone={posture.observed === 'change' ? 'amber' : posture.observed === 'stable' ? 'ok' : 'bad'}>
             {posture.observed === 'change' ? (en ? 'Observed change' : 'Cambio observado') : posture.observed === 'stable' ? (en ? 'Within baseline' : 'Dentro de línea base') : (en ? 'No recent evaluation' : 'Sin evaluación reciente')}
           </Badge>
         </div>
-        <p className="muted">{analysis?.summary ?? (en ? 'There is no open health episode. Sensor alerts do not open one by themselves.' : 'No hay un episodio de salud abierto. Las alertas de sensor no abren uno por sí solas.')}</p>
-        <div className="row">
-          <SymptomButton />
-          <RepeatButton />
-          {episode ? <Link className="btn btn-primary" to="/app/analisis"><Brain aria-hidden="true" size={18} strokeWidth={1.75} /> {en ? 'Open analysis' : 'Abrir análisis'}</Link> : <Link className="btn" to="/app/analisis"><Brain aria-hidden="true" size={18} strokeWidth={1.75} /> {en ? 'View analysis' : 'Ver análisis'}</Link>}
-          {alerts[0] ? <button className="btn" type="button" onClick={() => { const first = alerts[0]; if (first) dispatch({ type: 'ackAlert', alertId: first.id }) }}><Check aria-hidden="true" size={18} strokeWidth={1.75} /> {en ? 'Confirm notice' : 'Confirmar aviso'}</button> : null}
-          <Link className="btn" to="/app/recursos"><Package aria-hidden="true" size={18} strokeWidth={1.75} /> {en ? 'Inventory' : 'Inventario'}</Link>
+
+        <ol className="monitor-next-steps">
+          {nextSteps.map((step) => (
+            <li key={step}>{step}</li>
+          ))}
+        </ol>
+
+        {caps.psychOnly ? (
+          <p className="muted">
+            {en
+              ? 'Psychologist view: use Wellbeing for granted emotional follow-up. Clinical vitals actions stay with medic / chief.'
+              : 'Vista psicología: usá Bienestar para seguimiento emocional concedido. Las acciones clínicas quedan en médica / jefatura.'}
+          </p>
+        ) : null}
+
+        <div className="monitor-action-grid">
+          {caps.alerts && alerts.length > 0 ? (
+            <Link className="btn btn-primary" to="/app/alertas">
+              <AlertTriangle aria-hidden="true" size={18} strokeWidth={1.75} />
+              {en ? `Open alerts (${alerts.length})` : `Ver alertas (${alerts.length})`}
+            </Link>
+          ) : null}
+          {caps.symptoms ? <SymptomButton /> : null}
+          {caps.repeat ? <RepeatButton /> : null}
+          {caps.analysis ? (
+            <Link className="btn btn-primary" to="/app/analisis">
+              <Brain aria-hidden="true" size={18} strokeWidth={1.75} />
+              {en ? 'Open analysis' : 'Abrir análisis'}
+            </Link>
+          ) : null}
+          {caps.inventory ? (
+            <Link className="btn" to="/app/recursos">
+              <Package aria-hidden="true" size={18} strokeWidth={1.75} />
+              {en ? 'Inventory' : 'Inventario'}
+            </Link>
+          ) : null}
+          {caps.psychOnly ? (
+            <Link className="btn btn-primary" to="/app/centro">
+              {en ? 'Open wellbeing' : 'Abrir bienestar'}
+            </Link>
+          ) : null}
+          <Link className="btn" to="/app/mi-salud">
+            {en ? 'My health' : 'Mi salud'}
+          </Link>
         </div>
+
         {symptoms.length > 0 ? (
-          <ul>
+          <ul className="monitor-symptom-list">
             {symptoms.map((item) => (
-              <li key={item.id}>{item.symptoms.map((id) => SYMPTOM_LABEL[lang][id as keyof typeof SYMPTOM_LABEL.en] ?? id).join(', ') || (en ? 'Note' : 'Nota')} — {item.note || (en ? 'no note' : 'sin nota')} · {ageLabel(state.clock.simulatedAt, item.reportedAt)}</li>
+              <li key={item.id}>
+                {item.symptoms.map((id) => SYMPTOM_LABEL[lang][id as keyof typeof SYMPTOM_LABEL.en] ?? id).join(', ') || (en ? 'Note' : 'Nota')}
+                {' — '}
+                {item.note || (en ? 'no note' : 'sin nota')}
+                {' · '}
+                {ageLabel(state.clock.simulatedAt, item.reportedAt)}
+              </li>
             ))}
           </ul>
-        ) : null}
-        {resources.length > 0 ? (
-          <p className="muted">{en ? 'Resources' : 'Recursos'}: {resources.map((item) => `${item.name} (${item.quantity})`).join(' · ')}</p>
         ) : null}
       </section>
     </div>
