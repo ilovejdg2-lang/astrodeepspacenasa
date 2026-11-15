@@ -32,7 +32,7 @@
 
 /* Dashboard: sit above bottom nav (portaled to body, so use own class) */
 .quiron-root.is-dashboard {
-  --quiron-fab-bottom: calc(76px + env(safe-area-inset-bottom, 0px));
+  --quiron-fab-bottom: calc(84px + env(safe-area-inset-bottom, 0px));
   z-index: 80;
 }
 
@@ -187,7 +187,8 @@ html[data-reduce-motion="1"] .quiron-bubble-layer {
   color: var(--quiron-ink);
   border: 1px solid color-mix(in srgb, var(--quiron-fucsia) 28%, transparent);
   box-shadow: var(--quiron-shadow);
-  overflow: hidden;
+  /* visible so the ⋯ menu is not clipped against the panel edge */
+  overflow: visible;
   transform-origin: bottom right;
   animation: quiron-panel-in 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
@@ -215,6 +216,8 @@ html[data-reduce-motion="1"] .quiron-bubble-layer {
 }
 
 .quiron-head {
+  position: relative;
+  z-index: 4;
   display: grid;
   grid-template-columns: auto 1fr auto;
   gap: 10px;
@@ -223,6 +226,8 @@ html[data-reduce-motion="1"] .quiron-bubble-layer {
   border-bottom: 1px solid color-mix(in srgb, var(--quiron-fucsia) 18%, transparent);
   background: color-mix(in srgb, #fff 55%, transparent);
   backdrop-filter: blur(8px);
+  overflow: visible;
+  border-radius: 24px 24px 0 0;
 }
 
 :root[data-theme="dark"] .quiron-head {
@@ -314,10 +319,11 @@ html[data-reduce-motion="1"] .quiron-bubble-layer {
 
 .quiron-menu {
   position: absolute;
-  top: 58px;
-  right: 12px;
-  z-index: 2;
-  min-width: 200px;
+  top: calc(100% + 6px);
+  right: 10px;
+  z-index: 6;
+  min-width: 220px;
+  max-width: min(280px, calc(100% - 20px));
   padding: 6px;
   border-radius: 14px;
   background: var(--quiron-bot);
@@ -345,6 +351,7 @@ html[data-reduce-motion="1"] .quiron-bubble-layer {
   min-height: 0;
   display: grid;
   grid-template-rows: minmax(0, 1fr);
+  overflow: hidden;
 }
 
 .quiron-scroll {
@@ -404,6 +411,64 @@ html[data-reduce-motion="1"] .quiron-bubble-layer {
   gap: 8px;
   justify-content: center;
   margin-top: 6px;
+}
+
+.quiron-topics {
+  display: grid;
+  gap: 10px;
+  width: 100%;
+  margin-top: 4px;
+}
+
+.quiron-topics-label {
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 650;
+  color: var(--quiron-muted);
+  letter-spacing: 0.02em;
+}
+
+.quiron-topics-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+}
+
+.quiron-topic {
+  border: 1px solid color-mix(in srgb, var(--quiron-fucsia) 42%, transparent);
+  background: var(--quiron-fucsia-soft);
+  color: var(--quiron-ink);
+  border-radius: 999px;
+  padding: 10px 14px;
+  font-size: 0.86rem;
+  font-weight: 650;
+}
+
+.quiron-topic:hover,
+.quiron-topic:focus-visible {
+  background: color-mix(in srgb, var(--quiron-fucsia) 22%, transparent);
+}
+
+.quiron-topic.is-on {
+  background: var(--quiron-fucsia);
+  color: #fff;
+  border-color: transparent;
+}
+
+.quiron-care-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 10px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 650;
+  background: var(--quiron-fucsia-soft);
+  color: var(--quiron-ink);
+  border: 1px solid color-mix(in srgb, var(--quiron-fucsia) 28%, transparent);
+  width: fit-content;
 }
 
 .quiron-chip {
@@ -577,6 +642,8 @@ html[data-reduce-motion="1"] .quiron-bubble-layer {
   padding: 10px 12px calc(12px + env(safe-area-inset-bottom, 0px));
   border-top: 1px solid color-mix(in srgb, var(--quiron-fucsia) 18%, transparent);
   background: color-mix(in srgb, #fff 70%, transparent);
+  border-radius: 0 0 24px 24px;
+  overflow: hidden;
 }
 
 :root[data-theme="dark"] .quiron-composer {

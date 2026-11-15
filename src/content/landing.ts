@@ -7,7 +7,7 @@ export const LANDING_VIDEO = {
   title: 'Video del proyecto HELIOS',
 }
 
-export const DASHBOARD_PATH = '/app'
+export const DASHBOARD_PATH = '/entrar'
 
 export const NAV = [
   { to: '/', label: 'Inicio', end: true },

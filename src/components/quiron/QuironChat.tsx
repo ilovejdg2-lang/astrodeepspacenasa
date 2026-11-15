@@ -14,6 +14,8 @@ import type { AiHealth } from '../../ai/client'
 import type { AppState } from '../../../shared/types'
 import { dashboardSuggestions, publicSuggestions } from '../../domain/quironPublic'
 import { useLocale } from '../../i18n'
+import { platformApi } from '../../platform/api'
+import { getActiveMissionId } from '../../platform/session'
 import { formatQuironReply } from './formatReply'
 import './quiron.css'
 
@@ -25,6 +27,23 @@ const ASSETS = {
   mark: '/brand/quiron/quiron-mark.svg',
 } as const
 
+type CareTopic = 'physical' | 'emotional'
+
+type CareConversation = {
+  id: string
+  messages?: Array<{ role: 'user' | 'assistant'; text: string; at?: number }>
+}
+
+function mapCareMessages(conversation: CareConversation, channel: QuironMessage['channel'] = 'local'): QuironMessage[] {
+  return (conversation.messages || []).map((item, index) => ({
+    id: `${conversation.id}-${index}-${item.role}`,
+    role: item.role,
+    text: item.text,
+    at: item.at ?? Date.now() + index,
+    channel,
+  }))
+}
+
 export function QuironChat({ mode, state = null }: { mode: QuironMode; state?: AppState | null }) {
   const { lang } = useLocale()
   const en = lang === 'en'
@@ -33,6 +52,8 @@ export function QuironChat({ mode, state = null }: { mode: QuironMode; state?: A
   const titleId = useId()
   const fabRef = useRef<HTMLButtonElement>(null)
   const closeRef = useRef<HTMLButtonElement>(null)
+  const menuRef = useRef<HTMLDivElement>(null)
+  const menuBtnRef = useRef<HTMLButtonElement>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const abortRef = useRef<AbortController | null>(null)
@@ -52,6 +73,8 @@ export function QuironChat({ mode, state = null }: { mode: QuironMode; state?: A
   const [showJump, setShowJump] = useState(false)
   const [showTip, setShowTip] = useState(false)
   const [messages, setMessages] = useState<QuironMessage[]>([])
+  const [careTopic, setCareTopic] = useState<CareTopic | null>(null)
+  const [careConversationId, setCareConversationId] = useState<string | null>(null)
 
   useEffect(() => {
     if (mode !== 'dashboard') return
@@ -62,9 +85,48 @@ export function QuironChat({ mode, state = null }: { mode: QuironMode; state?: A
       setDraft(detail.question.slice(0, 1000))
       setShowTip(false)
     }
+    const openCare = (event: Event) => {
+      const detail: unknown = (event as CustomEvent).detail
+      const topic =
+        detail && typeof detail === 'object' && 'topic' in detail && (detail.topic === 'physical' || detail.topic === 'emotional')
+          ? detail.topic
+          : null
+      setShowTip(false)
+      setOpen(true)
+      setMenuOpen(false)
+      if (topic) {
+        window.setTimeout(() => {
+          void (async () => {
+            const missionId = getActiveMissionId()
+            if (!missionId) {
+              setError(en ? 'Join or open a mission to talk about your health with Quirón.' : 'Entrá a una misión para hablar de tu salud con Quirón.')
+              return
+            }
+            setPending(true)
+            setError('')
+            try {
+              const conversation = await platformApi.quironStart(missionId, topic) as CareConversation
+              setCareTopic(topic)
+              setCareConversationId(conversation.id)
+              setMessages(mapCareMessages(conversation))
+              stickBottom.current = true
+              window.setTimeout(() => inputRef.current?.focus(), 20)
+            } catch (err) {
+              setError(err instanceof Error ? err.message : (en ? 'Could not start the conversation.' : 'No se pudo iniciar la conversación.'))
+            } finally {
+              setPending(false)
+            }
+          })()
+        }, 0)
+      }
+    }
     window.addEventListener('helios:quiron-demo', openDemo)
-    return () => window.removeEventListener('helios:quiron-demo', openDemo)
-  }, [mode])
+    window.addEventListener('helios:quiron-care', openCare)
+    return () => {
+      window.removeEventListener('helios:quiron-demo', openDemo)
+      window.removeEventListener('helios:quiron-care', openCare)
+    }
+  }, [mode, en])
 
   const suggestions = mode === 'public' ? publicSuggestions(lang) : dashboardSuggestions(lang)
   const status = formatServiceStatus(health, lang, probing)
@@ -127,6 +189,8 @@ export function QuironChat({ mode, state = null }: { mode: QuironMode; state?: A
     if (contextKeyRef.current !== key) {
       contextKeyRef.current = key
       setMessages([])
+      setCareTopic(null)
+      setCareConversationId(null)
       setError('')
     }
   }, [state, mode])
@@ -135,6 +199,11 @@ export function QuironChat({ mode, state = null }: { mode: QuironMode; state?: A
     setOpen(false)
     setMenuOpen(false)
     window.setTimeout(() => fabRef.current?.focus(), 30)
+  }, [])
+
+  const clearCareThread = useCallback(() => {
+    setCareTopic(null)
+    setCareConversationId(null)
   }, [])
 
   useEffect(() => {
@@ -153,6 +222,17 @@ export function QuironChat({ mode, state = null }: { mode: QuironMode; state?: A
       window.clearTimeout(t)
     }
   }, [open, menuOpen, closePanel])
+
+  useEffect(() => {
+    if (!menuOpen) return
+    const onPointer = (event: MouseEvent) => {
+      const target = event.target as Node
+      if (menuRef.current?.contains(target) || menuBtnRef.current?.contains(target)) return
+      setMenuOpen(false)
+    }
+    window.addEventListener('mousedown', onPointer)
+    return () => window.removeEventListener('mousedown', onPointer)
+  }, [menuOpen])
 
   const dismissTip = () => {
     setShowTip(false)
@@ -192,10 +272,39 @@ export function QuironChat({ mode, state = null }: { mode: QuironMode; state?: A
     scrollToEnd()
   }, [messages, pending, open])
 
+  const startCareTopic = async (topic: CareTopic) => {
+    if (pending) return
+    const missionId = getActiveMissionId()
+    if (!missionId) {
+      setError(en ? 'Join or open a mission to talk about your health with Quirón.' : 'Entrá a una misión para hablar de tu salud con Quirón.')
+      return
+    }
+    setPending(true)
+    setError('')
+    setMenuOpen(false)
+    try {
+      const conversation = await platformApi.quironStart(missionId, topic) as CareConversation
+      setCareTopic(topic)
+      setCareConversationId(conversation.id)
+      setMessages(mapCareMessages(conversation))
+      setAnnounce(
+        topic === 'physical'
+          ? (en ? 'Physical health conversation started.' : 'Conversación de salud física iniciada.')
+          : (en ? 'Emotional wellbeing conversation started.' : 'Conversación de bienestar emocional iniciada.'),
+      )
+      stickBottom.current = true
+      window.setTimeout(() => inputRef.current?.focus(), 20)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : (en ? 'Could not start the conversation.' : 'No se pudo iniciar la conversación.'))
+    } finally {
+      setPending(false)
+    }
+  }
+
   const send = async (text: string) => {
     const trimmed = text.trim()
     if (!trimmed || pending) return
-    const key = `${mode}-${trimmed}-${messages.length}`
+    const key = `${mode}-${careTopic || 'general'}-${trimmed}-${messages.length}`
     if (flightRef.current === key) return
     flightRef.current = key
 
@@ -211,6 +320,24 @@ export function QuironChat({ mode, state = null }: { mode: QuironMode; state?: A
     setError('')
     setPending(true)
     stickBottom.current = true
+
+    if (careConversationId) {
+      try {
+        const conversation = await platformApi.quironMessage(careConversationId, trimmed) as CareConversation
+        setMessages(mapCareMessages({ ...conversation, id: careConversationId }))
+        const last = conversation.messages?.at(-1)
+        if (last?.role === 'assistant') setAnnounce(last.text)
+      } catch {
+        setError(en ? 'Could not reach Quirón. Your text is still in the box.' : 'No se pudo contactar a Quirón. Tu texto sigue en el campo.')
+        setDraft(trimmed)
+        setMessages((prev) => prev.filter((m) => m.id !== userMsg.id))
+      } finally {
+        setPending(false)
+        flightRef.current = ''
+        window.setTimeout(() => inputRef.current?.focus(), 20)
+      }
+      return
+    }
 
     const preferModel = mode === 'dashboard' && Boolean(health?.configured && health.reachable)
     const controller = new AbortController()
@@ -263,6 +390,7 @@ export function QuironChat({ mode, state = null }: { mode: QuironMode; state?: A
   const newConversation = () => {
     setMenuOpen(false)
     setMessages([])
+    clearCareThread()
     setError('')
     setAnnounce(en ? 'New conversation started.' : 'Nueva conversación iniciada.')
     if (mode === 'public') {
@@ -273,6 +401,13 @@ export function QuironChat({ mode, state = null }: { mode: QuironMode; state?: A
       }
     }
   }
+
+  const careTopicLabel =
+    careTopic === 'physical'
+      ? (en ? 'Physical health' : 'Salud física')
+      : careTopic === 'emotional'
+        ? (en ? 'Emotional wellbeing · private by default' : 'Bienestar emocional · privado por defecto')
+        : null
 
   const onSubmit = (event: FormEvent) => {
     event.preventDefault()
@@ -364,6 +499,7 @@ export function QuironChat({ mode, state = null }: { mode: QuironMode; state?: A
             </div>
             <div className="quiron-head-actions">
               <button
+                ref={menuBtnRef}
                 type="button"
                 className="quiron-icon-btn"
                 aria-label={en ? 'More options' : 'Más opciones'}
@@ -384,16 +520,27 @@ export function QuironChat({ mode, state = null }: { mode: QuironMode; state?: A
               </button>
             </div>
             {menuOpen ? (
-              <div className="quiron-menu" role="menu">
+              <div ref={menuRef} className="quiron-menu" role="menu">
                 <button type="button" role="menuitem" onClick={newConversation}>
                   {en ? 'Start new conversation' : 'Iniciar nueva conversación'}
                 </button>
+                {mode === 'dashboard' ? (
+                  <>
+                    <button type="button" role="menuitem" disabled={pending} onClick={() => void startCareTopic('physical')}>
+                      {en ? 'Talk about physical health' : 'Hablar de salud física'}
+                    </button>
+                    <button type="button" role="menuitem" disabled={pending} onClick={() => void startCareTopic('emotional')}>
+                      {en ? 'Talk about emotional wellbeing' : 'Hablar de bienestar emocional'}
+                    </button>
+                  </>
+                ) : null}
               </div>
             ) : null}
           </header>
 
           <div className="quiron-body">
             <div ref={scrollRef} className="quiron-scroll" onScroll={onScroll}>
+              {careTopicLabel ? <p className="quiron-care-chip">{careTopicLabel}</p> : null}
               {contextLabel && messages.length > 0 ? <p className="quiron-context">{contextLabel}</p> : null}
 
               {messages.length === 0 ? (
@@ -414,6 +561,29 @@ export function QuironChat({ mode, state = null }: { mode: QuironMode; state?: A
                     </p>
                   ) : contextLabel ? (
                     <p className="quiron-context">{contextLabel}</p>
+                  ) : null}
+                  {mode === 'dashboard' ? (
+                    <div className="quiron-topics">
+                      <p className="quiron-topics-label">{en ? 'What do you want to talk about?' : '¿Sobre qué querés hablar?'}</p>
+                      <div className="quiron-topics-row">
+                        <button
+                          type="button"
+                          className={`quiron-topic${careTopic === 'physical' ? ' is-on' : ''}`}
+                          disabled={pending}
+                          onClick={() => void startCareTopic('physical')}
+                        >
+                          {en ? 'Physical health' : 'Salud física'}
+                        </button>
+                        <button
+                          type="button"
+                          className={`quiron-topic${careTopic === 'emotional' ? ' is-on' : ''}`}
+                          disabled={pending}
+                          onClick={() => void startCareTopic('emotional')}
+                        >
+                          {en ? 'Emotional wellbeing' : 'Bienestar emocional'}
+                        </button>
+                      </div>
+                    </div>
                   ) : null}
                   <div className="quiron-suggestions">
                     {suggestions.map((item) => (

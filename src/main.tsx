@@ -9,6 +9,9 @@ import '@fontsource/outfit/800.css'
 import { App } from './App'
 import { LocaleProvider } from './i18n'
 import './index.css'
+import { hardenDomAgainstExternalMutations } from './domHarden'
+
+hardenDomAgainstExternalMutations()
 
 const root = document.getElementById('root')
 if (!root) throw new Error('No se encontró #root')

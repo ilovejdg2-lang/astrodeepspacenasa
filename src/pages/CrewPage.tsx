@@ -1,6 +1,7 @@
 import { Heart } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { CarouselStrip } from '../components/CarouselStrip'
 import { CrewHelmet } from '../components/CrewHelmet'
 import { SpaceRequests } from '../components/SpaceRequests'
 import { Field } from '../components/ui'
@@ -137,7 +138,7 @@ export function CrewPage() {
         ))}
       </div>
 
-      <div className="crew-board">
+      <CarouselStrip className="crew-board-carousel" trackClassName="crew-board" label={en ? 'Crew board' : 'Tablero de tripulación'}>
         {visible.map((crew) => {
           const posture = crewPosture(state, crew.id)
           const hr = latestMeasurement(state, crew.id, 'heart_rate')
@@ -182,7 +183,7 @@ export function CrewPage() {
             </button>
           )
         })}
-      </div>
+      </CarouselStrip>
       {visible.length === 0 ? <p className="empty">{en ? 'Nobody matches that filter.' : 'Nadie coincide con ese filtro.'}</p> : null}
 
       <div className="crew-extra">
@@ -231,7 +232,7 @@ export function CrewPage() {
             <div className="spread">
               <h2>{selected.name}</h2>
               <div className="row">
-                <Link className="btn btn-primary" to="/app">{en ? 'Open monitor' : 'Abrir monitor'}</Link>
+                <Link className="btn btn-primary" to="/app/monitor">{en ? 'Open monitor' : 'Abrir monitor'}</Link>
                 <Link className="btn" to="/app/historial">{en ? 'View history' : 'Ver historial'}</Link>
               </div>
             </div>

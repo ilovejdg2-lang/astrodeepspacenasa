@@ -55,7 +55,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     } catch {
       /* Sesión en memoria. */
     }
-    setBackendError('NestJS unavailable / no disponible. Local simulator active / simulador local activo.')
+    setBackendError(null)
   }, [])
 
   const dispatch = useCallback(
@@ -120,11 +120,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let active = true
     async function initialize() {
-      let initial: AppState
+      const fallback = () => createInitialState('gradual-fatigue')
+      let initial: AppState = fallback()
       try {
-        initial = (await loadState()) ?? createInitialState('gradual-fatigue')
+        const loaded = await Promise.race([
+          loadState(),
+          new Promise<null>((resolve) => window.setTimeout(() => resolve(null), 2500)),
+        ])
+        if (loaded) initial = loaded
       } catch {
-        initial = createInitialState('gradual-fatigue')
+        initial = fallback()
         /* Sin banner visual: se continúa con demo sin interrumpir la maqueta HELIOS. */
         if (active) setPersistenceError(null)
       }
@@ -148,8 +153,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         if (!active) return
         detach()
         setBackendError(error instanceof ApiError && error.status === 429
-          ? `NestJS: HTTP 429. Retry after ${error.retryAfterSeconds ?? 60}s. / Reintenta en ${error.retryAfterSeconds ?? 60}s. The local simulator remains available.`
-          : 'NestJS unavailable / no disponible. Local simulator active / simulador local activo.')
+          ? `NestJS: HTTP 429. Retry after ${error.retryAfterSeconds ?? 60}s. / Reintenta en ${error.retryAfterSeconds ?? 60}s.`
+          : null)
         apply(initial)
       }
       ready.current = true

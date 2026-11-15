@@ -6,6 +6,7 @@ import { runLocalAnalysis } from '../domain/analysis'
 import { CREW, crewDuty, crewPlace } from '../domain/crew'
 import { ageLabel, formatValue, kindLabel } from '../domain/format'
 import { crewPosture, isReliable, latestMeasurement, openEpisode } from '../domain/selectors'
+import { CarouselStrip } from '../components/CarouselStrip'
 import { CrewHelmet } from '../components/CrewHelmet'
 import { useLocale } from '../i18n'
 import { HeartWave } from '../components/HeartWave'
@@ -19,28 +20,36 @@ const SYMPTOM_LABEL = {
   es: { cansancio: 'Cansancio', mareo: 'Mareo', cefalea: 'Dolor de cabeza', nausea: 'Náusea', otro: 'Otro' },
 } as const
 
-export function MonitorPage() {
+export function MonitorPage({ embedded = false }: { embedded?: boolean } = {}) {
   const { lang } = useLocale()
   const { state, dispatch } = useApp()
   const en = lang === 'en'
   const crew = CREW.find((item) => item.id === state.selectedCrewId) ?? CREW[0]
-  if (!crew) return null
-  const posture = crewPosture(state, crew.id)
-  const hr = latestMeasurement(state, crew.id, 'heart_rate')
+  const posture = crew ? crewPosture(state, crew.id) : null
+  const hr = crew ? latestMeasurement(state, crew.id, 'heart_rate') : null
   const trusted = hr ? isReliable(hr, state.clock.simulatedAt) : false
-  const episode = openEpisode(state, crew.id)
+  const episode = crew ? openEpisode(state, crew.id) : null
   const analysis = episode ? runLocalAnalysis(state, episode.id) : null
-  const symptoms = state.symptoms.filter((item) => item.crewId === crew.id)
-  const alerts = state.alerts.filter((item) => item.crewId === crew.id && item.status !== 'closed')
+  const symptoms = crew ? state.symptoms.filter((item) => item.crewId === crew.id) : []
+  const alerts = crew ? state.alerts.filter((item) => item.crewId === crew.id && item.status !== 'closed') : []
   const resources = state.resources.filter((item) => item.quantity > 0).slice(0, 3)
   const unit = en ? 'bpm' : 'lpm'
-  const baseline = `${crew.baseline.hrMin}-${crew.baseline.hrMax} ${unit}`
-  const hrAbove = hr && hr.value > crew.baseline.hrMax
+  const baseline = crew ? `${crew.baseline.hrMin}-${crew.baseline.hrMax} ${unit}` : ''
+  const hrAbove = Boolean(crew && hr && hr.value > crew.baseline.hrMax)
   const hrText = hr ? `${formatValue('heart_rate', hr.value)} ${unit}` : null
+  const shellClass = embedded ? 'monitor-page monitor-embedded' : 'page monitor-page'
+
+  if (!crew || !posture) {
+    return (
+      <div className={shellClass}>
+        <p className="muted">{en ? 'No crew member available.' : 'No hay tripulante disponible.'}</p>
+      </div>
+    )
+  }
 
   return (
-    <div className="page monitor-page">
-      <div className="crew-picker" role="group" aria-label={en ? 'Crew' : 'Tripulación'}>
+    <div className={shellClass}>
+      <CarouselStrip className="crew-carousel" trackClassName="crew-picker" label={en ? 'Crew' : 'Tripulación'}>
         {CREW.map((item) => (
           <button
             key={item.id}
@@ -48,19 +57,26 @@ export function MonitorPage() {
             className="crew-pick"
             data-testid={`crew-${item.id}`}
             aria-pressed={item.id === crew.id}
+            aria-label={
+              item.id === crew.id
+                ? en
+                  ? `${item.name}, selected`
+                  : `${item.name}, seleccionada`
+                : item.name
+            }
             onClick={() => dispatch({ type: 'selectCrew', crewId: item.id })}
           >
             <CrewHelmet id={item.id} name={item.name} selected={item.id === crew.id} />
-            <span>{item.name}</span>
+            <span aria-hidden="true">{item.name.split(' ')[0]}</span>
           </button>
         ))}
-      </div>
+      </CarouselStrip>
 
       <header className="monitor-id">
         <div className="monitor-avatar">
           <CrewHelmet id={crew.id} name={crew.name} selected />
         </div>
-        <p className="monitor-kicker">Monitor</p>
+        <p className="monitor-kicker">{embedded ? (en ? 'Mission center' : 'Centro') : 'Monitor'}</p>
         <h1 className="monitor-name">{crew.name}</h1>
         <p className="monitor-meta">{crewDuty(crew, lang)} · {crewPlace(crew, lang)}</p>
         <p className="monitor-summary">

@@ -20,26 +20,38 @@ import { NosotrosPage } from './pages/public/NosotrosPage'
 import { PerfilPage } from './pages/public/PerfilPage'
 import { ProyectoPage } from './pages/public/ProyectoPage'
 import { VideoPage } from './pages/public/VideoPage'
+import { CarePage } from './pages/platform/CarePage'
+import { EnterPage } from './pages/platform/EnterPage'
+import { EvidencePage } from './pages/platform/EvidencePage'
+import { MissionGate } from './pages/platform/MissionGate'
+import { MissionsHubPage } from './pages/platform/MissionsHubPage'
+import { MissionWizardPage } from './pages/platform/MissionWizardPage'
+import { MyHealthPage } from './pages/role/MyHealthPage'
+import { RoleHome } from './pages/role/RoleHome'
 
 function Dashboard() {
   return (
-    <AppProvider>
-      <Shell>
-        <Routes>
-          <Route index element={<MonitorPage />} />
-          <Route path="mision" element={<MissionPage />} />
-          <Route path="tripulacion" element={<CrewPage />} />
-          <Route path="recursos" element={<ResourcesPage />} />
-          <Route path="alertas" element={<AlertsPage />} />
-          <Route path="historial" element={<HistoryPage />} />
-          <Route path="analisis" element={<AnalysisPage />} />
-          <Route path="riesgos" element={<RisksPage />} />
-          <Route path="medico" element={<MedicalPage />} />
-          <Route path="mi-espacio" element={<MySpacePage />} />
-          <Route path="*" element={<Navigate to="/app" replace />} />
-        </Routes>
-      </Shell>
-    </AppProvider>
+    <MissionGate>
+      <AppProvider>
+        <Shell>
+          <Routes>
+            <Route index element={<RoleHome />} />
+            <Route path="monitor" element={<MonitorPage />} />
+            <Route path="mi-salud" element={<MyHealthPage />} />
+            <Route path="mision" element={<MissionPage />} />
+            <Route path="tripulacion" element={<CrewPage />} />
+            <Route path="recursos" element={<ResourcesPage />} />
+            <Route path="alertas" element={<AlertsPage />} />
+            <Route path="historial" element={<HistoryPage />} />
+            <Route path="analisis" element={<AnalysisPage />} />
+            <Route path="riesgos" element={<RisksPage />} />
+            <Route path="medico" element={<MedicalPage />} />
+            <Route path="mi-espacio" element={<MySpacePage />} />
+            <Route path="*" element={<Navigate to="/app" replace />} />
+          </Routes>
+        </Shell>
+      </AppProvider>
+    </MissionGate>
   )
 }
 
@@ -57,6 +69,11 @@ export function App() {
           <Route path="documentos" element={<DocumentosPage />} />
           <Route path="datos" element={<DatosPage />} />
         </Route>
+        <Route path="/entrar" element={<EnterPage />} />
+        <Route path="/misiones" element={<MissionsHubPage />} />
+        <Route path="/misiones/nueva" element={<MissionWizardPage />} />
+        <Route path="/misiones/cuidado" element={<CarePage />} />
+        <Route path="/misiones/evidencia" element={<EvidencePage />} />
         <Route path="/app/*" element={<Dashboard />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
