@@ -646,6 +646,25 @@ html[data-reduce-motion="1"] .quiron-bubble-layer {
   overflow: hidden;
 }
 
+.quiron-consent {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: 4px 0;
+  border: 0;
+  min-width: 0;
+  font-size: 12px;
+  line-height: 1.4;
+}
+.quiron-consent label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 28px;
+}
+.quiron-consent input { accent-color: var(--quiron-fucsia); }
+.quiron-consent small { display: block; font-size: 12px; }
+.quiron-consent legend { font-weight: 600; }
+
 :root[data-theme="dark"] .quiron-composer {
   background: color-mix(in srgb, #1a0f14 80%, transparent);
 }

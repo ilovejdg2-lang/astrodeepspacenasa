@@ -11,6 +11,7 @@ import {
 } from '../../shared/spaceSchema'
 import type { AnalysisResult } from '../../shared/types'
 import { apiUrl } from '../api/baseUrl'
+import { dialogueResponseSchema, type DialogueRequest } from '../../shared/dialogueSchema'
 
 export interface AiHealth {
   configured: boolean
@@ -47,6 +48,26 @@ function serviceFailure(status: number, body: unknown) {
     ok: false as const,
     code,
     message: messages[code] ?? data?.message ?? messages.network!,
+  }
+}
+
+export async function askDialogue(context: DialogueRequest, signal: AbortSignal, sessionId?: string) {
+  try {
+    const response = await fetch(apiUrl('/api/ai/dialogue'), {
+      method: 'POST',
+      headers: { 'content-type': 'application/json',
+        ...(context.mode === 'dashboard' && sessionId ? { 'X-Simulation-Id': sessionId } : {}) },
+      body: JSON.stringify(context),
+      signal: AbortSignal.any([signal, AbortSignal.timeout(40000)]),
+    })
+    const body: unknown = await response.json().catch(() => null)
+    if (!response.ok) return serviceFailure(response.status, body)
+    const parsed = dialogueResponseSchema.safeParse(body)
+    if (!parsed.success) return { ok: false as const, code: 'invalid_response', message: 'La respuesta de IA no se pudo validar.' }
+    return { ok: true as const, ...parsed.data }
+  } catch (error) {
+    if (signal.aborted) return { ok: false as const, code: 'aborted', message: 'Solicitud cancelada.' }
+    return serviceFailure(error instanceof DOMException && error.name === 'TimeoutError' ? 504 : 502, null)
   }
 }
 

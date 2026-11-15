@@ -8,6 +8,7 @@ import { useLocale } from '../../i18n'
 import { useMotionPref } from '../../hooks/useMotionPref'
 import { useTheme } from '../../theme'
 import { HeliosLogo } from '../HeliosLogo'
+import { QuironChat } from '../quiron/QuironChat'
 import { Starfield } from './Starfield'
 import '../../public.css'
 
@@ -167,6 +168,7 @@ export function PublicLayout() {
           </p>
         </footer>
       </div>
+      <QuironChat mode="public" />
     </div>
   )
 }

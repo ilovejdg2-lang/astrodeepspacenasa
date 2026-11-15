@@ -1,9 +1,12 @@
 import { answerLocal, answerMissionLocal } from '../domain/analysis'
 import { answerPublicLocal, type QuironPublicLocale } from '../domain/quironPublic'
-import { buildAnalysisContext } from './context'
-import { askModel, getAiHealth, type AiHealth } from './client'
+import { askDialogue, getAiHealth, type AiHealth } from './client'
+import { dialogueContextKey, type DialogueHistory } from '../../shared/dialogueSchema'
 import type { AppState } from '../../shared/types'
 import { crewById } from '../domain/crew'
+import { generalQuironExplanation } from '../domain/quironKnowledge'
+import { dashboardIndicatorAnswer } from '../domain/quironDashboardLocal'
+import { dashboardConversationFallback } from '../../shared/dashboardConversation'
 
 export type QuironMode = 'public' | 'dashboard'
 
@@ -17,6 +20,8 @@ export interface QuironMessage {
   channel: 'model' | 'local' | 'demo' | 'error'
   contextLabel?: string
   model?: string
+  notice?: string
+  retryQuestion?: string
 }
 
 export interface QuironAskResult {
@@ -26,11 +31,14 @@ export interface QuironAskResult {
   contextLabel?: string
   model?: string
   errorCode?: string
+  notice?: string
 }
 
 export function quironContextLabel(state: AppState | null, locale: QuironPublicLocale): string | undefined {
   if (!state) return undefined
-  const episode = state.episodes.find((item) => item.id === state.selectedEpisodeId) ?? state.episodes.find((item) => item.status !== 'closed')
+  const episode =
+    state.episodes.find((item) => item.id === state.selectedEpisodeId) ??
+    state.episodes.find((item) => item.status !== 'closed')
   const crew = episode ? crewById(episode.crewId) : null
   const stage =
     locale === 'en'
@@ -55,6 +63,11 @@ export async function askQuiron(options: {
   state: AppState | null
   signal: AbortSignal
   preferModel: boolean
+  modelConsent?: boolean
+  historyConsent?: boolean
+  dataConsent?: boolean
+  history?: DialogueHistory
+  sessionId?: string
 }): Promise<QuironAskResult> {
   const { mode, question, locale, state, signal, preferModel } = options
   const trimmed = question.trim().slice(0, 1000)
@@ -67,12 +80,7 @@ export async function askQuiron(options: {
     }
   }
 
-  if (mode === 'public') {
-    const local = answerPublicLocal(trimmed, locale)
-    return { text: local.text, sources: local.sources, channel: 'demo' }
-  }
-
-  if (!state) {
+  if (mode === 'dashboard' && !state) {
     return {
       text: locale === 'en' ? 'Dashboard context is not ready yet.' : 'El contexto del panel aún no está listo.',
       sources: [],
@@ -81,67 +89,121 @@ export async function askQuiron(options: {
     }
   }
 
-  const label = quironContextLabel(state, locale)
-  const episode =
-    state.episodes.find((item) => item.id === state.selectedEpisodeId) ??
-    state.episodes.find((item) => item.status !== 'closed')
+  const label = mode === 'dashboard' ? quironContextLabel(state, locale) : undefined
 
-  if (preferModel && episode) {
-    const context = buildAnalysisContext(state, episode.id, trimmed, locale)
-    if (context) {
-      const response = await askModel('/api/ai/chat', context, signal)
-      if (response.ok) {
-        return {
-          text: response.result.summary,
-          sources: response.result.sources,
-          channel: 'model',
-          contextLabel: label,
-          model: response.model,
-        }
-      }
-      if (response.code === 'aborted') {
-        return {
-          text: locale === 'en' ? 'Request cancelled.' : 'Solicitud cancelada.',
-          sources: [],
-          channel: 'error',
-          errorCode: 'aborted',
-          contextLabel: label,
-        }
-      }
-      // Fall through to local with honest note if model failed
-      const local = answerLocal(state, episode.id, trimmed)
-      if (local) {
-        return {
-          text: `${local.summary}\n\n(${locale === 'en' ? 'Model unavailable' : 'Modelo no disponible'}: ${response.message})`,
-          sources: local.sources,
-          channel: 'local',
-          contextLabel: label,
-          errorCode: response.code,
-        }
-      }
+  // ── Episode lookup for deterministic clinical fallback (dashboard only) ──────
+  const episode =
+    state && mode === 'dashboard'
+      ? state.episodes.find(
+          (item) =>
+            item.id === state.selectedEpisodeId &&
+            (state.role === 'medical' ||
+              (state.role === 'astronaut' && item.crewId === state.sessionCrewId)),
+        )
+      : undefined
+
+  // ── 1. Try Gemini / configured model when consent is given ───────────────────
+  //   This applies to ALL modes (public, dashboard) so conversations are natural.
+  //   Only clinical deterministic answers bypass Gemini (see section 2 below).
+  let failure: { code: string; message: string } | undefined
+
+  if (preferModel && options.modelConsent) {
+    const response = await askDialogue(
+      {
+        mode,
+        question: trimmed,
+        locale,
+        modelConsent: true,
+        historyConsent: Boolean(options.historyConsent),
+        dataConsent: mode === 'dashboard' && Boolean(options.dataConsent),
+        history: options.historyConsent ? (options.history ?? []) : [],
+        // Public requests never include a private context key.
+        ...(state && mode === 'dashboard' ? { contextKey: dialogueContextKey(state) } : {}),
+      },
+      signal,
+      mode === 'dashboard' ? options.sessionId : undefined,
+    )
+
+    if (response.ok) {
       return {
-        text: response.message,
+        text: response.result.text,
+        sources: response.result.sources,
+        channel: 'model',
+        contextLabel: label,
+        model: response.model,
+      }
+    }
+
+    if (response.code === 'aborted') {
+      return {
+        text: locale === 'en' ? 'Request cancelled.' : 'Solicitud cancelada.',
         sources: [],
         channel: 'error',
-        errorCode: response.code,
+        errorCode: 'aborted',
         contextLabel: label,
       }
     }
+
+    // Model failed – record failure, fall through to local engines
+    failure = response
   }
 
-  if (episode) {
+  const fallback = {
+    errorCode: failure?.code,
+    notice: failure
+      ? locale === 'en'
+        ? 'The model could not respond. Showing a local answer instead.'
+        : 'El modelo no pudo responder. Mostrando una respuesta local.'
+      : undefined,
+  }
+
+  // ── 2. Deterministic clinical analysis (dashboard, with episode, health question) ──
+  //   Only used as fallback when Gemini is unavailable or not consented.
+  const conversational = mode === 'dashboard' ? dashboardConversationFallback(trimmed, locale, options.historyConsent ? options.history : []) : undefined
+  if (conversational) return { text: conversational, sources: [], channel: 'local', contextLabel: label, ...fallback }
+  const explanation = generalQuironExplanation(trimmed, locale === 'en')
+  if (mode === 'dashboard' && explanation) {
+    return { text: explanation, sources: [], channel: 'local', contextLabel: label, ...fallback }
+  }
+
+  if (
+    mode === 'dashboard' &&
+    episode &&
+    state &&
+    /alert|indicador|pulso|pulse|heart|frecuencia|sueño|sleep|sensor|medici|measurement|sintoma|síntoma|symptom|datos.*falt|missing.*data/i.test(
+      trimmed,
+    )
+  ) {
     const local = answerLocal(state, episode.id, trimmed)
     if (local) {
-      return { text: local.summary, sources: local.sources, channel: 'local', contextLabel: label }
+      return { text: local.summary, sources: local.sources, channel: 'local', contextLabel: label, ...fallback }
     }
   }
 
-  const mission = answerMissionLocal(state, trimmed)
+  // ── 3. Public / general fallback ─────────────────────────────────────────────
+  const indicators = mode === 'dashboard' && state
+    ? dashboardIndicatorAnswer(state, trimmed, locale === 'en') : undefined
+  if (indicators) return {
+    text: indicators, sources: ['HELIOS · motor determinista local'], channel: 'local', contextLabel: label, ...fallback,
+  }
+
+  if (mode === 'public') {
+    const local = answerPublicLocal(trimmed, locale, options.historyConsent ? options.history : [])
+    return { text: local.text, sources: local.sources, channel: 'demo', ...fallback }
+  }
+
+  // ── 4. Dashboard general fallback (mission resources / comms) ────────────────
+  const general = answerPublicLocal(trimmed, locale, options.historyConsent ? options.history : [])
+  const mission =
+    state && /mision|misión|mission|destino|destination|enlace|comunic|link|communicat|inventar|recurso|resource|prepar/i.test(trimmed)
+      ? answerMissionLocal(state, trimmed)
+      : general.text
   return {
     text: mission,
     sources: [locale === 'en' ? 'Quirón · HELIOS local engine' : 'Quirón · motor local de HELIOS'],
     channel: 'local',
     contextLabel: label,
+    ...fallback,
   }
 }
 
@@ -149,7 +211,11 @@ export async function probeQuironHealth(signal?: AbortSignal): Promise<AiHealth>
   return getAiHealth(signal)
 }
 
-export function formatServiceStatus(health: AiHealth | null, locale: QuironPublicLocale, probing: boolean): { label: string; ok: boolean } {
+export function formatServiceStatus(
+  health: AiHealth | null,
+  locale: QuironPublicLocale,
+  probing: boolean,
+): { label: string; ok: boolean } {
   if (probing || !health) {
     return { label: locale === 'en' ? 'Checking service…' : 'Comprobando servicio…', ok: false }
   }

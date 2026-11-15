@@ -1,5 +1,7 @@
 /** Respuestas locales del sitio público — sin datos privados del dashboard. */
 
+import { generalQuironExplanation } from './quironKnowledge'
+
 export type QuironPublicLocale = 'en' | 'es'
 
 export interface QuironPublicAnswer {
@@ -12,9 +14,36 @@ function match(q: string, ...keys: string[]) {
   return keys.some((key) => q.includes(key))
 }
 
-export function answerPublicLocal(question: string, locale: QuironPublicLocale): QuironPublicAnswer {
-  const q = question.toLowerCase().normalize('NFD').replace(/\p{M}/gu, '')
+export function answerPublicLocal(question: string, locale: QuironPublicLocale, history: { role: string; content: string }[] = []): QuironPublicAnswer {
+  let q = question.toLowerCase().normalize('NFD').replace(/\p{M}/gu, '').replace(/^[¿¡\s]+/, '')
   const en = locale === 'en'
+
+  const simple = (text: string): QuironPublicAnswer => ({ text, sources: [], demo: true })
+  const explanation = generalQuironExplanation(question, en)
+  if (explanation) return simple(explanation)
+  if (/^(hola|hey|buenas|hello|hi)[!¡?.\s]*$/.test(q))
+    return simple(en ? 'Hi! What would you like to explore in HELIOS?' : '¡Hola! ¿Qué te gustaría explorar de HELIOS?')
+  if (/^(gracias|thanks|thank you)[!.\s]*$/.test(q))
+    return simple(en ? 'You’re welcome.' : 'Con gusto.')
+  if (/^(basta|para|stop|no quiero seguir)[!.\s]*$/.test(q))
+    return simple(en ? 'We can leave it here.' : 'Lo dejamos aquí.')
+  if (match(q, 'me siento solo', 'me siento sola', 'soledad', 'feel lonely', 'feel alone', 'miss home'))
+    return simple(en
+      ? 'Being far from familiar people can be hard. If you want company, you could ask a trusted person for a short conversation. We can also talk about what you miss; no measurements are needed for that.'
+      : 'Estar lejos de las personas cercanas puede pesar. Si te ayudaría tener compañía, puedes proponerle a alguien de confianza hablar un rato. También podemos conversar sobre lo que extrañas; no hacen falta mediciones para eso.')
+  if (match(q, 'no entiendo', 'no me ayuda', 'frustr', 'robot', 'don’t understand', "don't understand"))
+    return simple(en ? 'Let’s try a simpler explanation. Which part should I clarify?' : 'Probemos con una explicación más sencilla. ¿Qué parte quieres aclarar?')
+  if (/^(y eso por que|por que|explicame mejor|que podemos hacer|why is that|why|explain more|what can we do)[?¿!.\s]*$/.test(q)) {
+    const previous = [...history].reverse().find((m) => m.role === 'user' && !/^(y eso|por que|explicame|why|explain)/i.test(m.content))
+    const previousExplanation = previous && generalQuironExplanation(previous.content, en)
+    if (previousExplanation) return simple(en
+      ? 'For example, two identical readings can mean different things if one is older or has a poor signal. That is why HELIOS checks context before interpreting the number. This explains the method, not a personal result.'
+      : 'Por ejemplo, dos lecturas iguales pueden tener distinto valor si una es antigua o tiene mala señal. Por eso HELIOS comprueba el contexto antes de interpretar el número. Esto explica el método, sin atribuirte un resultado personal.')
+    if (previous && /alert|medici|record|registro/i.test(previous.content))
+      return simple(en ? 'The public chat has no access to those records. Open the authorized dashboard to review the available evidence.' : 'Este chat público no tiene acceso a esos registros. En el panel autorizado puedes revisar la evidencia disponible.')
+    if (previous) q = previous.content.toLowerCase().normalize('NFD').replace(/\p{M}/gu, '')
+    else return simple(en ? 'Which part would you like me to explain?' : '¿Qué parte quieres que te explique mejor?')
+  }
 
   if (match(q, 'que puedo', 'what can', 'funciones', 'features', 'hacer en helios', 'do in helios')) {
     return {
@@ -41,8 +70,8 @@ export function answerPublicLocal(question: string, locale: QuironPublicLocale):
       demo: true,
       sources: ['HELIOS · límite del sitio público'],
       text: en
-        ? 'I cannot see personal measurements, alerts, or private wellbeing notes from the public site. Enter the HELIOS system to work with the authorized demo case. Prototype analysis is not a clinical diagnosis.'
-        : 'Desde el sitio público no puedo ver mediciones personales, alertas ni notas privadas de bienestar. Entrá al sistema HELIOS para trabajar con el caso de demostración autorizado. El análisis del prototipo no es un diagnóstico clínico.',
+        ? 'To understand a record, start with what was measured, when, its signal quality and how it compares with the individual baseline. I cannot open your personal records from this public chat; those are reviewed in the authorized dashboard.'
+        : 'Para entender un registro, empieza por qué se midió, cuándo, la calidad de la señal y su comparación con la referencia individual. No puedo abrir tus registros personales desde este chat público; se revisan en el panel autorizado.',
     }
   }
 

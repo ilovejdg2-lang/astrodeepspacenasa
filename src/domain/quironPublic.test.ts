@@ -2,6 +2,33 @@ import { describe, expect, it } from 'vitest'
 import { answerPublicLocal } from './quironPublic'
 
 describe('answerPublicLocal', () => {
+  it.each([
+    ['¿Qué es una alerta?', 'es', /motor determinista/],
+    ['What is a measurement?', 'en', /observation/],
+    ['¿Cómo funciona la calidad del sensor?', 'es', /señal/],
+    ['What is a baseline?', 'en', /individual reference/],
+  ] as const)('explains %s without a privacy refusal', (question, locale, expected) => {
+    const answer = answerPublicLocal(question, locale)
+    expect(answer.text).toMatch(expected)
+    expect(answer.text).not.toMatch(/no puedo|cannot|autoriza|permission/i)
+  })
+
+  it.each(['es', 'en'] as const)('adds context on a follow-up in %s', (locale) => {
+    const question = locale === 'es' ? '¿Qué es una alerta?' : 'What is an alert?'
+    const first = answerPublicLocal(question, locale)
+    const next = answerPublicLocal(locale === 'es' ? '¿Y eso por qué?' : 'Why?', locale, [
+      { role: 'user', content: question }, { role: 'assistant', content: first.text },
+    ])
+    expect(next.text).not.toBe(first.text)
+    expect(next.text).toMatch(/ejemplo|example/i)
+    expect(next.text).not.toMatch(/no puedo|cannot/i)
+  })
+
+  it('supports loneliness without asking for measurements or inventing memories', () => {
+    const answer = answerPublicLocal('Me siento sola', 'es')
+    expect(answer.text).toContain('compañía')
+    expect(answer.text).not.toMatch(/tu pulso|tu sueño|recuerdo|diagnóstico/i)
+  })
   it('explains HELIOS without private dashboard claims', () => {
     const answer = answerPublicLocal('¿Qué es HELIOS?', 'es')
     expect(answer.demo).toBe(true)
