@@ -33,12 +33,12 @@ export function DatosPage() {
         </p>
       </header>
 
-      <Suspense fallback={<div className="data-network-static scene-block" aria-hidden="true" />}>
+      <Suspense fallback={<figure className="data-network"><div className="data-network-static" aria-hidden="true" /><figcaption>{en ? 'Conceptual decoration · not real medical centers or data links' : 'Decoración conceptual · no representa centros médicos ni enlaces de datos reales'}</figcaption></figure>}>
         <DataNetwork
           reduced={reduced}
           label={
             en
-              ? 'Conceptual decoration · does not represent real medical centers or data links'
+              ? 'Conceptual decoration · not real medical centers or data links'
               : 'Decoración conceptual · no representa centros médicos ni enlaces de datos reales'
           }
         />

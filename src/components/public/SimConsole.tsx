@@ -75,7 +75,7 @@ export function SimConsole({ reduced, en }: Props) {
     [en, tick],
   )
 
-  const current = modules.find((m) => m.id === active) ?? modules[0]
+  const current = modules.find((m) => m.id === active) ?? modules[0]!
 
   useEffect(() => {
     if (reduced) return

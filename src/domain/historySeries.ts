@@ -45,8 +45,10 @@ export function dailyTrends(measurements: Measurement[], crewId: CrewId | 'all')
   }
 
   const days = [...new Set([...pulseByDay.keys(), ...sleepByDay.keys()])].sort()
-  if (days.length === 0) return { pulse: [], sleep: [] }
-  const range = eachUtcDay(days[0], days[days.length - 1])
+  const first = days[0]
+  const last = days[days.length - 1]
+  if (!first || !last) return { pulse: [], sleep: [] }
+  const range = eachUtcDay(first, last)
   return {
     pulse: range.map((day) => toPoint(day, meanOf(pulseByDay.get(day), (values) => values.reduce((sum, value) => sum + value, 0) / values.length), true)),
     sleep: range.map((day) => toPoint(day, meanOf(sleepByDay.get(day), (entry) => entry.value), false)),

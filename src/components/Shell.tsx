@@ -17,6 +17,7 @@ import { MedicalBackdrop } from './MedicalBackdrop'
 import { HeliosLogo } from './HeliosLogo'
 import { Hint } from './Hint'
 import { PageEnter } from './PageEnter'
+import { QuironDashboard } from './quiron/QuironDashboard'
 
 function beep() {
   const audio = new AudioContext()
@@ -30,16 +31,19 @@ function beep() {
   oscillator.onended = () => void audio.close()
 }
 
-function HelmetIcon({ size = 18, ...props }: SVGProps<SVGSVGElement> & { size?: number }) {
+function HelmetIcon({ size = 20, strokeWidth = 2, ...props }: SVGProps<SVGSVGElement> & { size?: number; strokeWidth?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true" {...props}>
-      <path d="M6 14c0-4.4 2.7-8 6-8s6 3.6 6 8" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" />
-      <path d="M5 15.5h14v2.2c0 1-.8 1.8-1.8 1.8H6.8c-1 0-1.8-.8-1.8-1.8v-2.2z" stroke="currentColor" strokeWidth="1.75" />
-      <path d="M8 14.2h8" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" />
+      <path d="M6 14c0-4.4 2.7-8 6-8s6 3.6 6 8" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" />
+      <path d="M5 15.5h14v2.2c0 1-.8 1.8-1.8 1.8H6.8c-1 0-1.8-.8-1.8-1.8v-2.2z" stroke="currentColor" strokeWidth={strokeWidth} />
+      <path d="M8 14.2h8" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" />
       <circle cx="8.2" cy="11.2" r="1" fill="currentColor" />
     </svg>
   )
 }
+
+const NAV_ICON = 20
+const NAV_STROKE = 2
 
 function earthPill(link: 'up' | 'delayed' | 'down', delayMin: number, shell: { linkDown: string; linkDelayed: (minutes: number) => string; linkUp: string }) {
   if (link === 'down') return shell.linkDown
@@ -182,7 +186,7 @@ export function Shell({ children }: { children: ReactNode }) {
             <nav className="nav" aria-label={shell.sections}>
               {primary.map((link) => (
                 <NavLink key={link.to} to={link.to} end={link.end} onClick={() => setOpen(false)}>
-                  <link.icon aria-hidden="true" size={20} strokeWidth={1.75} />
+                  <link.icon aria-hidden="true" className="nav-icon" size={NAV_ICON} strokeWidth={NAV_STROKE} />
                   {link.label}
                   {link.to === '/app/alertas' && alerts > 0 ? <span className={badgePop ? 'nav-badge pop' : 'nav-badge'}>{alerts}</span> : null}
                 </NavLink>
@@ -191,7 +195,7 @@ export function Shell({ children }: { children: ReactNode }) {
             <nav className="nav nav-extra" aria-label={shell.moreSections}>
               {extraLinks.map((link) => (
                 <NavLink key={link.to} to={link.to} end={link.end} onClick={() => setOpen(false)}>
-                  <link.icon aria-hidden="true" size={18} strokeWidth={1.75} />
+                  <link.icon aria-hidden="true" className="nav-icon" size={NAV_ICON} strokeWidth={NAV_STROKE} />
                   {link.label}
                 </NavLink>
               ))}
@@ -263,7 +267,7 @@ export function Shell({ children }: { children: ReactNode }) {
         <nav className="bottom-nav" aria-label={shell.mainSections}>
           {primaryLinks.slice(0, narrowPhone ? 4 : 5).map((link) => (
             <NavLink key={link.to} to={link.to} end={link.end} onClick={() => setMore(false)}>
-              <link.icon aria-hidden="true" size={18} strokeWidth={1.75} />
+              <link.icon aria-hidden="true" className="nav-icon" size={NAV_ICON} strokeWidth={NAV_STROKE} />
               {link.label}
             </NavLink>
           ))}
@@ -275,7 +279,7 @@ export function Shell({ children }: { children: ReactNode }) {
             aria-current={moreIsCurrent(location.pathname, primaryLinks, narrowPhone, state.role === 'astronaut') ? 'page' : undefined}
             onClick={() => setMore((value) => !value)}
           >
-            <Menu aria-hidden="true" size={18} strokeWidth={1.75} /> {shell.more}
+            <Menu aria-hidden="true" className="nav-icon" size={NAV_ICON} strokeWidth={NAV_STROKE} /> {shell.more}
           </button>
         </nav>
         {more ? <button className="scrim more-scrim" type="button" aria-label={shell.closeMenu} onClick={() => { setMore(false); moreButton.current?.focus() }} /> : null}
@@ -283,24 +287,25 @@ export function Shell({ children }: { children: ReactNode }) {
           <div ref={morePanel} id="more-modules" className="more-menu" role="dialog" aria-label={shell.moreSections}>
             {primaryLinks.slice(narrowPhone ? 4 : 5).map((link) => (
               <NavLink key={link.to} to={link.to} end={link.end} onClick={() => setMore(false)}>
-                <link.icon aria-hidden="true" size={18} strokeWidth={1.75} />
+                <link.icon aria-hidden="true" className="nav-icon" size={NAV_ICON} strokeWidth={NAV_STROKE} />
                 {link.label}
               </NavLink>
             ))}
             {state.role === 'astronaut' ? (
               <NavLink to={spaceLink.to} onClick={() => setMore(false)}>
-                <spaceLink.icon aria-hidden="true" size={18} strokeWidth={1.75} />
+                <spaceLink.icon aria-hidden="true" className="nav-icon" size={NAV_ICON} strokeWidth={NAV_STROKE} />
                 {spaceLink.label}
               </NavLink>
             ) : null}
             {extraLinks.map((link) => (
               <NavLink key={link.to} to={link.to} end={link.end} onClick={() => setMore(false)}>
-                <link.icon aria-hidden="true" size={18} strokeWidth={1.75} />
+                <link.icon aria-hidden="true" className="nav-icon" size={NAV_ICON} strokeWidth={NAV_STROKE} />
                 {link.label}
               </NavLink>
             ))}
           </div>
         ) : null}
+        <QuironDashboard />
       </div>
     </div>
     </Tooltip.Provider>

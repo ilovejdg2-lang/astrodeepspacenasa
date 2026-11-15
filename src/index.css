@@ -62,7 +62,12 @@
 }
 
 * { box-sizing: border-box; }
-html, body, #root { min-height: 100%; height: 100%; }
+html, body, #root {
+  width: 100%;
+  max-width: 100%;
+  min-height: 100%;
+  margin: 0;
+}
 html { scrollbar-width: none; }
 html::-webkit-scrollbar { width: 0; height: 0; display: none; }
 body {
@@ -73,14 +78,40 @@ body {
   font-size: 1rem;
   line-height: 1.5;
   font-weight: 450;
+  overflow-x: clip;
 }
+/* Dashboard: viewport fijo. Público: dejar crecer el documento a ancho completo */
 body:has(.shell) {
+  height: 100%;
   overflow: hidden;
+}
+html:has(.shell),
+#root:has(.shell) {
+  height: 100%;
+  overflow: hidden;
+}
+body:has(.pub),
+#root:has(.pub) {
+  height: auto;
+  min-height: 100dvh;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: clip;
+}
+body:has(.pub) {
+  background: #f7f4fb;
+}
+:root[data-theme="dark"] body:has(.pub) {
+  background: #070a12;
 }
 button, input, select, textarea { font: inherit; color: inherit; }
 button { cursor: pointer; }
 img, svg { display: block; }
-p, h1, h2, h3 { text-wrap: balance; }
+p, h1, h2, h3 {
+  text-wrap: wrap;
+  overflow-wrap: break-word;
+  word-break: normal;
+}
 :focus { outline: none; }
 :focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
 .sr-only {
@@ -152,6 +183,19 @@ a.brand-mark:hover { background: color-mix(in srgb, var(--accent) 8%, transparen
 .nav a, .bottom-nav a, .more-menu a {
   display: flex; align-items: center; gap: 12px; min-height: 48px; padding: 0 16px; border-radius: 16px;
   color: var(--sidebar-nav); text-decoration: none; font-weight: 650;
+}
+/* Mismo caja visual para todos los iconos del menú (como Monitor) */
+.nav-icon,
+.sidebar .nav a > svg,
+.bottom-nav a > svg,
+.bottom-nav button > svg,
+.more-menu a > svg {
+  width: 20px;
+  height: 20px;
+  min-width: 20px;
+  min-height: 20px;
+  flex: none;
+  display: block;
 }
 .shell { --nav-active: #f5004f; }
 .shell.is-monitor { --nav-active: #f5004f; }
