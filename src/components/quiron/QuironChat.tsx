@@ -21,6 +21,8 @@ import { getActiveMissionId, getStoredProfile } from '../../platform/session'
 import { useWorkspaceRole } from '../../platform/workspace'
 import { formatQuironReply } from './formatReply'
 import './quiron.css'
+import { CareAiControls, LOCAL_CARE } from './CareAiControls'
+import type { CareAiOptions, CareConversation } from '../../../shared/careSchema'
 
 const GREET_KEY = 'quiron-greet-dismissed'
 const SESSION_KEY_PUBLIC = 'quiron-public-thread'
@@ -32,18 +34,16 @@ const ASSETS = {
 
 type CareTopic = 'physical' | 'emotional'
 
-type CareConversation = {
-  id: string
-  messages?: Array<{ role: 'user' | 'assistant'; text: string; at?: number }>
-}
-
-function mapCareMessages(conversation: CareConversation, channel: QuironMessage['channel'] = 'local'): QuironMessage[] {
+function mapCareMessages(conversation: CareConversation): QuironMessage[] {
   return (conversation.messages || []).map((item, index) => ({
     id: `${conversation.id}-${index}-${item.role}`,
     role: item.role,
     text: item.text,
     at: item.at ?? Date.now() + index,
-    channel,
+    channel: item.source === 'model' ? 'model' : 'local',
+    model: item.model,
+    notice: item.notice,
+    sources: item.sources,
   }))
 }
 
@@ -79,6 +79,7 @@ export function QuironChat({ mode, state = null }: { mode: QuironMode; state?: A
   const [messages, setMessages] = useState<QuironMessage[]>([])
   const [careTopic, setCareTopic] = useState<CareTopic | null>(null)
   const [careConversationId, setCareConversationId] = useState<string | null>(null)
+  const [careAiOptions, setCareAiOptions] = useState<CareAiOptions>(LOCAL_CARE)
   const [modelConsent, setModelConsent] = useState(false)
   const [historyConsent, setHistoryConsent] = useState(false)
   const [dataConsent, setDataConsent] = useState(false)
@@ -95,6 +96,7 @@ export function QuironChat({ mode, state = null }: { mode: QuironMode; state?: A
     setMessages([])
     setCareTopic(null)
     setCareConversationId(null)
+    setCareAiOptions(LOCAL_CARE)
     setDraft('')
     setError('')
     setAnnounce('')
@@ -130,10 +132,11 @@ export function QuironChat({ mode, state = null }: { mode: QuironMode; state?: A
             setError('')
             const version = ++generation.current
             try {
-              const conversation = await platformApi.quironStart(missionId, topic) as CareConversation
+              const conversation = await platformApi.quironStart(missionId, topic, lang) as CareConversation
               if (version !== generation.current) return
               setCareTopic(topic)
               setCareConversationId(conversation.id)
+              setCareAiOptions(LOCAL_CARE)
               setMessages(mapCareMessages(conversation))
               stickBottom.current = true
               window.setTimeout(() => inputRef.current?.focus(), 20)
@@ -153,7 +156,7 @@ export function QuironChat({ mode, state = null }: { mode: QuironMode; state?: A
       window.removeEventListener('helios:quiron-demo', openDemo)
       window.removeEventListener('helios:quiron-care', openCare)
     }
-  }, [mode, en])
+  }, [mode, en, lang])
 
   const suggestions = mode === 'public' ? publicSuggestions(lang) : dashboardSuggestions(lang)
   const status = formatServiceStatus(health, lang, probing)
@@ -293,10 +296,11 @@ export function QuironChat({ mode, state = null }: { mode: QuironMode; state?: A
     setMenuOpen(false)
     const version = ++generation.current
     try {
-      const conversation = await platformApi.quironStart(missionId, topic) as CareConversation
+      const conversation = await platformApi.quironStart(missionId, topic, lang) as CareConversation
       if (version !== generation.current) return
       setCareTopic(topic)
       setCareConversationId(conversation.id)
+      setCareAiOptions(LOCAL_CARE)
       setMessages(mapCareMessages(conversation))
       setAnnounce(
         topic === 'physical'
@@ -335,8 +339,10 @@ export function QuironChat({ mode, state = null }: { mode: QuironMode; state?: A
 
     if (careConversationId) {
       const version = ++generation.current
+      const controller = new AbortController()
+      abortRef.current = controller
       try {
-        const conversation = await platformApi.quironMessage(careConversationId, trimmed) as CareConversation
+        const conversation = await platformApi.quironMessage(careConversationId, trimmed, lang, careAiOptions, controller.signal)
         if (version !== generation.current) return
         setMessages(mapCareMessages({ ...conversation, id: careConversationId }))
         const last = conversation.messages?.at(-1)
@@ -349,6 +355,7 @@ export function QuironChat({ mode, state = null }: { mode: QuironMode; state?: A
       } finally {
         if (version === generation.current) {
         setPending(false)
+        abortRef.current = null
         flightRef.current = ''
         window.setTimeout(() => inputRef.current?.focus(), 20)
         }
@@ -671,7 +678,9 @@ export function QuironChat({ mode, state = null }: { mode: QuironMode; state?: A
           </div>
 
           <form className="quiron-composer" onSubmit={onSubmit}>
-            <fieldset className="quiron-consent">
+            {careConversationId ? <CareAiControls key={careConversationId}
+              conversationId={careConversationId} messageCount={messages.length} locale={lang} state={state}
+              disabled={pending} onChange={setCareAiOptions} onCancel={stop} /> : <fieldset className="quiron-consent">
               <legend>{en ? 'AI and privacy' : 'IA y privacidad'}</legend>
               <label><input type="checkbox" checked={modelConsent} onChange={(e) => { clearThread(); setModelConsent(e.target.checked); if (!e.target.checked) { setHistoryConsent(false); setDataConsent(false) } }} />{en ? 'Use Gemini: send my messages' : 'Usar Gemini: enviar mis mensajes'}</label>
               {modelConsent ? <>
@@ -682,7 +691,7 @@ export function QuironChat({ mode, state = null }: { mode: QuironMode; state?: A
                 {mode === 'dashboard' ? <label><input type="checkbox" checked={dataConsent} onChange={(e) => { clearThread(); setDataConsent(e.target.checked) }} />{en ? 'Include permitted simulated indicators' : 'Incluir indicadores simulados permitidos'}</label> : null}
                 <small>{en ? 'Messages go to the AI provider. Dashboard mode also includes mission/link status; personal indicators require the extra permission. No private Mi espacio notes are included.' : 'Los mensajes se envían al proveedor de IA. En el panel también se incluye misión/enlace; los indicadores personales requieren el permiso adicional. Se excluyen las notas privadas de Mi espacio.'}</small>
               </> : null}
-            </fieldset>
+            </fieldset>}
             <label className="sr-only" htmlFor={`${dialogId}-input`}>
               {en ? 'Message for Quirón' : 'Mensaje para Quirón'}
             </label>

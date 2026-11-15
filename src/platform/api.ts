@@ -1,5 +1,6 @@
 import { apiUrl } from '../api/baseUrl'
 import { getActiveMissionId, getSessionToken } from './session'
+import { careConversationSchema, careDraftSchema, type CareAiOptions } from '../../shared/careSchema'
 
 async function platformFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const headers = new Headers(init?.headers)
@@ -115,16 +116,23 @@ export const platformApi = {
   grant: (id: string, body: Record<string, unknown>) =>
     platformFetch(`/api/platform/missions/${id}/grants`, { method: 'POST', body: JSON.stringify(body) }),
   revokeGrant: (grantId: string) => platformFetch(`/api/platform/grants/${grantId}/revoke`, { method: 'POST', body: '{}' }),
-  quironStart: (id: string, mode: 'physical' | 'emotional') =>
-    platformFetch(`/api/platform/missions/${id}/quiron`, { method: 'POST', body: JSON.stringify({ mode }) }),
-  quironMessage: (conversationId: string, text: string) =>
-    platformFetch(`/api/platform/quiron/${conversationId}/message`, { method: 'POST', body: JSON.stringify({ text }) }),
-  quironSummary: (conversationId: string, body: string, shareWith: string | null) =>
+  quironStart: (id: string, mode: 'physical' | 'emotional', locale: 'es' | 'en' = 'es') =>
+    platformFetch(`/api/platform/missions/${id}/quiron`, { method: 'POST', body: JSON.stringify({ mode, locale }) }),
+  quironMessage: async (conversationId: string, text: string, locale: 'es' | 'en' = 'es', ai?: CareAiOptions, signal?: AbortSignal) =>
+    careConversationSchema.parse(await platformFetch(`/api/platform/quiron/${conversationId}/message`, {
+      method: 'POST', body: JSON.stringify({ text, locale, ai }), signal,
+    })),
+  quironDraft: async (conversationId: string, locale: 'es' | 'en', ai: CareAiOptions, signal?: AbortSignal) =>
+    careDraftSchema.parse(await platformFetch(`/api/platform/quiron/${conversationId}/summary/draft`, {
+      method: 'POST', body: JSON.stringify({ locale, ai }), signal,
+    })),
+  quironSummary: (conversationId: string, body: string, shareWith: string | null, expectedMessages?: number) =>
     platformFetch(`/api/platform/quiron/${conversationId}/summary`, {
       method: 'POST',
-      body: JSON.stringify({ body, shareWith }),
+      body: JSON.stringify({ body, shareWith, expectedMessages }),
     }),
   urgent: (id: string) => platformFetch(`/api/platform/missions/${id}/urgent`, { method: 'POST', body: '{}' }),
+  quironSummaries: (missionId: string) => platformFetch<{ items: Array<{ id: string; body: string; profileId: string; mode: string; createdAt: number }> }>(`/api/platform/missions/${missionId}/quiron-summaries`),
   appointments: (id: string) => platformFetch<{ items: unknown[] }>(`/api/platform/missions/${id}/appointments`),
   requestAppointment: (id: string, body: Record<string, unknown>) =>
     platformFetch(`/api/platform/missions/${id}/appointments`, { method: 'POST', body: JSON.stringify(body) }),

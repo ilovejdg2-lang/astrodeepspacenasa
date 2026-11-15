@@ -665,6 +665,28 @@ html[data-reduce-motion="1"] .quiron-bubble-layer {
 .quiron-consent small { display: block; font-size: 12px; }
 .quiron-consent legend { font-weight: 600; }
 
+.quiron-care-controls {
+  grid-column: 1 / -1;
+  min-width: 0;
+  max-height: min(40dvh, 300px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  font-size: 12px;
+}
+.quiron-care-controls button,
+.quiron-care-controls select,
+.quiron-care-controls input[type="password"] {
+  font: inherit;
+  color: var(--quiron-ink);
+  background: var(--quiron-panel);
+  border: 1px solid color-mix(in srgb, var(--quiron-fucsia) 30%, transparent);
+  border-radius: 8px;
+  padding: 6px 8px;
+  margin: 4px 4px 4px 0;
+}
+.quiron-care-controls button:disabled { opacity: .5; }
+.quiron-care-controls > div > label { display: grid; gap: 4px; margin-block: 8px; }
+
 :root[data-theme="dark"] .quiron-composer {
   background: color-mix(in srgb, #1a0f14 80%, transparent);
 }

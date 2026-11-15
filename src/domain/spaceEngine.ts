@@ -1,3 +1,4 @@
+import { textSafetyCategories } from '../../shared/spaceSafety'
 import type { SpaceProposal } from '../../shared/spaceSchema'
 import type { AppState, CrewId } from '../../shared/types'
 import type { SpaceDataUse, SpaceShareLevel } from '../persistence/space'
@@ -6,15 +7,6 @@ import { crewPosture, latestReliable, vitalTrends, measurementQuality, activeHea
 
 const HR_HIGH = 150
 const HR_LOW = 40
-
-const KEYWORDS: { category: string; patterns: string[] }[] = [
-  { category: 'dolor en el pecho', patterns: ['dolor en el pecho', 'dolor de pecho', 'dolor toracico', 'chest pain'] },
-  { category: 'desmayo', patterns: ['desmay', 'faint', 'blackout'] },
-  { category: 'dificultad para respirar', patterns: ['dificultad para respirar', 'no puedo respirar', 'me falta el aire', 'falta de aire', 'trouble breathing', 'cant breathe', "can't breathe"] },
-  { category: 'confusión', patterns: ['confusion', 'confundid', 'confused'] },
-  { category: 'hacerse daño o dañar a otros', patterns: ['hacerme dano', 'hacerse dano', 'matarme', 'suicid', 'danar a otros', 'herir a', 'lastimar a', 'hurt myself', 'hurt others'] },
-  { category: 'riesgo para la nave', patterns: ['riesgo para la nave', 'peligro para la nave', 'risk to the ship'] },
-]
 
 export interface SpaceTurn {
   assistantText: string
@@ -147,21 +139,7 @@ export function escalationCategories(
   dataUse: SpaceDataUse,
   text: string,
 ): string[] {
-  const folded = fold(text)
-  const englishDanger = [
-    'chest pain',
-    'cannot breathe',
-    "can't breathe",
-    'hurt myself',
-    'kill myself',
-    'hurt someone',
-    'danger to the spacecraft',
-    'passed out',
-  ].some((p) => folded.includes(p))
-  const found = KEYWORDS.filter((rule) =>
-    rule.patterns.some((pattern) => folded.includes(pattern)),
-  ).map((rule) => rule.category)
-  if (englishDanger) found.push('explicit safety concern')
+  const found = textSafetyCategories(text)
   if (dataUse.pulse) {
     const pulse = latestReliable(state, crewId, 'heart_rate')
     if (pulse && (pulse.value >= HR_HIGH || pulse.value <= HR_LOW))
