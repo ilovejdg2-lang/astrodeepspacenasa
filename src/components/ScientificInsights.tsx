@@ -67,6 +67,7 @@ export function ScientificInsights() {
                 className="nasa-event"
                 data-testid={`osdr-${study.studyId}`}
               >
+                <p className="badge">NASA Research Metadata · OSDR</p>
                 <h3>{study.metadata?.title ?? study.studyId}</h3>
                 {study.message && (
                   <p role="alert">

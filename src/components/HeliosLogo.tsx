@@ -56,6 +56,7 @@ export function HeliosLogo({ variant = 'wordmark', size = 72, className }: Helio
       <span className="helios-letters" aria-hidden="true">
         HELI
         <span className="helios-o">
+          O
           <svg viewBox="6 12 52 52" width="0.78em" height="0.78em" focusable="false" overflow="visible">
             <circle cx="32" cy="38" r="24" fill="var(--accent)" />
             <path

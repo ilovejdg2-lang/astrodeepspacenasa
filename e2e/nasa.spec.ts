@@ -163,7 +163,14 @@ test('all HELIOS pages render without JavaScript errors', async ({ page }) => {
     'medico',
     'mi-espacio',
   ]) {
-    await page.goto(`/app/${path}`, { waitUntil: 'domcontentloaded' })
+    const target = path ? `/app/${path}` : '/app'
+    const link = page.locator(`a[href="${target}"]`).first()
+    if (path && await link.isVisible()) {
+      await link.click()
+      await expect(page).toHaveURL(new RegExp(`${target}$`))
+    } else {
+      await page.goto(target, { waitUntil: 'domcontentloaded' })
+    }
     await expect(page.getByRole('main')).toBeVisible()
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
   }

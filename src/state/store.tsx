@@ -17,6 +17,7 @@ interface StoreValue {
   saving: boolean
   authenticatedCrewId: CrewId | null
   dispatch: (action: Action) => void
+  runActions: (actions: Action[]) => Promise<AppState>
   analyzeEpisode: (episodeId: string, question?: string) => Promise<AnalysisResult>
   unlockSpace: (crewId: CrewId) => void
   restoreDemo: () => Promise<void>
@@ -36,6 +37,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const client = useRef<SimulationClient | null>(null)
   const connected = useRef(false)
   const queue = useRef<Promise<void>>(Promise.resolve())
+  const actionFailure = useRef<string | null>(null)
   const tickPending = useRef(false)
   const ready = useRef(false)
 
@@ -64,6 +66,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (action.type === 'tick') tickPending.current = true
       queue.current = queue.current
         .then(async () => {
+          actionFailure.current = null
           const current = stateRef.current
           if (!current) return
           if (!connected.current || !client.current) {
@@ -82,6 +85,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
                   detach()
                 }
               }
+              actionFailure.current = error.message
               setBackendError(`La operación no se confirmó. ${error.message}`)
               return
             }
@@ -89,13 +93,27 @@ export function AppProvider({ children }: { children: ReactNode }) {
             apply(reduce(current, action))
           }
         })
-        .catch(() => setBackendError('No se pudo aplicar la operación.'))
+        .catch(() => {
+          actionFailure.current = 'No se pudo aplicar la operación.'
+          setBackendError(actionFailure.current)
+        })
         .finally(() => {
           if (action.type === 'tick') tickPending.current = false
         })
     },
     [apply, detach],
   )
+  const runActions = useCallback(async (actions: Action[]): Promise<AppState> => {
+    await queue.current
+    for (const action of actions) {
+      dispatch(action)
+      await queue.current
+      if (actionFailure.current) throw new Error(actionFailure.current)
+      if (stateRef.current?.notice?.tone === 'err') throw new Error(stateRef.current.notice.text)
+    }
+    if (!stateRef.current) throw new Error('Simulation unavailable')
+    return stateRef.current
+  }, [dispatch])
   const signature = useRef('')
   const saveGeneration = useRef(0)
 
@@ -199,6 +217,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       authenticatedCrewId,
       dispatch,
       analyzeEpisode,
+      runActions,
       unlockSpace: (crewId) => {
         const current = stateRef.current
         if (!current || current.role !== 'astronaut' || current.sessionCrewId !== crewId) return
@@ -212,7 +231,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         await queue.current
       },
     }
-  }, [state, persistenceError, saving, authenticatedCrewId, backendMode, backendError, dispatch, analyzeEpisode])
+  }, [state, persistenceError, saving, authenticatedCrewId, backendMode, backendError, dispatch, analyzeEpisode, runActions])
 
   if (!value) {
     return (

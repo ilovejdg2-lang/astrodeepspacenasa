@@ -93,8 +93,8 @@ export function HomePage() {
           </p>
         </div>
 
-        <div className="mission-path" aria-hidden={!reduced}>
-          <svg className="mission-path-svg" viewBox="0 0 960 220" preserveAspectRatio="none">
+        <div className="mission-path">
+          <svg className="mission-path-svg" viewBox="0 0 960 220" preserveAspectRatio="none" aria-hidden="true" focusable="false">
             <path
               className={reduced ? undefined : 'path-draw'}
               d="M40 160 C 180 40, 300 40, 320 110 S 480 210, 520 120 S 700 20, 780 90 S 880 160, 920 120"

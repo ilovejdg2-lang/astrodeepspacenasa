@@ -3,6 +3,7 @@ import type { Action } from '../domain/reduce'
 import { stateSchema } from '../../shared/stateSchema'
 import { analysisResultSchema } from '../../shared/aiSchema'
 import { apiUrl } from './baseUrl'
+import { uiLang } from '../locale'
 
 export interface Snapshot {
   state: AppState
@@ -25,7 +26,7 @@ export class SimulationClient {
   private async request(path: string, body?: unknown): Promise<unknown> {
     const response = await fetch(apiUrl(path), {
       method: body === undefined ? 'GET' : 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-Simulation-Id': this.sessionId },
+      headers: { 'Content-Type': 'application/json', 'X-Simulation-Id': this.sessionId, 'Accept-Language': uiLang() },
       body: body === undefined ? undefined : JSON.stringify(body),
       signal: AbortSignal.timeout(8000),
     })

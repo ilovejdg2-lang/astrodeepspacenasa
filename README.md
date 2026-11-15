@@ -71,6 +71,8 @@ DONKI en Misión y Alertas; RadLab y Scientific Health Insights en Riesgos NASA.
 
 Límites por cliente, validación y cuerpos por ruta, errores seguros con requestId, registros técnicos mínimos, integridad HMAC de demostración y fronteras de IA. Vite rechaza credenciales privadas en variables públicas. Ejecutar `npm run security:audit` para revisar el historial local y los artefactos sin imprimir valores. Ver [medidas, evidencias, comandos y limitaciones](docs/SECURITY.md).
 
-## Mi espacio y Quir?n Bot
+## Mi espacio y Quirón Bot
 
-Memoria reciente opcional, consentimiento independiente para el modelo, herramientas de solo lectura en Nest, cancelaci?n y continuidad local. Se conserva el nivel de compartir elegido. Ver [contratos, archivos, pruebas y l?mites de seguridad](docs/MI-ESPACIO.md).
+Memoria reciente opcional, consentimiento independiente para el modelo, herramientas de solo lectura en Nest, cancelación y continuidad local. Se conserva el nivel de compartir elegido. Ver [contratos, archivos, pruebas y límites de seguridad](docs/MI-ESPACIO.md).
+
+El [plan maestro implementado](docs/PLAN-IMPLEMENTADO.md) documenta las siete herramientas, tendencias y calidad de evidencia, paridad React/Nest, trazabilidad NASA y demo guiada de siete pasos.

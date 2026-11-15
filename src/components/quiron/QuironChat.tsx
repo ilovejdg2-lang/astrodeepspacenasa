@@ -53,6 +53,19 @@ export function QuironChat({ mode, state = null }: { mode: QuironMode; state?: A
   const [showTip, setShowTip] = useState(false)
   const [messages, setMessages] = useState<QuironMessage[]>([])
 
+  useEffect(() => {
+    if (mode !== 'dashboard') return
+    const openDemo = (event: Event) => {
+      const detail: unknown = (event as CustomEvent).detail
+      if (!detail || typeof detail !== 'object' || !('question' in detail) || typeof detail.question !== 'string') return
+      setOpen(true)
+      setDraft(detail.question.slice(0, 1000))
+      setShowTip(false)
+    }
+    window.addEventListener('helios:quiron-demo', openDemo)
+    return () => window.removeEventListener('helios:quiron-demo', openDemo)
+  }, [mode])
+
   const suggestions = mode === 'public' ? publicSuggestions(lang) : dashboardSuggestions(lang)
   const status = formatServiceStatus(health, lang, probing)
   const contextLabel = mode === 'dashboard' ? quironContextLabel(state, lang) : undefined

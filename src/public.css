@@ -1315,3 +1315,13 @@
     gap: 2px 12px;
   }
 }
+
+/* Keep the original palette while providing AA contrast for small button text. */
+:root[data-theme] .pub-btn:not(.pub-btn-ghost),
+:root[data-theme] .pub-cta,
+:root[data-theme] .pub-lang button[aria-pressed="true"],
+:root[data-theme] .docs-filters button.is-active { background: #b3003a; color: #fff; }
+:root[data-theme="light"] .highlight-item { color: #35333e; }
+:root[data-theme="dark"] .highlight-item { color: #efedf4; }
+:root[data-theme="light"] .pub-kicker { color: #ac0036; }
+:root[data-theme] .sim-enter { background: #b3003a; color: #fff; }

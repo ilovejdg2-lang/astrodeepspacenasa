@@ -38,7 +38,7 @@ export function RisksPage() {
       </header>
 
       <div className="spread">
-        <div className="chips" role="tablist" aria-label={en ? 'Risk category' : 'Categoría de riesgo'}>
+        <div className="chips" role="group" aria-label={en ? 'Risk category' : 'Categoría de riesgo'}>
           <button type="button" className="chip" aria-pressed={category === 'all'} onClick={() => setCategory('all')}>{en ? 'All' : 'Todas'}</button>
           {CATEGORIES.map((id) => (
             <button key={id} type="button" className="chip" aria-pressed={category === id} onClick={() => setCategory(id)}>

@@ -134,6 +134,7 @@ export function SpaceWeatherPanel({ notices = false }: { notices?: boolean }) {
           : 'Space Weather Monitoring'
       }
     >
+      <p className="badge">NASA Real Data · DONKI</p>
       <h2>
         {notices
           ? en
@@ -206,11 +207,12 @@ export function SpaceWeatherPanel({ notices = false }: { notices?: boolean }) {
                   key={`${event.type}-${event.id}`}
                   className="nasa-event"
                 >
+                  <p className="badge">NASA Real Data · DONKI</p>
                   <h3>
                     {event.type} {event.classification}
                   </h3>
                   <p>
-                    <time>{event.timestamp} UTC</time>
+                    <time dateTime={event.timestamp}>{event.timestamp} UTC</time>
                   </p>
                   <p>
                     {event.description ||
@@ -328,11 +330,14 @@ export function RadiationPanel() {
       </div>
       {data && (
         <>
+          <p className="badge">NASA Historical Benchmark · RadLab</p>
+          <p>{en ? 'Environmental historical measurements; they do not establish individual astronaut exposure or diagnoses. Units are supplied by NASA (µGy/h and µSv/h); values are not relabeled as daily rates. All record times are UTC.' : 'Mediciones ambientales históricas; no establecen exposición individual ni diagnósticos. Las unidades son las suministradas por NASA (µGy/h y µSv/h); no se presentan como tasas diarias. Todas las fechas del registro son UTC.'}</p>
           <Source {...data} en={en} />
           <a href={data.sourceUrl} target="_blank" rel="noreferrer">
             {en ? 'Original NASA data' : 'Datos originales NASA'}
           </a>
           <p>
+            {en ? 'Detector / spacecraft: ' : 'Detector / nave: '}
             {[
               ...new Set(
                 data.measurements.map(

@@ -2,6 +2,8 @@
 
 Implementación local del 14 de noviembre de 2026. React/Vite consume NestJS; no se añadió lógica de IA al servidor Hono heredado ni dependencias nuevas. No se hizo commit, push ni despliegue.
 
+Actualización: el [plan maestro implementado](PLAN-IMPLEMENTADO.md) amplía las herramientas a siete, incorpora tendencias y calidad, y resuelve los fallos de paridad mencionados en los resultados históricos de este documento.
+
 ## Conversación y consentimiento
 
 Quirón recibe el mensaje actual por separado y, con permiso independiente, hasta 12 mensajes recientes con sus roles `user` y `assistant`. Se excluye el mensaje actual duplicado. Cada mensaje tiene un máximo de 2000 caracteres; el frontend limita el historial serializado a 12000 bytes UTF-8 y el servidor a 16000. El sobre completo enviado al proveedor admite hasta 32000 bytes, incluidos instrucciones y resultados de herramientas.
@@ -29,6 +31,9 @@ La autorización se vuelve a comprobar en cada ronda, cada herramienta y despué
 | `getLatestVitals` | Preferencia pulso; únicamente frecuencia cardíaca fiable del propietario. No habilita otros signos vitales. |
 | `getMissionContext` | Permiso específico de misión; nombre, etapa, destino y enlace simulado. |
 | `getSupportOptions` | Opciones de apoyo humano; siempre indica `notified: false`. |
+| `getVitalTrends` | Pulso autorizado; tendencia descriptiva de 30 minutos y línea base del propietario. |
+| `getMeasurementQuality` | Pulso autorizado; frescura, señal, integridad, posible congelamiento y reposo. |
+| `getActiveHealthAlerts` | Solo metadatos de cambios/síntomas autorizados del propietario, sin razones ni notas privadas. |
 
 Todas usan SimulationService y selectores existentes. Sus argumentos son objetos vacíos estrictos validados con Zod: el modelo no puede elegir otro astronauta. Los síntomas autorizados se reducen a las cuatro últimas categorías del propietario, sin notas libres. Al desactivar síntomas no se incluyen en el contexto. Las mediciones inexistentes o no fiables no se presentan como estabilidad.
 

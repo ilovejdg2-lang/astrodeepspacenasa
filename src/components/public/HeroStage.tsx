@@ -108,15 +108,7 @@ export function HeroStage({ reduced }: { reduced: boolean }) {
         className="hero-play"
         onClick={() => setPlaying((value) => !value)}
         aria-pressed={playing}
-        aria-label={
-          playing
-            ? en
-              ? 'Pause hero motion'
-              : 'Pausar movimiento del hero'
-            : en
-              ? 'Resume hero motion'
-              : 'Reanudar movimiento del hero'
-        }
+
       >
         {playing ? (en ? 'Pause scene' : 'Pausar escena') : en ? 'Resume scene' : 'Reanudar escena'}
       </button>

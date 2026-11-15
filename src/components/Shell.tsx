@@ -173,7 +173,7 @@ export function Shell({ children }: { children: ReactNode }) {
       {open ? <button className="scrim" aria-label={shell.closeMenu} onClick={() => setOpen(false)} /> : null}
       <aside className={open ? 'sidebar open' : 'sidebar'}>
         <div className="sidebar-top">
-          <Link className="brand-mark" to="/" onClick={() => setOpen(false)} aria-label={shell.presentation}>
+          <Link className="brand-mark" to="/" onClick={() => setOpen(false)} title={shell.presentation}>
             <HeliosLogo variant="mark" size={112} />
             <p className="brand-stack">
               Health evaluation

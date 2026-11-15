@@ -2,7 +2,7 @@ import type { SpaceProposal } from '../../shared/spaceSchema'
 import type { AppState, CrewId } from '../../shared/types'
 import type { SpaceDataUse, SpaceShareLevel } from '../persistence/space'
 import { uiLang } from '../locale'
-import { crewPosture, latestReliable } from './selectors'
+import { crewPosture, latestReliable, vitalTrends, measurementQuality, activeHealthAlerts } from './selectors'
 
 const HR_HIGH = 150
 const HR_LOW = 40
@@ -99,6 +99,26 @@ export function answerSpace(
       suggestedLevel: 'medico',
       categories,
     }
+  }
+  // Local read-only fallback: no external model and no modification of state.
+  if (state.role === 'astronaut' && state.sessionCrewId === crewId) {
+    const intent = fold(text)
+    let explanation: string | null = null
+    if (dataUse.pulse && /tendencia|trend/.test(intent)) {
+      const t = vitalTrends(state, crewId)
+      explanation = t.currentHr === null
+        ? (locale === 'en' ? 'There is not enough reliable recent evidence to calculate a trend.' : 'No hay evidencia reciente confiable suficiente para calcular una tendencia.')
+        : (locale === 'en' ? `Heart rate ${t.currentHr} bpm; baseline ${t.hrMin}–${t.hrMax} bpm. Difference from the upper limit: ${t.deltaHr} bpm. Slope over 30 minutes: ${t.slopeBpmPerMinute ?? 'not enough samples'} bpm/min. This does not establish a cause.` : `Pulso ${t.currentHr} lpm; línea base ${t.hrMin}–${t.hrMax} lpm. Diferencia respecto al límite superior: ${t.deltaHr} lpm. Pendiente en 30 minutos: ${t.slopeBpmPerMinute ?? 'sin muestras suficientes'} lpm/min. Esto no establece una causa.`)
+    } else if (dataUse.pulse && /calidad|quality|sensor/.test(intent)) {
+      const q = measurementQuality(state, crewId)
+      explanation = locale === 'en'
+        ? `Measurement quality: ${q.status}; signal ${q.signalQuality ?? 'not supplied'}/100. Resting control: ${q.restControl ? 'available' : 'missing'}. Repeated values require verification. Quality is not clinical certainty.`
+        : `Calidad de medición: ${q.status}; señal ${q.signalQuality ?? 'sin datos'}/100. Control en reposo: ${q.restControl ? 'disponible' : 'faltante'}. Los valores repetidos requieren verificación. Calidad no equivale a certeza clínica.`
+    } else if ((dataUse.pulse || dataUse.symptoms) && /alerta|alert/.test(intent)) {
+      const alerts = activeHealthAlerts(state, crewId).filter((a) => a.type === 'change' ? dataUse.pulse : dataUse.symptoms)
+      explanation = locale === 'en' ? `${alerts.length} active health notices within your allowed data. These are simulated findings, not diagnoses.` : `${alerts.length} avisos de salud activos dentro de tus datos autorizados. Son hallazgos simulados, no diagnósticos.`
+    }
+    if (explanation) return { assistantText: explanation, requiereHumanoAhora: false, suggestedLevel: 'solo_yo', categories: [] }
   }
   const conversation = conversationalTurn(text, history, locale)
   if (conversation)

@@ -1538,3 +1538,39 @@ html.tab-hidden .skeleton { animation: none; }
 .nasa-events { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr)); gap:1rem; max-height:36rem; overflow:auto; }
 .nasa-event { border:1px solid var(--line, #536374); border-radius:12px; padding:1rem; overflow-wrap:anywhere; }
 .nasa-panel { min-width:0; }
+
+.mission-demo-controller { position: fixed; z-index: 65; top: 5rem; left: max(1rem, calc(50% - 29rem)); width: min(58rem, calc(100vw - 2rem)); max-height: calc(100dvh - 7rem); overflow: auto; box-shadow: 0 1rem 3rem #0003; }
+.mission-demo-controller p { font-size: .88rem; margin: .5rem 0; }
+.an-summary { white-space: pre-line; }
+.helios-o { position: relative; width: .78em; justify-content: center; }
+.helios-o svg { position: absolute; left: 0; }
+:root[data-theme] .shell.is-resources { --nav-active: #11627b; }
+:root[data-theme] .shell.is-alerts { --nav-active: #4d6530; }
+:root[data-theme] .shell.is-history { --nav-active: #8c5800; }
+:root[data-theme] .shell.is-analysis { --nav-active: #90247c; }
+:root[data-theme] .shell.is-mission { --nav-active: #9f4318; }
+:root[data-theme] .shell.is-risks { --nav-active: #a33a25; }
+:root[data-theme="light"] .crew-filters button[aria-pressed="true"] { background: #675084; }
+:root[data-theme="dark"] .crew-tile.is-alert .crew-tile-name { color: #c0b1ff; }
+:root[data-theme="light"] .inv-cats button, :root[data-theme="light"] .inv-detail h2 { color: #11627b; }
+.inv-btn.is-sky { background: #15657d; color: #fff; }
+:root[data-theme] .alerts-filters button[aria-pressed="true"],
+.alert-badge.is-change, .alert-badge.is-quality, .alert-badge.is-repeated,
+.alert-badge.is-altered, .alert-badge.is-comms, .alerts-btn.is-fill { background: #4d6530; color: #fff; }
+:root[data-theme="light"] .alerts-filters button { color: #4b622f; }
+:root[data-theme="light"] .alert-card-name,
+:root[data-theme="light"] .alert-card-when,
+:root[data-theme="light"] .alerts-detail h2 { color: #4b622f; }
+:root[data-theme="light"] .alert-card.is-muted .alert-card-name,
+:root[data-theme="light"] .alert-card.is-muted .alert-card-kind,
+:root[data-theme="light"] .alert-card.is-muted .alert-card-when { color: #626262; }
+:root[data-theme="light"] .alerts-btn.is-line { color: #4b622f; }
+:root[data-theme="light"] .shell.is-history { --hist-amber: #8c5800; }
+.hist-export { background: #8c5800; color: #fff; }
+:root[data-theme="light"] .hist-card h2 { color: #8c5800; }
+:root[data-theme="light"] .kicker { color: #ac0036; }
+:root[data-theme="light"] .nav a:not([aria-current="page"]) { color: #ac0036; }
+@media (prefers-reduced-motion: reduce) {
+  .nav a, .bottom-nav a, .more-menu a { transition: none; }
+}
+@media (max-width: 600px) { .mission-demo-controller { top: 4.5rem; max-height: 55dvh; } }
