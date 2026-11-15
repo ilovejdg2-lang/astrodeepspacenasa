@@ -12,6 +12,7 @@ import { ResourcesBackdrop } from './ResourcesBackdrop'
 import { CrewBackdrop } from './CrewBackdrop'
 import { MissionDemoButton } from './MissionDemo'
 import { useLocale } from '../i18n'
+import { noticeText } from '../noticeLocale'
 import { EcgBackdrop } from './EcgBackdrop'
 import { MedicalBackdrop } from './MedicalBackdrop'
 import { HeliosLogo } from './HeliosLogo'
@@ -260,7 +261,7 @@ export function Shell({ children }: { children: ReactNode }) {
           {backendError ? <p role="status">{backendError}</p> : null}
           {persistenceError ? <p>{persistenceError}</p> : null}
         </div>
-        <div className="notice" aria-live="polite">{ai ? <div className="content notice-float" style={{ paddingBottom: 0 }}><p className={`callout callout-${ai.tone === 'err' ? 'bad' : ai.tone === 'ok' ? 'ok' : 'amber'}`} data-testid="notice">{ai.text}</p></div> : null}</div>
+        <div className="notice" aria-live="polite">{ai ? <div className="content notice-float" style={{ paddingBottom: 0 }}><p className={`callout callout-${ai.tone === 'err' ? 'bad' : ai.tone === 'ok' ? 'ok' : 'amber'}`} data-testid="notice">{noticeText(ai.text, lang)}</p></div> : null}</div>
         <main id="contenido" className="content">
           <PageEnter key={`${location.pathname}:${lang}`}>{children}</PageEnter>
         </main>

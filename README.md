@@ -62,3 +62,15 @@ La simulación sigue en Nest/IndexedDB hasta que migremos tablas a Supabase.
 - NTRS sobre monitoreo metabólico EVA (FC / BTU/hr); **no hay telemetría EMU/xEMU pública en vivo**.
 - Metadatos OSDR vía Nest: `GET /api/nasa/sources` y `GET /api/nasa/osdr/studies/OSD-575` (cortesía: NASA Open Science Data Repository).
 - Pantalla **Riesgos NASA** lista riesgos, rangos EVA documentados y el resultado de la consulta OSDR.
+
+## Integraciones ambientales NASA
+
+DONKI en Misión y Alertas; RadLab y Scientific Health Insights en Riesgos NASA. Datos ambientales separados de las alertas médicas. Configurar NASA_API_KEY solo en Nest. [Contratos, verificación real, pruebas, archivos y limitaciones](docs/NASA-INTEGRATION.md).
+
+## Controles de seguridad
+
+Límites por cliente, validación y cuerpos por ruta, errores seguros con requestId, registros técnicos mínimos, integridad HMAC de demostración y fronteras de IA. Vite rechaza credenciales privadas en variables públicas. Ejecutar `npm run security:audit` para revisar el historial local y los artefactos sin imprimir valores. Ver [medidas, evidencias, comandos y limitaciones](docs/SECURITY.md).
+
+## Mi espacio y Quir?n Bot
+
+Memoria reciente opcional, consentimiento independiente para el modelo, herramientas de solo lectura en Nest, cancelaci?n y continuidad local. Se conserva el nivel de compartir elegido. Ver [contratos, archivos, pruebas y l?mites de seguridad](docs/MI-ESPACIO.md).

@@ -4,6 +4,7 @@ import { apiUrl } from './baseUrl'
 export type OsdrStudyResponse = {
   courtesy: string
   studyId: string
+  cached?: boolean
   fetchedAt?: string
   sourceUrl?: string
   repoUrl: string
@@ -12,6 +13,9 @@ export type OsdrStudyResponse = {
     title: string | null
     description: string | null
     organism: string | null
+    researchType?: string | null
+    conditions?: string | null
+    mission?: string | null
     factor: string | null
   }
   limitation?: string
@@ -45,7 +49,7 @@ export async function fetchNasaSources(signal?: AbortSignal): Promise<{
 }
 
 export async function fetchOsdrStudy(studyId: string, signal?: AbortSignal): Promise<OsdrStudyResponse> {
-  const response = await fetch(apiUrl(`/api/nasa/osdr/studies/${encodeURIComponent(studyId)}`), { signal })
+  const response = await fetch(apiUrl(`/api/nasa/osdr/studies/${encodeURIComponent(studyId)}`), { signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(20000)]) : AbortSignal.timeout(20000) })
   const data = (await response.json().catch(() => ({}))) as OsdrStudyResponse & {
     message?: string
     url?: string

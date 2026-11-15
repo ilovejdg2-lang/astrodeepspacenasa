@@ -1,3 +1,4 @@
+import { SpaceWeatherPanel } from '../components/NasaEnvironment'
 import { CheckCircle2, CircleHelp, ClipboardList, Rocket } from 'lucide-react'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
@@ -56,6 +57,8 @@ export function MissionPage() {
         </div>
         <Badge tone="ok">{en ? STAGE_EN[state.mission.stage] : MISSION_STAGE_LABEL[state.mission.stage]}</Badge>
       </header>
+
+      <SpaceWeatherPanel />
 
       <section className="panel">
         <h2>{en ? 'Mission data' : 'Datos de la misión'}</h2>

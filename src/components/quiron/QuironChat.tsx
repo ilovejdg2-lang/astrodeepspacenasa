@@ -177,7 +177,6 @@ export function QuironChat({ mode, state = null }: { mode: QuironMode; state?: A
   useEffect(() => {
     if (!open) return
     scrollToEnd()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [messages, pending, open])
 
   const send = async (text: string) => {

@@ -4,12 +4,13 @@ import { expect, test } from '@playwright/test'
 test('recorre el flujo principal con datos compartidos', async ({ page }) => {
   await page.goto('/app')
   await expect(page.getByTestId('sim-pill')).toHaveText('Simulation')
-  await page.getByTestId('theme-toggle').click()
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark')
   await page.getByTestId('theme-toggle').click()
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'light')
   await page.reload()
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'light')
+  await page.getByTestId('theme-toggle').click()
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark')
 
   await page.getByTestId('crew-mateo-ruiz').click()
   await expect(page.getByRole('heading', { level: 1, name: 'Mateo Ruiz' })).toBeVisible()
@@ -62,6 +63,7 @@ test('recorre el flujo principal con datos compartidos', async ({ page }) => {
 
 test('la pantalla principal no tiene violaciones críticas de accesibilidad', async ({ page }) => {
   await page.goto('/app')
+  await expect(page.getByTestId('sim-pill')).toHaveText('Simulation')
   const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa']).analyze()
   const serious = results.violations.filter((item) => item.impact === 'serious' || item.impact === 'critical')
   expect(serious.map((item) => item.id)).toEqual([])

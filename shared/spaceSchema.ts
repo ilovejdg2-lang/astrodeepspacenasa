@@ -41,6 +41,21 @@ export const spaceContextSchema = z
         .max(8),
     }),
     textoPersona: z.string().max(2000),
+    locale: z.enum(['es', 'en']).optional(),
+    selectedLevel: z
+      .enum(['solo_yo', 'generica', 'medico', 'equipo'])
+      .optional(),
+    history: z
+      .array(
+        z
+          .object({
+            role: z.enum(['user', 'assistant']),
+            content: z.string().min(1).max(2000),
+          })
+          .strict(),
+      )
+      .max(12)
+      .optional(),
   })
   .strict()
 

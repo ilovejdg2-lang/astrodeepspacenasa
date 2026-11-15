@@ -58,7 +58,7 @@ export function ProyectoPage() {
       </Reveal>
 
       <Reveal className="editorial-block mint" delay={0.05}>
-        <h2>{en ? 'What HELIOS proposes' : 'Qué propone HELIOS'}</h2>
+        <h2>{en ? 'What does HELIOS propose?' : '¿Qué propone HELIOS?'}</h2>
         <p>
           {en
             ? 'A support platform that organizes indicators, inventory, consent, and specialized support across Pre-flight, On board, and Post-mission — with transparency about data quality and the scope of the prototype.'
@@ -67,7 +67,7 @@ export function ProyectoPage() {
       </Reveal>
 
       <Reveal className="editorial-block lilac" delay={0.08}>
-        <h2>{en ? 'The problem it addresses' : 'Qué problema busca resolver'}</h2>
+        <h2>{en ? 'What problem does it seek to solve?' : '¿Qué problema busca resolver?'}</h2>
         <p>
           {en
             ? 'Fragmentation between preparation, demonstration telemetry, emotional wellbeing, and later follow-up. HELIOS aims for the crew and the responsible team to consult one mission thread, without presenting invented readings as live clinical data.'
@@ -76,7 +76,7 @@ export function ProyectoPage() {
       </Reveal>
 
       <Reveal className="editorial-block warm" delay={0.1}>
-        <h2>{en ? 'What makes it different' : 'Qué lo hace diferente'}</h2>
+        <h2>{en ? 'What makes it different?' : '¿Qué lo hace diferente?'}</h2>
         <ul className="feature-list">
           {items.map((item) => (
             <li key={item.title}>

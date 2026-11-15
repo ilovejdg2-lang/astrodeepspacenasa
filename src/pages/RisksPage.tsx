@@ -1,8 +1,9 @@
-import { BookOpen, ExternalLink, Loader2, Satellite } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
-import { EVA_METABOLIC_BANDS, NASA_SOURCES, OSDR_DEMO_STUDIES } from '../../shared/nasaSources'
+import { RadiationPanel } from '../components/NasaEnvironment'
+import { BookOpen, ExternalLink } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import { EVA_METABOLIC_BANDS, NASA_SOURCES } from '../../shared/nasaSources'
 import { NASA_RISKS, RISK_CATEGORY_LABEL, type RiskCategory } from '../../shared/risks'
-import { fetchOsdrStudy, type OsdrStudyResponse } from '../api/nasa'
+import { ScientificInsights } from '../components/ScientificInsights'
 import { Empty } from '../components/ui'
 import { useLocale } from '../i18n'
 
@@ -13,9 +14,6 @@ export function RisksPage() {
   const en = lang === 'en'
   const [category, setCategory] = useState<RiskCategory | 'all'>('all')
   const [query, setQuery] = useState('')
-  const [studyId, setStudyId] = useState<(typeof OSDR_DEMO_STUDIES)[number]>(OSDR_DEMO_STUDIES[0])
-  const [osdr, setOsdr] = useState<OsdrStudyResponse | null>(null)
-  const [loading, setLoading] = useState(false)
   const rows = useMemo(() => {
     return NASA_RISKS.filter((item) => {
       if (category !== 'all' && item.category !== category) return false
@@ -24,15 +22,6 @@ export function RisksPage() {
       return hay.includes(query.trim().toLowerCase())
     })
   }, [category, query])
-
-  useEffect(() => {
-    const controller = new AbortController()
-    setLoading(true)
-    void fetchOsdrStudy(studyId, controller.signal)
-      .then(setOsdr)
-      .finally(() => setLoading(false))
-    return () => controller.abort()
-  }, [studyId])
 
   return (
     <div className="page">
@@ -87,37 +76,9 @@ export function RisksPage() {
         </div>
       )}
 
-      <section className="panel">
-        <h2><Satellite aria-hidden="true" size={18} strokeWidth={1.75} /> {en ? 'OSDR · live metadata' : 'OSDR · metadatos en vivo'}</h2>
-        <p className="lede">
-          {en
-            ? 'Queries the public OSDR API (no key) for OSD-288 and OSD-575. Data are courtesy of the NASA Open Science Data Repository. HELIOS does not interpret clinical panels.'
-            : 'Consulta la API pública de OSDR (sin llave) para OSD-288 y OSD-575. Data are courtesy of the NASA Open Science Data Repository. HELIOS no interpreta paneles clínicos.'}
-        </p>
-        <div className="chips" role="group" aria-label="Estudio OSDR">
-          {OSDR_DEMO_STUDIES.map((id) => (
-            <button key={id} type="button" className="chip" aria-pressed={studyId === id} onClick={() => setStudyId(id)} data-testid={`osdr-${id}`}>
-              {id}
-            </button>
-          ))}
-        </div>
-        {loading ? (
-          <p className="muted"><Loader2 aria-hidden="true" size={16} strokeWidth={1.75} className="is-busy" /> {en ? 'Querying OSDR…' : 'Consultando OSDR…'}</p>
-        ) : osdr ? (
-          <div className="stack" data-testid="osdr-result">
-            {osdr.metadata?.title ? <p><strong>{osdr.metadata.title}</strong></p> : null}
-            {osdr.metadata?.description ? <p>{osdr.metadata.description}</p> : null}
-            {osdr.message ? <p className="callout callout-amber">{osdr.message}</p> : null}
-            {osdr.limitation ? <p className="muted">{osdr.limitation}</p> : null}
-            <p>
-              <a href={osdr.repoUrl} target="_blank" rel="noreferrer">
-                <ExternalLink aria-hidden="true" size={16} strokeWidth={1.75} /> {en ? 'Open study in OSDR' : 'Abrir estudio en OSDR'}
-              </a>
-              {osdr.fetchedAt ? <span className="muted"> · consultado {osdr.fetchedAt}</span> : null}
-            </p>
-          </div>
-        ) : null}
-      </section>
+      <RadiationPanel />
+
+      <ScientificInsights />
 
       <section className="panel">
         <h2>{en ? 'Documented EVA ranges (xEMU)' : 'Rangos EVA documentados (xEMU)'}</h2>

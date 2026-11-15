@@ -10,11 +10,11 @@ export function readThemeChoice(): ThemeChoice {
     const value = localStorage.getItem(KEY) || localStorage.getItem(LEGACY_KEY)
     if (value === 'dark') return 'dark'
     if (value === 'light') return 'light'
-    /* "system" legado: primera visita sin preferencia explícita → claro */
+    /* Primera visita o preferencia no explícita → oscuro por defecto */
   } catch {
     /* almacenamiento no disponible */
   }
-  return 'light'
+  return 'dark'
 }
 
 export function applyTheme(choice: ThemeChoice): 'light' | 'dark' {

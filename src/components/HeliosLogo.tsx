@@ -52,7 +52,7 @@ export function HeliosLogo({ variant = 'wordmark', size = 72, className }: Helio
   }
 
   return (
-    <span className={className ? `helios-wordmark ${className}` : 'helios-wordmark'} aria-label="HELIOS">
+    <span className={className ? `helios-wordmark ${className}` : 'helios-wordmark'} role="img" aria-label="HELIOS">
       <span className="helios-letters" aria-hidden="true">
         HELI
         <span className="helios-o">

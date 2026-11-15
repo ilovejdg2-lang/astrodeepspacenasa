@@ -1,3 +1,4 @@
+import { SpaceWeatherPanel } from '../components/NasaEnvironment'
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import type { Alert, AlertStatus, AlertType } from '../../shared/types'
@@ -161,6 +162,7 @@ export function AlertsPage() {
           )}
         </article>
       </div>
+      <SpaceWeatherPanel notices />
       {selected ? <SciencePanel brief={briefForCrew(state, selected.crewId, lang, selected)} /> : null}
       <section className="panel alerts-integrity">
         <h2>{en ? 'Recent integrity' : 'Integridad reciente'}</h2>
