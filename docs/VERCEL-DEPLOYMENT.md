@@ -1,4 +1,6 @@
-﻿# Despliegue Vercel
+> Registro historico. Ver la configuracion actual y los pendientes en [RELEASE.md](RELEASE.md). No se ha publicado el nuevo proxy.
+
+# Despliegue Vercel
 
 Publicado el 14 de noviembre de 2026 (Costa Rica).
 

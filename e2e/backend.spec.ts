@@ -38,3 +38,11 @@ test('la pérdida de API activa el simulador y permite continuar', async ({ page
   await expect(page.getByTestId('backend-mode')).toHaveText('NestJS conectado')
   await expect(page.getByText('Reporte en simulador local')).toBeVisible()
 })
+
+test('session throttling is visible with its retry delay', async ({ page }) => {
+  await page.route('**/api/simulation', (route) => route.fulfill({status: 429, headers: {'Retry-After':'25'}, json:{code:'rate_limit'}}))
+  await page.goto('/app')
+  await expect(page.getByTestId('backend-mode')).toBeVisible()
+  await expect(page.getByTestId('backend-mode')).toHaveText('Simulador local')
+  await expect(page.locator('.connection-notices')).toContainText('25s')
+})

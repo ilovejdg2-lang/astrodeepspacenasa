@@ -25,38 +25,52 @@ export function MissionDemoButton() {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const flight = useRef(false)
+  const cursor = useRef(-1)
   async function go(target: number) {
     if (flight.current) return
     flight.current = true
     setBusy(true)
     setError('')
     try {
-      // Replay deterministic steps so Back/direct navigation cannot duplicate drafts.
-      let current = await runActions([
-        { type: 'setRole', role: 'medical' },
-        { type: 'setScenario', scenarioId: target === 0 ? 'baseline' : 'gradual-fatigue' },
-        { type: 'setRunning', running: false },
-      ])
-      if (target >= 2) current = await runActions([{ type: 'selectCrew', crewId: 'elena-torres' }])
-      if (target >= 4) {
-        const episode = current.episodes.find((e) => e.crewId === 'elena-torres' && e.status !== 'closed')
-        const analysis = episode ? runLocalAnalysis(current, episode.id) : null
-        current = await runActions([{
-          type: 'createCommunication', crewId: 'elena-torres', episodeId: episode?.id ?? null,
-          subject: en ? 'DEMO · Human review requested' : 'DEMO · Solicitud de revisión humana',
-          body: analysis?.summary ?? (en ? 'Simulated change requires human review.' : 'El cambio simulado requiere revisión humana.'),
-          idempotencyKey: 'mission-demo-review',
-        }])
-        const draft = current.communications.find((c) => c.idempotencyKey === 'mission-demo-review')
-        if (!draft) throw new Error('Demo draft unavailable')
-        current = await runActions([{ type: 'transitionCommunication', id: draft.id, status: 'queued' }])
+      let current = await runActions([])
+      // Only restart/back navigation reconstructs the scenario. Forward keeps history.
+      if (step === null || target <= cursor.current) {
+        current = await runActions([
+          { type: 'setRole', role: 'medical' },
+          { type: 'setScenario', scenarioId: 'baseline' },
+          { type: 'setRunning', running: false },
+        ])
+        cursor.current = 0
       }
-      if (target === 5) current = await runActions([{ type: 'setLink', link: 'down' }])
-      if (target === 6) {
-        current = await runActions([{ type: 'setLink', link: 'up' }, { type: 'deliverQueued' }, { type: 'confirmReceived' }])
-        const actions = activeHealthAlerts(current, 'elena-torres').filter((a) => a.status === 'active')
-          .map((a) => ({ type: 'setAlertStatus' as const, alertId: a.id, status: 'following' as const }))
-        if (actions.length) current = await runActions(actions)
+      for (let next = cursor.current + 1; next <= target; next++) {
+        if (next === 1) current = await runActions([{ type: 'setScenario', scenarioId: 'gradual-fatigue' }])
+        if (next === 2) current = await runActions([{ type: 'selectCrew', crewId: 'elena-torres' }])
+        if (next === 4) {
+          const episode = current.episodes.find((e) => e.crewId === 'elena-torres' && e.status !== 'closed')
+          const analysis = episode ? runLocalAnalysis(current, episode.id) : null
+          current = await runActions([{
+            type: 'createCommunication', crewId: 'elena-torres', episodeId: episode?.id ?? null,
+            subject: en ? 'DEMO - Human review requested' : 'DEMO - Revision humana',
+            body: analysis?.summary ?? 'Simulated change requires human review.',
+            idempotencyKey: 'mission-demo-review',
+          }])
+          const draft = current.communications.find((c) => c.idempotencyKey === 'mission-demo-review')
+          if (!draft) throw new Error('Demo draft unavailable')
+          current = await runActions([{ type: 'transitionCommunication', id: draft.id, status: 'queued' }])
+        }
+        if (next === 5) current = await runActions([{ type: 'setLink', link: 'down' }])
+        if (next === 6) {
+          current = await runActions([{ type: 'setLink', link: 'up' }])
+          const draft = current.communications.find((c) => c.idempotencyKey === 'mission-demo-review')
+          if (!draft) throw new Error('Demo communication unavailable')
+          // Never deliver unrelated messages as a side effect of the guide.
+          if (draft.status === 'queued') current = await runActions([{ type: 'transitionCommunication', id: draft.id, status: 'sent' }])
+          if (draft.status !== 'received') current = await runActions([{ type: 'transitionCommunication', id: draft.id, status: 'received' }])
+          const actions = activeHealthAlerts(current, 'elena-torres').filter((a) => a.status === 'active')
+            .map((a) => ({ type: 'setAlertStatus' as const, alertId: a.id, status: 'following' as const }))
+          if (actions.length) current = await runActions(actions)
+        }
+        cursor.current = next
       }
       setStep(target)
       navigate(target < 2 || target === 5 ? '/app' : target === 2 ? '/app/alertas' : target === 3 ? '/app/analisis' : '/app/medico')
@@ -81,7 +95,7 @@ export function MissionDemoButton() {
         <strong>{en ? 'Guided mission demo' : 'Demo guiada de misión'} · {(step ?? 0) + 1}/7</strong>
         <button type="button" className="chip" disabled={busy} onClick={() => { setStep(null); setError('') }}>{en ? 'Close guide' : 'Cerrar guía'}</button>
       </div>
-      <p>{en ? 'Loads fictional scenarios and replaces the current simulation. Each navigation replays the demonstration; no real person is notified.' : 'Carga escenarios ficticios y reemplaza la simulación actual. Cada navegación reproduce el demo; no se notifica a ninguna persona real.'}</p>
+      <p>{en ? 'Loads fictional scenarios and replaces the current simulation. Forward preserves the current messages. Restart or Previous rebuilds the scenario; no real person is notified.' : 'Carga escenarios ficticios y reemplaza la simulación actual. Avanzar conserva los mensajes; reiniciar o retroceder reconstruye el escenario. No se notifica a ninguna persona real.'}</p>
       <div className="chips" role="group" aria-label={en ? 'Demo steps' : 'Pasos del demo'}>
         {STEPS.map((labels, i) => <button key={i} type="button" className="chip" data-testid={`mission-demo-step-${i + 1}`} aria-pressed={step === i} disabled={busy} onClick={() => void go(i)}>{i + 1}. {labels[en ? 0 : 1]}</button>)}
       </div>

@@ -23,6 +23,7 @@ test('guided mission executes seven real steps and preserves review boundaries',
   const sid = await page.evaluate(() => sessionStorage.getItem('vitalink-simulation-id'))
   const snapshot = async () => (await (await request.get('/api/simulation', { headers: { 'X-Simulation-Id': sid! } })).json()).state
   expect((await snapshot()).communications.filter((c: { status: string }) => c.status === 'queued')).toHaveLength(1)
+  const queued = await snapshot()
   await page.getByTestId('mission-demo-next').click()
   await expect(guide).toContainText('6/7')
   let state = await snapshot()
@@ -31,6 +32,8 @@ test('guided mission executes seven real steps and preserves review boundaries',
   await page.getByTestId('mission-demo-next').click()
   await expect(guide).toContainText('7/7')
   state = await snapshot()
+  expect(state.audit.slice(0, queued.audit.length)).toEqual(queued.audit)
+  expect(state.communications[0].id).toBe(queued.communications[0].id)
   expect(state.link).toBe('up')
   expect(state.communications).toHaveLength(1)
   expect(state.communications[0].status).toBe('received')

@@ -237,7 +237,7 @@ export function Shell({ children }: { children: ReactNode }) {
                 ? (lang === 'en' ? `Earth link: delayed ${state.linkDelayMin}min` : `Enlace Tierra: con demora ${state.linkDelayMin}min`)
                 : earthPill(state.link, state.linkDelayMin, shell)}
             </p>
-            <span className="sr-only" data-testid="backend-mode">{backendMode === 'connected' ? 'NestJS conectado' : 'Simulador local'}</span>
+            <span className="helios-pill" data-testid="backend-mode">{backendMode === 'connected' ? 'NestJS conectado' : 'Simulador local'}</span>
           </div>
           <div className="top-actions">
             <div className="lang-switch" role="group" aria-label={shell.language}>
@@ -257,7 +257,7 @@ export function Shell({ children }: { children: ReactNode }) {
             <button type="button" className="sr-only" data-testid="theme-dark" tabIndex={-1} onClick={() => setChoice('dark')}>{lang === 'en' ? 'Dark' : 'Oscuro'}</button>
           </div>
         </header>
-        <div className="sr-only" aria-live="polite">
+        <div className="connection-notices" aria-live="polite">
           {backendError ? <p role="status">{backendError}</p> : null}
           {persistenceError ? <p>{persistenceError}</p> : null}
         </div>

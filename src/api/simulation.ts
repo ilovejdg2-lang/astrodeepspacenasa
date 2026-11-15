@@ -14,6 +14,7 @@ export class ApiError extends Error {
   constructor(
     public status: number,
     message: string,
+    public retryAfterSeconds: number | null = null,
   ) {
     super(message)
   }
@@ -32,7 +33,8 @@ export class SimulationClient {
     })
     if (!response.ok) {
       const error = (await response.json().catch(() => null)) as { message?: string | string[] } | null
-      throw new ApiError(response.status, String(error?.message ?? `API ${response.status}`))
+      const wait = Number(response.headers.get('Retry-After'))
+      throw new ApiError(response.status, String(error?.message ?? `API ${response.status}`), Number.isFinite(wait) && wait > 0 ? Math.min(wait, 3600) : null)
     }
     return response.json()
   }
@@ -44,6 +46,13 @@ export class SimulationClient {
       throw new Error('Respuesta de simulación inválida')
     this.revision = snapshot.revision as number
     return { ...snapshot, state: state.data } as Snapshot
+  }
+  async connect(state: AppState): Promise<Snapshot> {
+    try { return await this.refresh() }
+    catch (error) {
+      if (!(error instanceof ApiError) || error.status !== 404) throw error
+      return this.initialize(state)
+    }
   }
   async initialize(state: AppState): Promise<Snapshot> {
     return this.accept(await this.request('/api/simulation', { initialState: state }))

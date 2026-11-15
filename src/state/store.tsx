@@ -55,8 +55,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     } catch {
       /* Sesión en memoria. */
     }
-    /* Sin banner visual: el modo local se indica solo en data-testid backend-mode. */
-    setBackendError(null)
+    setBackendError('NestJS unavailable / no disponible. Local simulator active / simulador local activo.')
   }, [])
 
   const dispatch = useCallback(
@@ -85,6 +84,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
                   detach()
                 }
               }
+              if (error.status === 429) error.message += ` Retry after ${error.retryAfterSeconds ?? 60}s / reintenta en ${error.retryAfterSeconds ?? 60}s.`
               actionFailure.current = error.message
               setBackendError(`La operación no se confirmó. ${error.message}`)
               return
@@ -139,14 +139,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const api = new SimulationClient(sessionId)
       client.current = api
       try {
-        const snapshot = await api.initialize(initial)
+        const snapshot = await api.connect(initial)
         if (!active) return
         connected.current = true
         setBackendMode('connected')
         apply(snapshot.state)
-      } catch {
+      } catch (error) {
         if (!active) return
         detach()
+        setBackendError(error instanceof ApiError && error.status === 429
+          ? `NestJS: HTTP 429. Retry after ${error.retryAfterSeconds ?? 60}s. / Reintenta en ${error.retryAfterSeconds ?? 60}s. The local simulator remains available.`
+          : 'NestJS unavailable / no disponible. Local simulator active / simulador local activo.')
         apply(initial)
       }
       ready.current = true
