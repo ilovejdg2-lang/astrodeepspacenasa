@@ -60,6 +60,7 @@ export function AlertsPage() {
     .sort((a, b) => b.openedAt - a.openedAt)
 
   useEffect(() => {
+    if (selectedId === '') return
     if (rows.some((alert) => alert.id === selectedId)) return
     setSelectedId(rows[0]?.id ?? '')
   }, [rows, selectedId])
@@ -105,8 +106,8 @@ export function AlertsPage() {
           </button>
         ))}
       </div>
-      <div className="alerts-layout">
-        <div className="alerts-list">
+      <div className={`alerts-layout${selected ? ' has-selection' : ''}`}>
+        <div className="alerts-list" id="alerts-list">
           {rows.length === 0 ? (
             <Empty title={en ? 'No alerts in this state' : 'No hay alertas en este estado'} text={en ? 'When an action or the scenario leaves a notice here, it will show up in this list.' : 'Cuando una acción o el escenario deje un aviso aquí, va a aparecer en esta lista.'} />
           ) : (
@@ -149,6 +150,7 @@ export function AlertsPage() {
                 ? { type: 'resolveSensorAlert', alertId: selected.id }
                 : { type: 'setAlertStatus', alertId: selected.id, status: 'closed' }))}
               onAnalysis={() => openAnalysis(selected)}
+              onBack={() => setSelectedId('')}
               english={en}
             />
           ) : (
@@ -167,7 +169,7 @@ export function AlertsPage() {
             <thead><tr><th>{en ? 'Time' : 'Hora'}</th><th>{en ? 'Source' : 'Origen'}</th><th>{en ? 'Data' : 'Dato'}</th><th>{en ? 'Integrity' : 'Integridad'}</th><th>{en ? 'Detail' : 'Detalle'}</th></tr></thead>
             <tbody>
               {state.measurements.slice(-6).reverse().map((item) => (
-                <tr key={item.id}><td>{formatMission(item.measuredAt)}</td><td>{item.sensorId}</td><td>{item.value} {item.unit}</td><td>{integrityLabel(item.integrity)}</td><td>{item.origin === 'local' ? 'Registro local' : item.macValid ? 'MAC de demostración válido' : 'Sin MAC'}</td></tr>
+                <tr key={item.id}><td>{formatMission(item.measuredAt)}</td><td>{item.sensorId}</td><td>{item.value} {item.unit}</td><td>{integrityLabel(item.integrity)}</td><td>{item.origin === 'local' ? (en ? 'Local record' : 'Registro local') : item.macValid ? (en ? 'Valid demonstration MAC' : 'MAC de demostración válido') : (en ? 'No MAC' : 'Sin MAC')}</td></tr>
               ))}
               {state.rejected.slice(-4).reverse().map((item) => (
                 <tr key={item.id}><td>{formatMission(item.at)}</td><td>{item.sensorId}</td><td>{item.claimedValue ?? '—'}</td><td>{rejectLabel(item.reason)}</td><td>{item.detail}</td></tr>
@@ -189,6 +191,7 @@ function AlertDetail({
   onFollow,
   onClose,
   onAnalysis,
+  onBack,
   english,
 }: {
   alert: Alert
@@ -199,12 +202,16 @@ function AlertDetail({
   onFollow: () => void
   onClose: () => void
   onAnalysis: () => void
+  onBack: () => void
   english: boolean
 }) {
   const opened = stamp(alert.openedAt)
   const updated = stamp(alert.updatedAt)
   return (
     <>
+      <button className="alerts-back" type="button" onClick={onBack}>
+        {english ? 'Back to the list' : 'Volver a la lista'}
+      </button>
       <p className="alerts-detail-kind">{kindLine(alert.type, alert.title, english)}</p>
       <h2>{name}</h2>
       {reasonLines(alert.reason).map((line) => <p key={line} className="alerts-detail-reason">{line}</p>)}

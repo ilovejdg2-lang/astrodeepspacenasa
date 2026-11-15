@@ -6,10 +6,14 @@ import { activeAlerts } from '../domain/selectors'
 import { useApp } from '../state/store'
 import { useTheme } from '../theme'
 import { AlertsBackdrop } from './AlertsBackdrop'
+import { AnalysisBackdrop } from './AnalysisBackdrop'
+import { HistoryBackdrop } from './HistoryBackdrop'
+import { ResourcesBackdrop } from './ResourcesBackdrop'
 import { CrewBackdrop } from './CrewBackdrop'
 import { MissionDemoButton } from './MissionDemo'
 import { useLocale } from '../i18n'
 import { EcgBackdrop } from './EcgBackdrop'
+import { MedicalBackdrop } from './MedicalBackdrop'
 import { HeliosLogo } from './HeliosLogo'
 import { Hint } from './Hint'
 import { PageEnter } from './PageEnter'
@@ -43,6 +47,11 @@ function earthPill(link: 'up' | 'delayed' | 'down', delayMin: number, shell: { l
   return shell.linkUp
 }
 
+function moreIsCurrent(pathname: string, primary: { to: string }[], narrow: boolean, astronaut: boolean): boolean {
+  const overflow = primary.slice(narrow ? 4 : 5).some((link) => pathname === link.to || pathname.startsWith(`${link.to}/`))
+  return overflow || pathname.startsWith('/app/mision') || pathname.startsWith('/app/riesgos') || (astronaut && pathname.startsWith('/app/mi-espacio'))
+}
+
 export function Shell({ children }: { children: ReactNode }) {
   const { state, persistenceError, backendMode, backendError } = useApp()
   const { resolved, setChoice, toggle } = useTheme()
@@ -64,12 +73,14 @@ export function Shell({ children }: { children: ReactNode }) {
   const spaceLink = { to: '/app/mi-espacio', label: shell.space, icon: Lock, end: false }
   const [open, setOpen] = useState(false)
   const [more, setMore] = useState(false)
+  const [narrowPhone, setNarrowPhone] = useState(() => window.matchMedia('(max-width: 359px)').matches)
+  const moreButton = useRef<HTMLButtonElement>(null)
+  const morePanel = useRef<HTMLDivElement>(null)
   const location = useLocation()
   const alerts = activeAlerts(state, 'active').length
   const primary = state.role === 'astronaut'
     ? [...primaryLinks.slice(0, 4), spaceLink, ...primaryLinks.slice(4)]
     : primaryLinks
-  const links = [...primary, ...extraLinks]
   const ai = state.notice
   const heard = useRef<Set<string> | null>(null)
   const [badgePop, setBadgePop] = useState(false)
@@ -77,6 +88,10 @@ export function Shell({ children }: { children: ReactNode }) {
   const isMonitor = location.pathname === '/app' || location.pathname === '/app/'
   const isCrew = location.pathname.startsWith('/app/tripulacion')
   const isAlerts = location.pathname.startsWith('/app/alertas')
+  const isResources = location.pathname.startsWith('/app/recursos')
+  const isHistory = location.pathname.startsWith('/app/historial')
+  const isAnalysis = location.pathname.startsWith('/app/analisis')
+  const isMedical = location.pathname.startsWith('/app/medico')
   const section = isMonitor
     ? 'is-monitor'
     : isCrew
@@ -97,6 +112,27 @@ export function Shell({ children }: { children: ReactNode }) {
                     ? 'is-risks'
                     : 'is-space'
 
+  useEffect(() => {
+    const query = window.matchMedia('(max-width: 359px)')
+    const sync = () => setNarrowPhone(query.matches)
+    sync()
+    query.addEventListener('change', sync)
+    return () => query.removeEventListener('change', sync)
+  }, [])
+  useEffect(() => {
+    setMore(false)
+  }, [location.pathname])
+  useEffect(() => {
+    if (!more) return
+    morePanel.current?.querySelector<HTMLElement>('a, button')?.focus()
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return
+      setMore(false)
+      moreButton.current?.focus()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [more])
   useEffect(() => {
     const sync = () => document.documentElement.classList.toggle('tab-hidden', document.hidden)
     sync()
@@ -133,7 +169,7 @@ export function Shell({ children }: { children: ReactNode }) {
       <aside className={open ? 'sidebar open' : 'sidebar'}>
         <div className="sidebar-top">
           <Link className="brand-mark" to="/" onClick={() => setOpen(false)} aria-label={shell.presentation}>
-            <HeliosLogo variant="mark" size={148} />
+            <HeliosLogo variant="mark" size={112} />
             <p className="brand-stack">
               Health evaluation
               <br />
@@ -171,11 +207,18 @@ export function Shell({ children }: { children: ReactNode }) {
           </p>
         </div>
       </aside>
-      <div className={isMonitor ? 'workspace workspace-monitor' : isCrew ? 'workspace workspace-crew' : isAlerts ? 'workspace workspace-alerts' : 'workspace'}>
+      <div className={isMonitor ? 'workspace workspace-monitor' : isCrew ? 'workspace workspace-crew' : isAlerts ? 'workspace workspace-alerts' : isResources ? 'workspace workspace-resources' : isHistory ? 'workspace workspace-history' : isAnalysis ? 'workspace workspace-analysis' : isMedical ? 'workspace workspace-medical' : 'workspace'}>
         {isMonitor ? <EcgBackdrop /> : null}
         {isCrew ? <CrewBackdrop /> : null}
         {isAlerts ? <AlertsBackdrop /> : null}
+        {isResources ? <ResourcesBackdrop /> : null}
+        {isHistory ? <HistoryBackdrop /> : null}
+        {isAnalysis ? <AnalysisBackdrop /> : null}
+        {isMedical ? <MedicalBackdrop /> : null}
         <header className="topbar">
+          <Link className="mobile-brand" to="/" aria-label={shell.presentation}>
+            <HeliosLogo variant="wordmark" />
+          </Link>
           <div className="row topbar-pills">
             <Hint label={open ? shell.closeMenu : shell.openMenu}>
               <button className="btn icon-btn menu-btn" type="button" aria-label={open ? shell.closeMenu : shell.openMenu} onClick={() => setOpen((value) => !value)}>
@@ -185,7 +228,9 @@ export function Shell({ children }: { children: ReactNode }) {
             <p className="helios-pill" data-testid="sim-pill">{shell.simulation}</p>
             <MissionDemoButton />
             <p className={`helios-pill ${state.link === 'down' ? 'down' : ''}`} key={state.link}>
-              {earthPill(state.link, state.linkDelayMin, shell)}
+              {(isResources || isHistory || isAnalysis || isMedical || isCrew || isMonitor) && state.link === 'delayed'
+                ? (lang === 'en' ? `Earth link: delayed ${state.linkDelayMin}min` : `Enlace Tierra: con demora ${state.linkDelayMin}min`)
+                : earthPill(state.link, state.linkDelayMin, shell)}
             </p>
             <span className="sr-only" data-testid="backend-mode">{backendMode === 'connected' ? 'NestJS conectado' : 'Simulador local'}</span>
           </div>
@@ -216,18 +261,40 @@ export function Shell({ children }: { children: ReactNode }) {
           <PageEnter key={`${location.pathname}:${lang}`}>{children}</PageEnter>
         </main>
         <nav className="bottom-nav" aria-label={shell.mainSections}>
-          {links.slice(0, 4).map((link) => (
+          {primaryLinks.slice(0, narrowPhone ? 4 : 5).map((link) => (
             <NavLink key={link.to} to={link.to} end={link.end} onClick={() => setMore(false)}>
               <link.icon aria-hidden="true" size={18} strokeWidth={1.75} />
               {link.label}
             </NavLink>
           ))}
-          <button type="button" onClick={() => setMore((value) => !value)} aria-expanded={more}><Menu aria-hidden="true" size={18} strokeWidth={1.75} /> {shell.more}</button>
+          <button
+            ref={moreButton}
+            type="button"
+            aria-expanded={more}
+            aria-controls="more-modules"
+            aria-current={moreIsCurrent(location.pathname, primaryLinks, narrowPhone, state.role === 'astronaut') ? 'page' : undefined}
+            onClick={() => setMore((value) => !value)}
+          >
+            <Menu aria-hidden="true" size={18} strokeWidth={1.75} /> {shell.more}
+          </button>
         </nav>
+        {more ? <button className="scrim more-scrim" type="button" aria-label={shell.closeMenu} onClick={() => { setMore(false); moreButton.current?.focus() }} /> : null}
         {more ? (
-          <div className="more-menu">
-            {links.slice(4).map((link) => (
-              <NavLink key={link.to} to={link.to} onClick={() => setMore(false)}>
+          <div ref={morePanel} id="more-modules" className="more-menu" role="dialog" aria-label={shell.moreSections}>
+            {primaryLinks.slice(narrowPhone ? 4 : 5).map((link) => (
+              <NavLink key={link.to} to={link.to} end={link.end} onClick={() => setMore(false)}>
+                <link.icon aria-hidden="true" size={18} strokeWidth={1.75} />
+                {link.label}
+              </NavLink>
+            ))}
+            {state.role === 'astronaut' ? (
+              <NavLink to={spaceLink.to} onClick={() => setMore(false)}>
+                <spaceLink.icon aria-hidden="true" size={18} strokeWidth={1.75} />
+                {spaceLink.label}
+              </NavLink>
+            ) : null}
+            {extraLinks.map((link) => (
+              <NavLink key={link.to} to={link.to} end={link.end} onClick={() => setMore(false)}>
                 <link.icon aria-hidden="true" size={18} strokeWidth={1.75} />
                 {link.label}
               </NavLink>

@@ -189,7 +189,7 @@ export function MySpacePage() {
         </div>
       </header>
       {state.role !== 'astronaut' ? (
-        <p className="callout">Con el rol simulado actual este módulo no se consulta. Ocultar la tarjeta no sería suficiente, así que la lectura ni siquiera se pide.</p>
+        <p className="callout">{en ? 'This simulated role does not open this module. Hiding the card would not be enough, so the read is not even requested.' : 'Con el rol simulado actual este módulo no se consulta. Ocultar la tarjeta no sería suficiente, así que la lectura ni siquiera se pide.'}</p>
       ) : null}
       {state.role === 'astronaut' && !allowed ? <PinGate name={sessionCrew.name} pin={pin} pinError={pinError} onPin={setPin} onClearError={() => setPinError('')} onSubmit={() => {
         if (!simulatedPinMatches(state.sessionCrewId, pin)) {
@@ -202,13 +202,17 @@ export function MySpacePage() {
       {allowed && record ? (
         <div className="stack">
           <details className="fold">
-            <summary>Qué no puede quedarse solo aquí</summary>
-            <p>Enviar publica la vista previa del nivel que elijas. Genérica no incluye el motivo ni los datos. Médico de vuelo y Equipo incluyen el texto. La conversación se queda aquí. Si escribes una urgencia del protocolo, el motor local crea una alerta en el Centro de alertas: dolor en el pecho, desmayo, dificultad para respirar, confusión, pensamientos de hacerse daño o de dañar a otros, y un riesgo para la nave.</p>
+            <summary>{en ? 'What cannot stay only here' : 'Qué no puede quedarse solo aquí'}</summary>
+            <p>{en ? 'Send publishes the preview for the level you choose. Generic does not include the reason or the data. Flight surgeon and Team include the text. The conversation stays here. If you write a protocol emergency, the local engine creates an alert: chest pain, fainting, trouble breathing, confusion, thoughts of harming yourself or others, and a risk to the ship.' : 'Enviar publica la vista previa del nivel que elijas. Genérica no incluye el motivo ni los datos. Médico de vuelo y Equipo incluyen el texto. La conversación se queda aquí. Si escribes una urgencia del protocolo, el motor local crea una alerta en el Centro de alertas: dolor en el pecho, desmayo, dificultad para respirar, confusión, pensamientos de hacerse daño o de dañar a otros, y un riesgo para la nave.'}</p>
           </details>
           <section className="panel">
-            <h2>Datos que uso</h2>
+            <h2>{en ? 'Data I use' : 'Datos que uso'}</h2>
             <div className="stack">
-              {SWITCHES.map((item) => (
+              {(en ? [
+                { id: 'sleep' as const, label: 'Sleep' },
+                { id: 'pulse' as const, label: 'Pulse' },
+                { id: 'symptoms' as const, label: 'Symptoms' },
+              ] : SWITCHES).map((item) => (
                 <div key={item.id} className="switch-row">
                   <label htmlFor={`space-use-${item.id}`}>{item.label}</label>
                   <Switch.Root
@@ -234,47 +238,55 @@ export function MySpacePage() {
             {' '}Lo que escribas aquí es privado hasta que tú lo envíes.
           </p>
           <section className="panel">
-            <h2>Cómo te sientes</h2>
+            <h2>{en ? 'How you feel' : 'Cómo te sientes'}</h2>
             <div className="chat-log" aria-live="polite">
-              {record.messages.length === 0 ? <p className="muted">Todavía no hay mensajes en tu espacio.</p> : null}
+              {record.messages.length === 0 ? <p className="muted">{en ? 'There are no messages in your space yet.' : 'Todavía no hay mensajes en tu espacio.'}</p> : null}
               {record.messages.map((message) => (
                 <article key={message.id} className={message.role === 'user' ? 'bubble user' : 'bubble'}>
-                  {message.role === 'assistant' ? <span className="muted">{message.source === 'model' ? 'Modelo' : 'Motor local'}</span> : null}
+                  {message.role === 'assistant' ? <span className="muted">{message.source === 'model' ? (en ? 'Model' : 'Modelo') : (en ? 'Local engine' : 'Motor local')}</span> : null}
                   <p>{message.text}</p>
                 </article>
               ))}
             </div>
-            {record.messages.at(-1)?.text.includes('no debe quedarse solo entre tú y yo') ? (
+            {(() => {
+              const last = record.messages.at(-1)?.text ?? ''
+              return last.includes('no debe quedarse solo entre tú y yo') || last.includes('should not stay only between you and me')
+            })() ? (
               <div className="row" data-testid="space-escalation">
-                <button className="btn btn-primary" type="button" onClick={() => { setLevel('medico'); setDraft('Necesito al médico de vuelo ahora') }}>Médico de vuelo</button>
-                <button className="btn" type="button" onClick={() => { setLevel('equipo'); setDraft('Necesito a un compañero ahora') }}>Compañero</button>
+                <button className="btn btn-primary" type="button" onClick={() => { setLevel('medico'); setDraft(en ? 'I need the flight surgeon now' : 'Necesito al médico de vuelo ahora') }}>{en ? 'Flight surgeon' : 'Médico de vuelo'}</button>
+                <button className="btn" type="button" onClick={() => { setLevel('equipo'); setDraft(en ? 'I need a crewmate now' : 'Necesito a un compañero ahora') }}>{en ? 'Crewmate' : 'Compañero'}</button>
               </div>
             ) : null}
-            <div className="chips" role="group" aria-label="Respuestas rápidas">
-              {QUICK.map((text) => (
+            <div className="chips" role="group" aria-label={en ? 'Quick replies' : 'Respuestas rápidas'}>
+              {(en ? ['I am tired', 'I need to rest', 'I want to talk to someone', 'I feel unwell now'] as const : QUICK).map((text) => (
                 <button key={text} type="button" className="chip" onClick={() => appendMessage(text)}>{text}</button>
               ))}
             </div>
             <form onSubmit={(event) => { event.preventDefault(); appendMessage(draft) }}>
-              <Field id="space-draft" label="Texto de la solicitud">
+              <Field id="space-draft" label={en ? 'Request text' : 'Texto de la solicitud'}>
                 <textarea id="space-draft" ref={draftRef} data-testid="space-draft" maxLength={2000} value={draft} onChange={(event) => setDraft(event.target.value)} />
               </Field>
-              <button className="btn" type="submit">Anotar</button>
+              <button className="btn" type="submit">{en ? 'Note it' : 'Anotar'}</button>
             </form>
           </section>
           <section className="panel">
-            <h2>Solicitud</h2>
-            <p className="muted">Vista previa de lo que vería el equipo.</p>
+            <h2>{en ? 'Request' : 'Solicitud'}</h2>
+            <p className="muted">{en ? 'Preview of what the team would see.' : 'Vista previa de lo que vería el equipo.'}</p>
             <p data-testid="space-preview">{draft.trim() ? preview.cardText : 'Escribe algo para armar la solicitud.'}</p>
-            <div className="chips" role="group" aria-label="Nivel de compartir">
-              {LEVELS.map((item) => (
+            <div className="chips" role="group" aria-label={en ? 'Sharing level' : 'Nivel de compartir'}>
+              {(en ? [
+                { id: 'solo_yo' as const, label: 'Only me' },
+                { id: 'generica' as const, label: 'Generic' },
+                { id: 'medico' as const, label: 'Flight surgeon' },
+                { id: 'equipo' as const, label: 'Team' },
+              ] : LEVELS).map((item) => (
                 <button key={item.id} type="button" className="chip" aria-pressed={level === item.id} onClick={() => setLevel(item.id)}>{item.label}</button>
               ))}
             </div>
             <div className="row">
-              <button className="btn btn-primary" type="button" data-testid="space-send" disabled={!draft.trim() || level === 'solo_yo'} onClick={() => saveRequest('sent')}>Enviar</button>
-              <button className="btn" type="button" onClick={() => draftRef.current?.focus()}>Editar</button>
-              <button className="btn" type="button" data-testid="space-keep" disabled={!draft.trim()} onClick={() => saveRequest('mine')}>Guardar solo para mí</button>
+              <button className="btn btn-primary" type="button" data-testid="space-send" disabled={!draft.trim() || level === 'solo_yo'} onClick={() => saveRequest('sent')}>{en ? 'Send' : 'Enviar'}</button>
+              <button className="btn" type="button" onClick={() => draftRef.current?.focus()}>{en ? 'Edit' : 'Editar'}</button>
+              <button className="btn" type="button" data-testid="space-keep" disabled={!draft.trim()} onClick={() => saveRequest('mine')}>{en ? 'Save only for me' : 'Guardar solo para mí'}</button>
             </div>
             {level === 'solo_yo' ? <p className="muted">Con Solo yo, Enviar queda deshabilitado. Usa Guardar solo para mí.</p> : null}
             {note ? <p className="callout" data-testid="space-note">{note}</p> : null}

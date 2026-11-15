@@ -69,6 +69,7 @@ export type Action =
     }
   | { type: 'updateResource'; resourceId: string; name: string; location: string; status: Resource['status'] }
   | { type: 'createCommunication'; crewId: CrewId; episodeId: string | null; subject: string; body: string; idempotencyKey: string }
+  | { type: 'updateCommunicationDraft'; id: string; subject: string; body: string }
   | { type: 'transitionCommunication'; id: string; status: CommStatus }
   | { type: 'deliverQueued' }
   | { type: 'confirmReceived' }
@@ -137,6 +138,8 @@ export function reduce(state: AppState, action: Action): AppState {
       return updateResource(state, action)
     case 'createCommunication':
       return createCommunication(state, action)
+    case 'updateCommunicationDraft':
+      return updateCommunicationDraft(state, action)
     case 'transitionCommunication':
       return transitionCommunication(state, action.id, action.status)
     case 'deliverQueued':
@@ -538,6 +541,33 @@ function createCommunication(
     actor: state.role,
     action: 'draft-communication',
     entityId: communication.id,
+    detail: subject,
+  })
+}
+
+function updateCommunicationDraft(
+  state: AppState,
+  action: { id: string; subject: string; body: string },
+): AppState {
+  if (!canManageComms(state.role)) return withNotice(state, 'err', uiLang() === 'en' ? 'This simulated role cannot edit a draft.' : 'Este rol simulado no puede editar un borrador.')
+  const current = state.communications.find((item) => item.id === action.id)
+  if (!current) return withNotice(state, 'err', uiLang() === 'en' ? 'That draft was not found.' : 'No se encontró el borrador.')
+  if (current.status !== 'draft') {
+    return withNotice(state, 'err', uiLang() === 'en' ? 'Only a draft can be edited. This message was not changed.' : 'Solo un borrador se puede editar. Este mensaje no cambió.')
+  }
+  const subject = action.subject.trim()
+  const body = action.body.trim()
+  if (subject.length < 3) return withNotice(state, 'err', uiLang() === 'en' ? 'The subject is too short.' : 'El asunto es demasiado corto.')
+  if (body.length < 3) return withNotice(state, 'err', uiLang() === 'en' ? 'The message is empty.' : 'El mensaje está vacío.')
+  if (body.length > 4000) return withNotice(state, 'err', uiLang() === 'en' ? 'The message is over the 4000 character limit.' : 'El mensaje supera el límite de 4000 caracteres.')
+  if (current.subject === subject && current.body === body) {
+    return withNotice(state, 'ok', uiLang() === 'en' ? 'Draft saved. It is not queued or sent yet.' : 'Borrador guardado. Todavía no está en cola ni fue enviado.')
+  }
+  const communications = state.communications.map((item) => (item.id === current.id ? { ...item, subject, body, status: 'draft' as const } : item))
+  return addAudit(withNotice({ ...state, communications }, 'ok', uiLang() === 'en' ? 'Draft saved. It is not queued or sent yet.' : 'Borrador guardado. Todavía no está en cola ni fue enviado.'), {
+    actor: state.role,
+    action: 'draft-communication',
+    entityId: current.id,
     detail: subject,
   })
 }

@@ -210,6 +210,13 @@ describe('inventario y comunicaciones', () => {
     const id = draft.communications[0]?.id ?? ''
     const skipped = reduce(draft, { type: 'transitionCommunication', id, status: 'received' })
     expect(skipped.communications[0]?.status).toBe('draft')
+    const edited = reduce(draft, { type: 'updateCommunicationDraft', id, subject: 'Resumen editado', body: 'Primera línea\nSegunda línea' })
+    expect(edited.communications[0]).toMatchObject({ status: 'draft', subject: 'Resumen editado', body: 'Primera línea\nSegunda línea', queuedAt: null, sentAt: null, receivedAt: null })
+    expect(edited.communications).toHaveLength(1)
+    const queuedDraft = reduce(edited, { type: 'transitionCommunication', id, status: 'queued' })
+    const blocked = reduce(queuedDraft, { type: 'updateCommunicationDraft', id, subject: 'No debe cambiar', body: 'Texto que no se guarda.' })
+    expect(blocked.communications[0]?.subject).toBe('Resumen editado')
+    expect(blocked.communications[0]?.status).toBe('queued')
   })
 
   it('el rol simulado de astronauta no cierra una alerta de salud', () => {

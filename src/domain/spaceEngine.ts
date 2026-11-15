@@ -1,18 +1,19 @@
 import type { SpaceProposal } from '../../shared/spaceSchema'
 import type { AppState, CrewId } from '../../shared/types'
 import type { SpaceDataUse, SpaceShareLevel } from '../persistence/space'
+import { uiLang } from '../locale'
 import { crewPosture, latestReliable } from './selectors'
 
 const HR_HIGH = 150
 const HR_LOW = 40
 
 const KEYWORDS: { category: string; patterns: string[] }[] = [
-  { category: 'dolor en el pecho', patterns: ['dolor en el pecho', 'dolor de pecho', 'dolor toracico'] },
-  { category: 'desmayo', patterns: ['desmay'] },
-  { category: 'dificultad para respirar', patterns: ['dificultad para respirar', 'no puedo respirar', 'me falta el aire', 'falta de aire'] },
-  { category: 'confusión', patterns: ['confusion', 'confundid'] },
-  { category: 'hacerse daño o dañar a otros', patterns: ['hacerme dano', 'hacerse dano', 'matarme', 'suicid', 'danar a otros', 'herir a', 'lastimar a'] },
-  { category: 'riesgo para la nave', patterns: ['riesgo para la nave', 'peligro para la nave'] },
+  { category: 'dolor en el pecho', patterns: ['dolor en el pecho', 'dolor de pecho', 'dolor toracico', 'chest pain'] },
+  { category: 'desmayo', patterns: ['desmay', 'faint', 'blackout'] },
+  { category: 'dificultad para respirar', patterns: ['dificultad para respirar', 'no puedo respirar', 'me falta el aire', 'falta de aire', 'trouble breathing', 'cant breathe', "can't breathe"] },
+  { category: 'confusión', patterns: ['confusion', 'confundid', 'confused'] },
+  { category: 'hacerse daño o dañar a otros', patterns: ['hacerme dano', 'hacerse dano', 'matarme', 'suicid', 'danar a otros', 'herir a', 'lastimar a', 'hurt myself', 'hurt others'] },
+  { category: 'riesgo para la nave', patterns: ['riesgo para la nave', 'peligro para la nave', 'risk to the ship'] },
 ]
 
 export interface SpaceTurn {
@@ -62,7 +63,9 @@ export function answerSpace(state: AppState, crewId: CrewId, dataUse: SpaceDataU
   const categories = escalationCategories(state, crewId, dataUse, text)
   if (categories.length > 0) {
     return {
-      assistantText: 'Esto es importante y no debe quedarse solo entre tú y yo. Conecta con el médico de vuelo o con un compañero. Motor local, simulación.',
+      assistantText: uiLang() === 'en'
+        ? 'This matters and should not stay only between you and me. Connect with the flight surgeon or a crewmate. Local engine, simulation.'
+        : 'Esto es importante y no debe quedarse solo entre tú y yo. Conecta con el médico de vuelo o con un compañero. Motor local, simulación.',
       requiereHumanoAhora: true,
       suggestedLevel: 'medico',
       categories,
@@ -83,33 +86,34 @@ export function escalationCategories(state: AppState, crewId: CrewId, dataUse: S
 
 function guidedTurn(state: AppState, crewId: CrewId, text: string): SpaceTurn {
   const folded = fold(text)
+  const english = uiLang() === 'en'
   const posture = crewPosture(state, crewId)
-  if (folded.includes('me siento mal') || folded.includes('mal ahora')) {
+  if (folded.includes('me siento mal') || folded.includes('mal ahora') || folded.includes('feel unwell') || folded.includes('feel bad')) {
     const assistantText = posture.observed === 'no_recent_evaluation'
-      ? 'No tengo datos recientes tuyos, así que no puedo comparar. Si te sientes mal, conviene repetir una medición en reposo.'
+      ? (english ? 'I do not have recent data for you, so I cannot compare. If you feel unwell, it helps to repeat a measurement at rest.' : 'No tengo datos recientes tuyos, así que no puedo comparar. Si te sientes mal, conviene repetir una medición en reposo.')
       : posture.observed === 'stable'
-        ? 'Tus cifras recientes no muestran un cambio. Eso no contradice cómo te sientes. Conviene repetir la medición en reposo.'
-        : 'Anoté que te sientes mal ahora. Puedes enviar la solicitud al médico de vuelo con el texto que elijas.'
+        ? (english ? 'Your recent numbers do not show a change. That does not contradict how you feel. It helps to repeat the measurement at rest.' : 'Tus cifras recientes no muestran un cambio. Eso no contradice cómo te sientes. Conviene repetir la medición en reposo.')
+        : (english ? 'I noted that you feel unwell now. You can send the request to the flight surgeon with the text you choose.' : 'Anoté que te sientes mal ahora. Puedes enviar la solicitud al médico de vuelo con el texto que elijas.')
     return { assistantText, requiereHumanoAhora: false, suggestedLevel: 'medico', categories: [] }
   }
-  if (folded.includes('hablar')) {
+  if (folded.includes('hablar') || folded.includes('talk')) {
     return {
-      assistantText: 'Puedes pedir hablar con alguien. En nivel genérico el equipo vería solo eso, sin el motivo.',
+      assistantText: english ? 'You can ask to talk with someone. At the generic level the team would see only that, without the reason.' : 'Puedes pedir hablar con alguien. En nivel genérico el equipo vería solo eso, sin el motivo.',
       requiereHumanoAhora: false,
       suggestedLevel: 'generica',
       categories: [],
     }
   }
-  if (folded.includes('descans') || folded.includes('cansad')) {
+  if (folded.includes('descans') || folded.includes('cansad') || folded.includes('rest') || folded.includes('tired')) {
     return {
-      assistantText: 'Puedo armar una solicitud de descanso. En nivel genérico el equipo vería que necesitas un bloque de descanso, sin el motivo.',
+      assistantText: english ? 'I can draft a rest request. At the generic level the team would see that you need a rest block, without the reason.' : 'Puedo armar una solicitud de descanso. En nivel genérico el equipo vería que necesitas un bloque de descanso, sin el motivo.',
       requiereHumanoAhora: false,
       suggestedLevel: 'generica',
       categories: [],
     }
   }
   return {
-    assistantText: 'Quedó anotado en tu espacio. Revisa la vista previa antes de enviar. Motor local, simulación.',
+    assistantText: english ? 'Noted in your space. Review the preview before sending. Local engine, simulation.' : 'Quedó anotado en tu espacio. Revisa la vista previa antes de enviar. Motor local, simulación.',
     requiereHumanoAhora: false,
     suggestedLevel: 'generica',
     categories: [],

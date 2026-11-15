@@ -57,6 +57,9 @@ export function MonitorPage() {
       </div>
 
       <header className="monitor-id">
+        <div className="monitor-avatar">
+          <CrewHelmet id={crew.id} name={crew.name} selected />
+        </div>
         <p className="monitor-kicker">Monitor</p>
         <h1 className="monitor-name">{crew.name}</h1>
         <p className="monitor-meta">{crewDuty(crew, lang)} · {crewPlace(crew, lang)}</p>
@@ -119,7 +122,7 @@ export function MonitorPage() {
         {symptoms.length > 0 ? (
           <ul>
             {symptoms.map((item) => (
-              <li key={item.id}>{item.symptoms.join(', ') || 'Nota'} — {item.note || 'sin nota'} · {ageLabel(state.clock.simulatedAt, item.reportedAt)}</li>
+              <li key={item.id}>{item.symptoms.map((id) => SYMPTOM_LABEL[lang][id as keyof typeof SYMPTOM_LABEL.en] ?? id).join(', ') || (en ? 'Note' : 'Nota')} — {item.note || (en ? 'no note' : 'sin nota')} · {ageLabel(state.clock.simulatedAt, item.reportedAt)}</li>
             ))}
           </ul>
         ) : null}

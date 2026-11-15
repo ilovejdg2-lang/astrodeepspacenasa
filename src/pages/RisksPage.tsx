@@ -49,8 +49,8 @@ export function RisksPage() {
       </header>
 
       <div className="spread">
-        <div className="chips" role="tablist" aria-label="Categoría de riesgo">
-          <button type="button" className="chip" aria-pressed={category === 'all'} onClick={() => setCategory('all')}>Todas</button>
+        <div className="chips" role="tablist" aria-label={en ? 'Risk category' : 'Categoría de riesgo'}>
+          <button type="button" className="chip" aria-pressed={category === 'all'} onClick={() => setCategory('all')}>{en ? 'All' : 'Todas'}</button>
           {CATEGORIES.map((id) => (
             <button key={id} type="button" className="chip" aria-pressed={category === id} onClick={() => setCategory(id)}>
               {RISK_CATEGORY_LABEL[id]}
@@ -58,13 +58,13 @@ export function RisksPage() {
           ))}
         </div>
         <label className="field" style={{ marginBottom: 0, minWidth: 220 }}>
-          Buscar
-          <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Sueño, radiación, EVA…" />
+          {en ? 'Search' : 'Buscar'}
+          <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={en ? 'Sleep, radiation, EVA…' : 'Sueño, radiación, EVA…'} />
         </label>
       </div>
 
       {rows.length === 0 ? (
-        <Empty title="Sin coincidencias" text="Probá otra categoría o palabra." />
+        <Empty title={en ? 'No matches' : 'Sin coincidencias'} text={en ? 'Try another category or word.' : 'Probá otra categoría o palabra.'} />
       ) : (
         <div className="stack">
           {rows.map((risk) => (
@@ -74,7 +74,7 @@ export function RisksPage() {
                 <span className="badge">{RISK_CATEGORY_LABEL[risk.category]}</span>
               </div>
               <p>{risk.summary}</p>
-              <p className="muted">Uso en HELIOS: {risk.useInSystem}</p>
+              <p className="muted">{en ? 'Use in HELIOS' : 'Uso en HELIOS'}: {risk.useInSystem}</p>
               <p className="callout callout-amber">{risk.limitation}</p>
               <p>
                 <a href={risk.sourceUrl} target="_blank" rel="noreferrer">
@@ -88,10 +88,11 @@ export function RisksPage() {
       )}
 
       <section className="panel">
-        <h2><Satellite aria-hidden="true" size={18} strokeWidth={1.75} /> OSDR · metadatos en vivo</h2>
+        <h2><Satellite aria-hidden="true" size={18} strokeWidth={1.75} /> {en ? 'OSDR · live metadata' : 'OSDR · metadatos en vivo'}</h2>
         <p className="lede">
-          Consulta la API pública de OSDR (sin llave) para OSD-288 y OSD-575. Data are courtesy of the NASA Open Science Data Repository.
-          HELIOS no interpreta paneles clínicos.
+          {en
+            ? 'Queries the public OSDR API (no key) for OSD-288 and OSD-575. Data are courtesy of the NASA Open Science Data Repository. HELIOS does not interpret clinical panels.'
+            : 'Consulta la API pública de OSDR (sin llave) para OSD-288 y OSD-575. Data are courtesy of the NASA Open Science Data Repository. HELIOS no interpreta paneles clínicos.'}
         </p>
         <div className="chips" role="group" aria-label="Estudio OSDR">
           {OSDR_DEMO_STUDIES.map((id) => (
@@ -101,7 +102,7 @@ export function RisksPage() {
           ))}
         </div>
         {loading ? (
-          <p className="muted"><Loader2 aria-hidden="true" size={16} strokeWidth={1.75} className="is-busy" /> Consultando OSDR…</p>
+          <p className="muted"><Loader2 aria-hidden="true" size={16} strokeWidth={1.75} className="is-busy" /> {en ? 'Querying OSDR…' : 'Consultando OSDR…'}</p>
         ) : osdr ? (
           <div className="stack" data-testid="osdr-result">
             {osdr.metadata?.title ? <p><strong>{osdr.metadata.title}</strong></p> : null}
@@ -110,7 +111,7 @@ export function RisksPage() {
             {osdr.limitation ? <p className="muted">{osdr.limitation}</p> : null}
             <p>
               <a href={osdr.repoUrl} target="_blank" rel="noreferrer">
-                <ExternalLink aria-hidden="true" size={16} strokeWidth={1.75} /> Abrir estudio en OSDR
+                <ExternalLink aria-hidden="true" size={16} strokeWidth={1.75} /> {en ? 'Open study in OSDR' : 'Abrir estudio en OSDR'}
               </a>
               {osdr.fetchedAt ? <span className="muted"> · consultado {osdr.fetchedAt}</span> : null}
             </p>
@@ -119,15 +120,16 @@ export function RisksPage() {
       </section>
 
       <section className="panel">
-        <h2>Rangos EVA documentados (xEMU)</h2>
+        <h2>{en ? 'Documented EVA ranges (xEMU)' : 'Rangos EVA documentados (xEMU)'}</h2>
         <p className="lede">
-          Tasa metabólica de referencia en BTU/hr: baja ≤{EVA_METABOLIC_BANDS.lowMax}, media hasta {EVA_METABOLIC_BANDS.mediumMax},
-          diseño histórico hasta ~{EVA_METABOLIC_BANDS.highDesignLimit}. No hay telemetría EMU/xEMU pública en vivo; estos valores solo contextualizan la simulación.
+          {en
+            ? `Reference metabolic rate in BTU/hr: low ≤${EVA_METABOLIC_BANDS.lowMax}, medium up to ${EVA_METABOLIC_BANDS.mediumMax}, historical design up to ~${EVA_METABOLIC_BANDS.highDesignLimit}. There is no live public EMU/xEMU telemetry; these values only frame the simulation.`
+            : `Tasa metabólica de referencia en BTU/hr: baja ≤${EVA_METABOLIC_BANDS.lowMax}, media hasta ${EVA_METABOLIC_BANDS.mediumMax}, diseño histórico hasta ~${EVA_METABOLIC_BANDS.highDesignLimit}. No hay telemetría EMU/xEMU pública en vivo; estos valores solo contextualizan la simulación.`}
         </p>
       </section>
 
       <section className="panel">
-        <h2>Fuentes consultadas</h2>
+        <h2>{en ? 'Sources consulted' : 'Fuentes consultadas'}</h2>
         <ul>
           {NASA_SOURCES.map((source) => (
             <li key={source.id}>

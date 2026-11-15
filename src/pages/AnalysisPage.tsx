@@ -1,19 +1,17 @@
-import { CircleHelp, ClipboardList, ListChecks, Loader2, Package } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { useLocation } from 'react-router-dom'
-import { DEMO_PROTOCOLS, findProtocol } from '../../shared/protocols'
+import { DEMO_PROTOCOLS } from '../../shared/protocols'
 import type { AnalysisResult } from '../../shared/types'
 import { analysisIsStale, episodeFingerprint, runLocalAnalysis } from '../domain/analysis'
 import { buildAnalysisContext } from '../ai/context'
 import { askModel, getAiHealth, type AiHealth } from '../ai/client'
 import { useApp } from '../state/store'
 import { SciencePanel } from '../components/SciencePanel'
-import { Badge } from '../components/ui'
 import { CREW } from '../domain/crew'
 import { briefForCrew } from '../domain/scienceBrief'
 import { useLocale } from '../i18n'
 
-const QUESTIONS = [
+const QUESTIONS_ES = [
   '¿Qué cambió respecto a las últimas mediciones?',
   '¿Qué información falta?',
   '¿En qué datos se basa esta alerta?',
@@ -23,8 +21,18 @@ const QUESTIONS = [
   '¿Qué seguimiento tengo pendiente después de regresar?',
 ]
 
+const QUESTIONS_EN = [
+  'What changed compared with the latest readings?',
+  'What information is missing?',
+  'Which data is this alert based on?',
+  'What equipment do we have to repeat the measurement?',
+  'Prepare a summary for my specialist.',
+  'What should I review before boarding?',
+  'What follow-up is still open after I return?',
+]
+
 export function AnalysisPage() {
-  const { state, dispatch, backendMode, analyzeEpisode } = useApp()
+  const { state, dispatch, analyzeEpisode } = useApp()
   const { lang, copy } = useLocale()
   const en = lang === 'en'
   const location = useLocation()
@@ -47,31 +55,7 @@ export function AnalysisPage() {
     return () => controller.abort()
   }, [])
 
-  const [serverAnalysis, setServerAnalysis] = useState<{ key: string; result: AnalysisResult } | null>(null)
-  const [analysisError, setAnalysisError] = useState('')
-  const analysisKey = episode ? `${episode.id}|${episodeFingerprint(state, episode.id)}|${state.clock.simulatedAt}` : ''
-  useEffect(() => {
-    let active = true
-    if (backendMode !== 'connected' || !episode) return
-    void analyzeEpisode(episode.id)
-      .then(result => {
-        if (!active) return
-        setServerAnalysis({ key: analysisKey, result })
-        setAnalysisError('')
-      })
-      .catch(() => {
-        if (!active) return
-        setServerAnalysis(null)
-        setAnalysisError('No se pudo recuperar el análisis de NestJS.')
-      })
-    return () => { active = false }
-  }, [analysisKey, episode, backendMode, analyzeEpisode])
-  let local: AnalysisResult | null = null
-  if (backendMode === 'connected') {
-    if (serverAnalysis?.key === analysisKey) local = serverAnalysis.result
-  } else if (episode) {
-    local = runLocalAnalysis(state, episode.id)
-  }
+  const local = episode ? runLocalAnalysis(state, episode.id) : null
   const saved = episode ? [...state.analyses].reverse().find((item) => item.episodeId === episode.id && item.source === 'model') : undefined
   const stale = saved && episode ? analysisIsStale(state, saved.fingerprint, episode.id) : false
   const chat = episode ? state.chats.filter((item) => item.episodeId === episode.id) : []
@@ -144,81 +128,96 @@ export function AnalysisPage() {
     })
   }
 
+  const emptyText = linked
+    ? `${linkedName ? `${linkedName}: ` : ''}${linked.title}. ${linked.reason} ${en ? 'A sensor alert, on its own, does not open a health episode.' : 'Una alerta de sensor, por sí sola, no abre un episodio de salud.'}`
+    : (en ? 'There is no open health episode. A sensor alert, on its own, does not create one.' : 'No hay un episodio de salud abierto. Una alerta de sensor, por sí sola, no crea uno.')
+
   return (
-    <div className="page">
-      <header className="page-head">
-        <div>
-          <p className="kicker">Quirón Bot</p>
-          <h1>{episode ? episode.title : (en ? 'No open episode' : 'Sin episodio abierto')}</h1>
-          <p className="lede">{en ? 'Quirón Bot supports with the local engine and, when a key is set, with a model. It does not diagnose or run medical actions.' : 'Quirón Bot acompaña con el motor local y, si hay clave, con un modelo. No diagnostica ni ejecuta acciones médicas.'}</p>
-        </div>
-        <AiBadge health={health} />
+    <div className="an-page">
+      <header className="an-head">
+        <p className="kicker">{en ? 'Analysis' : 'Análisis'}</p>
+        <h1>{episode ? episode.title : (en ? 'No open episode' : 'Sin episodio abierto')}</h1>
+        <p className="lede">
+          {en
+            ? 'The local engine is always available. A model answer is labeled separately and does not run actions.'
+            : 'El motor local siempre está disponible. Una respuesta del modelo se etiqueta aparte y no ejecuta acciones.'}
+        </p>
       </header>
-      {analysisError ? <p className="callout callout-amber" role="status">{analysisError}</p> : null}
-      {!episode || !local ? (
-        <p className="callout">{episode ? 'Actualizando el análisis del episodio…' : linked ? `${linkedName ? `${linkedName}: ` : ''}${linked.title}. ${linked.reason} Una alerta de sensor, por sí sola, no abre un episodio de salud.` : 'No hay un episodio de salud abierto. Una alerta de sensor, por sí sola, no crea uno.'}</p>
-      ) : (
+      {!local || !episode ? <p className="an-card an-empty">{emptyText}</p> : (
         <>
-          <p className="lede">{copy.analysisNasa}</p>
-          <SciencePanel brief={briefForCrew(state, episode.crewId, lang)} />
-          <section className="panel" data-testid="analysis-local">
-            <div className="spread"><h2>{en ? 'Simulated analysis engine' : 'Motor de análisis simulado'}</h2><Badge>{en ? 'Local analysis' : 'Análisis local'}</Badge></div>
-            <ResultView result={local} />
-          </section>
-          <section className="panel">
-            <div className="spread">
-              <h2>Modelo</h2>
-              <Badge tone={health?.configured ? 'ok' : 'amber'}>{health?.configured ? 'IA conectada' : health?.reachable === false ? 'Servicio no disponible' : 'Servicio no configurado'}</Badge>
+          <section className="an-card" data-testid="analysis-local">
+            <h2>{en ? 'Simulated analysis engine' : 'Motor de análisis simulado'}</h2>
+            <p className="an-summary">{local.summary}</p>
+            <h3>{en ? 'Evidence' : 'Evidencia'}</h3>
+            <div className="an-lines">
+              {local.evidence.map((item) => (
+                <p key={`${item.refType}-${item.refId}`}>{item.statement} ({item.refId})</p>
+              ))}
             </div>
-            {saved ? (
-              <>
-                {stale ? <p className="callout callout-amber">Las mediciones cambiaron después de este análisis. Puede estar desactualizado.</p> : null}
-                <p className="muted">Modelo {saved.model} · {saved.createdAt}</p>
-                <ResultView result={saved.result} />
-              </>
-            ) : <p>Todavía no hay una respuesta del modelo para este episodio.</p>}
-            {modelError ? <p className="callout callout-bad">{modelError}</p> : null}
-            <div className="row">
-              <button className="btn btn-primary" type="button" disabled={!health?.configured || pending} onClick={() => void send(question || 'Resumí el episodio para revisión humana.', 'model')}>
-                {pending ? <Loader2 aria-hidden="true" size={18} strokeWidth={1.75} className="is-busy" /> : null}
-                {pending ? 'Consultando…' : 'Pedir análisis al modelo'}
-              </button>
-              {pending ? <button className="btn" type="button" onClick={() => abortRef.current?.abort()}>Cancelar</button> : null}
-            </div>
-            {!health?.configured ? <p className="muted">{health?.reachable === false ? 'No se alcanzó el servidor local.' : `Falta ${health?.missing.join(', ') || 'AI_API_KEY'} en el servidor. El texto de arriba no es una respuesta del modelo.`}</p> : null}
+            <p className="sr-only">
+              {en
+                ? 'Valid integrity is not the same as clinical accuracy. Demonstration checks are not a validated clinical protocol. Resource availability is not a prescription.'
+                : 'Una integridad válida no equivale a una medición clínicamente precisa. Las comprobaciones son de demostración, no un protocolo clínico validado. La disponibilidad de un recurso no es una indicación de uso.'}
+            </p>
           </section>
-          <section className="chat">
-            <h2>Preguntas sobre este episodio</h2>
+          <section className="an-card" aria-label={en ? 'Missing information, checks and cited resources' : 'Información faltante, comprobaciones y recursos citados'}>
+            <h3>{en ? 'Missing' : 'Falta'}</h3>
+            <div className="an-lines">
+              {local.missing.length === 0
+                ? <p>{en ? 'The local engine does not mark another gap in this episode.' : 'El motor local no marca otro dato faltante en este episodio.'}</p>
+                : local.missing.map((item) => <p key={item}>{item}</p>)}
+            </div>
+            <h3>{en ? 'Checks' : 'Comprobaciones'}</h3>
+            <div className="an-lines">
+              {local.checks.map((item) => <p key={item.protocolId}>{item.title}. {item.why}</p>)}
+            </div>
+            <h3>{en ? 'Cited resources' : 'Recursos citados'}</h3>
+            <div className="an-lines">
+              {local.resources.length === 0
+                ? <p>{en ? 'No ready resource is cited. Availability is not assumed from the example text.' : 'No se cita un recurso listo. No se supone disponibilidad solo porque un ejemplo la mencione.'}</p>
+                : local.resources.map((item) => <p key={item.resourceId}>{item.note}</p>)}
+            </div>
+          </section>
+          {saved ? (
+            <section className="an-card an-model" aria-label={en ? 'Model answer' : 'Respuesta del modelo'}>
+              <h2>{en ? 'Model answer' : 'Respuesta del modelo'}</h2>
+              {stale ? <p>{en ? 'Measurements changed after this answer. It may be out of date.' : 'Las mediciones cambiaron después de esta respuesta. Puede estar desactualizada.'}</p> : null}
+              <p className="an-summary">{saved.result.summary}</p>
+              <p className="an-meta">{en ? 'Source: model' : 'Origen: modelo'}{saved.model ? ` · ${saved.model}` : ''}. {en ? 'It does not close alerts, change inventory, or send anything.' : 'No cierra alertas, no cambia el inventario ni envía nada.'}</p>
+            </section>
+          ) : null}
+          <details className="an-more">
+            <summary>{en ? 'Ask the local engine' : 'Preguntar al motor local'}</summary>
+            <SciencePanel brief={briefForCrew(state, episode.crewId, lang)} />
+            <p>{copy.analysisNasa}</p>
             <div className="questions">
-              {QUESTIONS.map((item) => (
+              {(en ? QUESTIONS_EN : QUESTIONS_ES).map((item) => (
                 <button key={item} type="button" className="btn btn-ghost" data-testid="ask-local" onClick={() => void send(item, 'local')}>{item}</button>
               ))}
             </div>
             <div className="chat-log" aria-live="polite">
               {chat.map((message) => (
                 <article key={message.id} className={message.role === 'user' ? 'bubble user' : 'bubble'}>
-                  <strong>{message.source === 'model' ? 'IA conectada' : message.source === 'local_engine' ? 'Análisis local' : message.source === 'error' ? 'Servicio no disponible' : 'Pregunta'}</strong>
+                  <strong>{message.source === 'model' ? (en ? 'AI connected' : 'IA conectada') : message.source === 'local_engine' ? (en ? 'Local analysis' : 'Análisis local') : message.source === 'error' ? (en ? 'Service unavailable' : 'Servicio no disponible') : (en ? 'Question' : 'Pregunta')}</strong>
                   <p>{message.text}</p>
                 </article>
               ))}
             </div>
-            <form onSubmit={(event) => { event.preventDefault(); void send(question, health?.configured ? 'model' : 'local'); setQuestion('') }}>
-              <label className="field" htmlFor="ask">Pregunta
+            <form onSubmit={(event) => { event.preventDefault(); void send(question, 'local'); setQuestion('') }}>
+              <label className="field" htmlFor="ask">{en ? 'Question' : 'Pregunta'}
                 <textarea id="ask" value={question} maxLength={1000} onChange={(event) => setQuestion(event.target.value)} />
               </label>
               <div className="row">
-                <button className="btn btn-primary" type="submit" disabled={pending || question.trim().length < 3}>{health?.configured ? 'Preguntar al modelo' : 'Responder con el motor local'}</button>
-                <button className="btn" type="button" disabled={pending || question.trim().length < 3} onClick={() => void send(question, 'local')}>Usar motor local</button>
-                {modelError ? <button className="btn" type="button" onClick={() => void send(question || '¿Qué información falta?', 'model')}>Reintentar</button> : null}
+                <button className="btn btn-primary" type="submit" disabled={pending || question.trim().length < 3}>{en ? 'Answer with the local engine' : 'Responder con el motor local'}</button>
+                <button className="btn" type="button" disabled={!health?.configured || pending || question.trim().length < 3} onClick={() => void send(question, 'model')}>{en ? 'Ask the model' : 'Preguntar al modelo'}</button>
+                {pending ? <button className="btn" type="button" onClick={() => abortRef.current?.abort()}>{en ? 'Cancel' : 'Cancelar'}</button> : null}
               </div>
             </form>
-          </section>
+            {modelError ? <p role="alert">{modelError} {health?.reachable === false ? (en ? 'The local engine above stays available.' : 'El motor local de arriba sigue disponible.') : ''}</p> : null}
+            {health && !health.configured ? <p>{en ? 'The remote model is not connected. The blocks above come from the local engine.' : 'El modelo remoto no está conectado. Los bloques de arriba salen del motor local.'}</p> : null}
+          </details>
         </>
       )}
-      <section className="panel">
-        <h2>Protocolos de demostración</h2>
-        <ul>{DEMO_PROTOCOLS.map((protocol) => <li key={protocol.id}>{protocol.title}. {findProtocol(protocol.id)?.limitation}</li>)}</ul>
-      </section>
     </div>
   )
 }
@@ -234,35 +233,3 @@ function snapshot(state: { measurements: { id: string; crewId: string }[]; sympt
   }
 }
 
-function ResultView({ result }: { result: AnalysisResult }) {
-  return (
-    <div className="stack">
-      <p>{result.summary}</p>
-      <div>
-        <h3><ClipboardList aria-hidden="true" size={16} strokeWidth={1.75} /> Evidencia</h3>
-        <ul>{result.evidence.map((item) => <li key={`${item.refType}-${item.refId}`}>{item.statement} <span className="muted">({item.refId})</span></li>)}</ul>
-      </div>
-      <div>
-        <h3><CircleHelp aria-hidden="true" size={16} strokeWidth={1.75} /> Falta</h3>
-        <ul>{result.missing.map((item) => <li key={item}>{item}</li>)}</ul>
-      </div>
-      <div>
-        <h3><ListChecks aria-hidden="true" size={16} strokeWidth={1.75} /> Comprobaciones</h3>
-        <ul>{result.checks.map((item) => <li key={item.protocolId}>{item.title}. {item.why}</li>)}</ul>
-      </div>
-      <div>
-        <h3><Package aria-hidden="true" size={16} strokeWidth={1.75} className="tone-resource" /> Recursos citados</h3>
-        <ul>{result.resources.map((item) => <li key={item.resourceId}>{item.note}</li>)}</ul>
-      </div>
-      <p className="callout">Revisión humana: sí. {result.limitations.join(' ')}</p>
-      <p className="muted">Fuentes: {result.sources.join(' · ')}</p>
-    </div>
-  )
-}
-
-function AiBadge({ health }: { health: AiHealth | null }) {
-  if (!health) return <Badge><Loader2 aria-hidden="true" size={14} strokeWidth={1.75} className="is-busy" /> Comprobando servicio</Badge>
-  if (!health.reachable) return <Badge tone="bad">Servicio no disponible</Badge>
-  if (!health.configured) return <Badge tone="amber">IA sin configurar</Badge>
-  return <Badge tone="ok">IA conectada · {health.model}</Badge>
-}

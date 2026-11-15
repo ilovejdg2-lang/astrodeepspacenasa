@@ -1,4 +1,5 @@
 import { EVA_METABOLIC_BANDS, NASA_SOURCES, OSDR_DEMO_STUDIES, type NasaSource } from '../../shared/nasaSources'
+import { apiUrl } from './baseUrl'
 
 export type OsdrStudyResponse = {
   courtesy: string
@@ -25,7 +26,7 @@ export async function fetchNasaSources(signal?: AbortSignal): Promise<{
   fromApi: boolean
 }> {
   try {
-    const response = await fetch('/api/nasa/sources', { signal })
+    const response = await fetch(apiUrl('/api/nasa/sources'), { signal })
     if (!response.ok) throw new Error('sources unavailable')
     const data = (await response.json()) as {
       sources: NasaSource[]
@@ -44,7 +45,7 @@ export async function fetchNasaSources(signal?: AbortSignal): Promise<{
 }
 
 export async function fetchOsdrStudy(studyId: string, signal?: AbortSignal): Promise<OsdrStudyResponse> {
-  const response = await fetch(`/api/nasa/osdr/studies/${encodeURIComponent(studyId)}`, { signal })
+  const response = await fetch(apiUrl(`/api/nasa/osdr/studies/${encodeURIComponent(studyId)}`), { signal })
   const data = (await response.json().catch(() => ({}))) as OsdrStudyResponse & {
     message?: string
     url?: string

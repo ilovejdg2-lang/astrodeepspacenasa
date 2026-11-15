@@ -203,9 +203,9 @@ export function CrewPage() {
                   unlockSpace(state.sessionCrewId)
                 }}
               >
-                <p>Este PIN es simulado. Sirve solo para la demostración y no protege los datos. Quien controla el navegador puede leer IndexedDB.</p>
-                <p className="muted">Códigos de demostración: {pinHint}.</p>
-                <Field id="space-pin" label={`PIN simulado de ${sessionCrew.name}`} error={pinError}>
+                <p>{en ? 'This PIN is simulated. It is only for the demonstration and does not protect the data. Whoever controls the browser can read IndexedDB.' : 'Este PIN es simulado. Sirve solo para la demostración y no protege los datos. Quien controla el navegador puede leer IndexedDB.'}</p>
+                <p className="muted">{en ? 'Demonstration codes' : 'Códigos de demostración'}: {pinHint}.</p>
+                <Field id="space-pin" label={`${en ? 'Simulated PIN for' : 'PIN simulado de'} ${sessionCrew.name}`} error={pinError}>
                   <input
                     id="space-pin"
                     data-testid="space-pin"
@@ -220,7 +220,7 @@ export function CrewPage() {
                     }}
                   />
                 </Field>
-                <button className="btn btn-primary" type="submit" data-testid="space-pin-submit">Abrir sesión simulada</button>
+                <button className="btn btn-primary" type="submit" data-testid="space-pin-submit">{en ? 'Open simulated session' : 'Abrir sesión simulada'}</button>
               </form>
             )}
           </section>
@@ -231,24 +231,24 @@ export function CrewPage() {
             <div className="spread">
               <h2>{selected.name}</h2>
               <div className="row">
-                <Link className="btn btn-primary" to="/app">Abrir monitor</Link>
-                <Link className="btn" to="/app/historial">Ver historial</Link>
+                <Link className="btn btn-primary" to="/app">{en ? 'Open monitor' : 'Abrir monitor'}</Link>
+                <Link className="btn" to="/app/historial">{en ? 'View history' : 'Ver historial'}</Link>
               </div>
             </div>
-            <p>{selected.location} · última actividad del reloj {ageLabel(state.clock.simulatedAt, state.clock.simulatedAt)}</p>
+            <p>{crewPlace(selected, lang)} · {en ? 'clock activity' : 'última actividad del reloj'} {ageLabel(state.clock.simulatedAt, state.clock.simulatedAt)}</p>
             <p>{crewPosture(state, selected.id).summary}</p>
             <div className="callout">
-              <strong>Bienestar privado</strong>
+              <strong>{en ? 'Private wellbeing' : 'Bienestar privado'}</strong>
               {allowed && loaded ? (
                 <form onSubmit={(event) => { event.preventDefault(); void writePrivate(selected.id, note) }}>
-                  <Field id="private-note" label="Nota visible solo para esta persona en este navegador">
+                  <Field id="private-note" label={en ? 'Note visible only to this person in this browser' : 'Nota visible solo para esta persona en este navegador'}>
                     <textarea id="private-note" value={note} maxLength={2000} onChange={(event) => setNote(event.target.value)} />
                   </Field>
-                  <button className="btn" type="submit">Guardar nota privada</button>
-                  <p className="muted">El equipo médico no carga este almacén. Quien controla el navegador puede leer IndexedDB: no es una frontera de seguridad.</p>
+                  <button className="btn" type="submit">{en ? 'Save private note' : 'Guardar nota privada'}</button>
+                  <p className="muted">{en ? 'The medical team does not load this store. Whoever controls the browser can read IndexedDB: it is not a security boundary.' : 'El equipo médico no carga este almacén. Quien controla el navegador puede leer IndexedDB: no es una frontera de seguridad.'}</p>
                 </form>
               ) : (
-                <p>Con el rol simulado actual este módulo no se consulta. Ocultar la tarjeta no sería suficiente, así que la lectura ni siquiera se pide.</p>
+                <p>{en ? 'This simulated role does not open this module. Hiding the card would not be enough, so the read is not even requested.' : 'Con el rol simulado actual este módulo no se consulta. Ocultar la tarjeta no sería suficiente, así que la lectura ni siquiera se pide.'}</p>
               )}
             </div>
           </section>

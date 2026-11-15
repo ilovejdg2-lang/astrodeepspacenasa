@@ -2,6 +2,7 @@ import type { AppState, AnalysisResult } from '../../shared/types'
 import type { Action } from '../domain/reduce'
 import { stateSchema } from '../../shared/stateSchema'
 import { analysisResultSchema } from '../../shared/aiSchema'
+import { apiUrl } from './baseUrl'
 
 export interface Snapshot {
   state: AppState
@@ -22,7 +23,7 @@ export class SimulationClient {
   constructor(public sessionId: string) {}
 
   private async request(path: string, body?: unknown): Promise<unknown> {
-    const response = await fetch(path, {
+    const response = await fetch(apiUrl(path), {
       method: body === undefined ? 'GET' : 'POST',
       headers: { 'Content-Type': 'application/json', 'X-Simulation-Id': this.sessionId },
       body: body === undefined ? undefined : JSON.stringify(body),

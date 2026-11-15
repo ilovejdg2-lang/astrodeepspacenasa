@@ -31,7 +31,7 @@ export function Starfield({ reduced }: { reduced: boolean }) {
       canvas.style.width = `${w}px`
       canvas.style.height = `${h}px`
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
-      const count = w < 700 ? 70 : w < 1100 ? 110 : 160
+      const count = w < 700 ? 110 : w < 1100 ? 170 : 240
       stars.length = 0
       for (let i = 0; i < count; i += 1) {
         stars.push({

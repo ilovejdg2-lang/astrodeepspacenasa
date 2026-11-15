@@ -41,7 +41,7 @@ test('recorre el flujo principal con datos compartidos', async ({ page }) => {
   await page.getByTestId('use-quantity').fill('1')
   await page.getByTestId('save-use').click()
   await expect(page.getByTestId('notice')).toContainText('Reusable equipment use')
-  await expect(page.getByText('Uso · Oxímetro')).toBeVisible()
+  await expect(page.getByText('Use · Oxímetro')).toBeVisible()
   await expect(page.getByTestId('resource-oximeter')).toContainText('2')
 
   await page.getByRole('link', { name: 'Medical team' }).click()
@@ -69,8 +69,8 @@ test('la pantalla principal no tiene violaciones críticas de accesibilidad', as
 
 test('la landing pública abre y lleva a la simulación', async ({ page }) => {
   await page.goto('/')
-  await expect(page.getByRole('heading', { level: 1, name: /cuidado humano/i })).toBeVisible()
-  await page.getByRole('link', { name: /acceder al sistema/i }).first().click()
+  await expect(page.getByRole('heading', { level: 1, name: /human care/i })).toBeVisible()
+  await page.getByRole('link', { name: /enter the system/i }).first().click()
   await expect(page).toHaveURL(/\/app/)
   await expect(page.getByTestId('sim-pill')).toHaveText('Simulation')
 })

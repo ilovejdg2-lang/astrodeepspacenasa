@@ -1,11 +1,16 @@
-import { useEffect, useState } from 'react'
-import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
+import { useEffect, useId, useState } from 'react'
+import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { formatClock } from '../domain/format'
 
-interface Point { label: string; value: number }
+export interface Point {
+  label: string
+  value: number | null
+  title?: string
+  people?: number
+}
 
-function useColor(name: string): string {
-  const [color, setColor] = useState('#f5004f')
+function useColor(name: string, fallback: string): string {
+  const [color, setColor] = useState(fallback)
   useEffect(() => {
     const read = () => {
       const value = getComputedStyle(document.documentElement).getPropertyValue(name).trim()
@@ -19,33 +24,80 @@ function useColor(name: string): string {
   return color
 }
 
-export function TrendChart({ points, unit, caption }: { points: Point[]; unit: string; caption: string }) {
-  const accent = useColor('--accent')
-  const muted = useColor('--muted')
-  const line = useColor('--line')
-  const surface = useColor('--surface')
-  const ink = useColor('--ink')
-  if (points.length === 0) {
-    return <p className="empty">No hay una serie confiable para graficar. La ausencia no se dibuja como una línea normal.</p>
+export function TrendChart({
+  points,
+  unit,
+  domain,
+  ticks,
+  empty,
+}: {
+  points: Point[]
+  unit: string
+  domain: [number, number]
+  ticks: number[]
+  empty: string
+}) {
+  const accent = useColor('--hist-amber', '#e69500')
+  const grid = useColor('--hist-grid', '#d9d3cc')
+  const ink = useColor('--ink', '#1a1a1a')
+  const fillId = useId().replace(/:/g, '')
+  const plotted = points.some((point) => point.value !== null)
+  if (!plotted) {
+    return <p className="hist-empty">{empty}</p>
   }
   return (
-    <figure>
-      <div className="chart" role="img" aria-label={caption}>
-        <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={points} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-            <CartesianGrid stroke={line} vertical={false} />
-            <XAxis dataKey="label" tick={{ fill: muted, fontSize: 12 }} axisLine={false} tickLine={false} />
-            <YAxis tick={{ fill: muted, fontSize: 12 }} axisLine={false} tickLine={false} width={40} unit="" />
-            <Tooltip
-              contentStyle={{ background: surface, border: `1px solid ${line}`, borderRadius: 12, color: ink }}
-              formatter={(value) => [`${value ?? ''} ${unit}`, 'Valor']}
-            />
-            <Line type="monotone" dataKey="value" stroke={accent} strokeWidth={2.4} dot={false} isAnimationActive={false} />
-          </LineChart>
-        </ResponsiveContainer>
-      </div>
-      <figcaption className="muted">{caption}</figcaption>
-    </figure>
+    <div className="chart hist-plot" role="img" aria-label={points.filter((point) => point.value !== null).map((point) => `${point.title ?? point.label}: ${point.value} ${unit}`).join('. ')}>
+      <ResponsiveContainer width="100%" height="100%">
+        <AreaChart data={points} margin={{ top: 18, right: 18, left: 4, bottom: 8 }}>
+          <defs>
+            <linearGradient id={fillId} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor={accent} stopOpacity={0.28} />
+              <stop offset="78%" stopColor={accent} stopOpacity={0.04} />
+              <stop offset="100%" stopColor={accent} stopOpacity={0} />
+            </linearGradient>
+          </defs>
+          <CartesianGrid stroke={grid} vertical={false} />
+          <XAxis dataKey="label" tick={{ fill: ink, fontSize: 13 }} axisLine={false} tickLine={false} interval="preserveStartEnd" minTickGap={28} />
+          <YAxis domain={domain} ticks={ticks} tick={{ fill: ink, fontSize: 14 }} axisLine={false} tickLine={false} width={42} />
+          <Tooltip
+            content={(props) => <ChartTip {...props} unit={unit} />}
+            cursor={{ stroke: grid, strokeWidth: 1 }}
+          />
+          <Area
+            type="monotone"
+            dataKey="value"
+            stroke={accent}
+            strokeWidth={2.25}
+            fill={`url(#${fillId})`}
+            dot={false}
+            activeDot={{ r: 4, fill: accent, stroke: '#fff', strokeWidth: 1.5 }}
+            connectNulls={false}
+            isAnimationActive={false}
+          />
+        </AreaChart>
+      </ResponsiveContainer>
+    </div>
+  )
+}
+
+function ChartTip({
+  active,
+  payload,
+  unit,
+}: {
+  active?: boolean
+  payload?: Array<{ value?: number | null; payload?: Point }>
+  unit: string
+}) {
+  const point = payload?.[0]?.payload
+  const value = payload?.[0]?.value
+  if (!active || !point || value === null || value === undefined) return null
+  const people = point.people && point.people > 1 ? ` · media de ${point.people} personas` : ''
+  return (
+    <div className="hist-tip" role="status">
+      <strong>{point.title ?? point.label}</strong>
+      <span>{value} {unit}{people}</span>
+    </div>
   )
 }
 
