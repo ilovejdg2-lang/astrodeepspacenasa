@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { HeliosLogo } from '../../components/HeliosLogo'
 import { MissionProcessStrip } from '../../components/platform/MissionProcessStrip'
@@ -25,16 +25,7 @@ export function MissionsHubPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
-  useEffect(() => {
-    document.title = en ? 'HELIOS · Missions' : 'HELIOS · Misiones'
-    if (!getSessionToken()) {
-      navigate('/entrar', { replace: true })
-      return
-    }
-    void refresh()
-  }, [navigate, en])
-
-  async function refresh() {
+  const refresh = useCallback(async () => {
     setLoading(true)
     setError('')
     try {
@@ -45,7 +36,16 @@ export function MissionsHubPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [en])
+
+  useEffect(() => {
+    document.title = en ? 'HELIOS · Missions' : 'HELIOS · Misiones'
+    if (!getSessionToken()) {
+      navigate('/entrar', { replace: true })
+      return
+    }
+    void refresh()
+  }, [navigate, en, refresh])
 
   function enter(missionId: string, membershipRole: string) {
     clearRoleScopedUiState()

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { BodyMap } from '../../components/health/BodyMap'
 import { HealthIndicatorsPanel } from '../../components/health/HealthIndicatorsPanel'
@@ -50,16 +50,16 @@ export function MyHealthPage() {
     try { return Number(localStorage.getItem('helios.progress.records') || '0') } catch { return 0 }
   })
 
-  async function reloadIndicators() {
+  const reloadIndicators = useCallback(async () => {
     if (!missionId) return
     const data = await platformApi.listIndicators(missionId)
     setIndicators(data.items)
     try { setRecordCount(Number(localStorage.getItem('helios.progress.records') || '0')) } catch { /* ignore */ }
-  }
+  }, [missionId])
 
   useEffect(() => {
     void reloadIndicators().catch(() => undefined)
-  }, [missionId])
+  }, [reloadIndicators])
 
   const routine = useMemo(() => {
     const items: { id: string; label: string; status: 'pending' | 'done' | 'overdue' }[] = []

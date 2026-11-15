@@ -58,7 +58,7 @@
   font-size: 0.88rem;
   cursor: pointer;
 }
-.risks-brief-tabs button[aria-pressed='true'] {
+.risks-brief-tabs button[aria-selected='true'] {
   border-color: var(--rb-line);
   background: var(--rb-soft);
   color: var(--rb-accent);

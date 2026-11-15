@@ -72,7 +72,6 @@ export function CarouselStrip({
         className={`carousel-track ${trackClassName}`.trim()}
         role="group"
         aria-label={label}
-        tabIndex={canPrev || canNext ? 0 : undefined}
       >
         {children}
       </div>

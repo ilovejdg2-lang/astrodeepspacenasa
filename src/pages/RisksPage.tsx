@@ -66,7 +66,7 @@ export function RisksPage() {
             ['library', en ? 'Risk cards' : 'Fichas'],
           ] as const
         ).map(([id, label]) => (
-          <button key={id} type="button" role="tab" aria-selected={tab === id} aria-pressed={tab === id} onClick={() => setTab(id)}>
+          <button key={id} type="button" role="tab" aria-selected={tab === id} onClick={() => setTab(id)}>
             {label}
           </button>
         ))}
