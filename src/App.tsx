@@ -31,6 +31,7 @@ const AnalysisPage = lazy(() => import('./pages/AnalysisPage').then((m) => ({ de
 const RisksPage = lazy(() => import('./pages/RisksPage').then((m) => ({ default: m.RisksPage })))
 const MedicalPage = lazy(() => import('./pages/MedicalPage').then((m) => ({ default: m.MedicalPage })))
 const MySpacePage = lazy(() => import('./pages/MySpacePage').then((m) => ({ default: m.MySpacePage })))
+const MemoriesPage = lazy(() => import('./pages/MemoriesPage').then((m) => ({ default: m.MemoriesPage })))
 
 function LazyPage({ children }: { children: ReactNode }) {
   return <Suspense fallback={<RouteFallback />}>{children}</Suspense>
@@ -64,6 +65,8 @@ function Dashboard() {
               <Route path="riesgos" element={<RisksPage />} />
               <Route path="medico" element={<NotForCrew><MedicalPage /></NotForCrew>} />
               <Route path="mi-espacio" element={<MySpacePage />} />
+              <Route path="memories" element={<MemoriesPage />} />
+              <Route path="recuerdos" element={<MemoriesPage />} />
               <Route path="*" element={<Navigate to="/app" replace />} />
             </Routes>
           </LazyPage>

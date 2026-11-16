@@ -1,5 +1,5 @@
 import * as Tooltip from '@radix-ui/react-tooltip'
-import { Activity, AlertTriangle, Box, Brain, BookOpen, Heart, History, Lock, Menu, Moon, Rocket, Stethoscope, Sun, X } from 'lucide-react'
+import { Activity, AlertTriangle, Box, Brain, BookOpen, Heart, History, Image as ImageIcon, Lock, Menu, Moon, Rocket, Stethoscope, Sun, X } from 'lucide-react'
 import { lazy, Suspense, useEffect, useRef, useState, type ReactNode, type SVGProps } from 'react'
 import { Link, NavLink, useLocation } from 'react-router-dom'
 import { profileTitle, roleLabel } from '../platform/copy'
@@ -124,8 +124,10 @@ export function Shell({ children }: { children: ReactNode }) {
         historyLink,
         missionLink,
         risksLink,
+        { to: '/app/memories', label: shell.memories, icon: ImageIcon, end: false },
       ]
   const spaceLink = { to: '/app/mi-espacio', label: shell.space, icon: Lock, end: false }
+  const memoriesLink = { to: '/app/memories', label: shell.memories, icon: ImageIcon, end: false }
   const [open, setOpen] = useState(false)
   const location = useLocation()
   useEffect(() => {
@@ -142,13 +144,14 @@ export function Shell({ children }: { children: ReactNode }) {
       : path.startsWith('/app/riesgos') ? (en ? 'NASA risks' : 'Riesgos NASA')
       : path.startsWith('/app/medico') ? (en ? 'Medical team' : 'Equipo médico')
       : path.startsWith('/app/mi-espacio') ? (en ? 'My space' : 'Mi espacio')
+      : path.startsWith('/app/memories') || path.startsWith('/app/recuerdos') ? (en ? 'Memories' : 'Recuerdos')
       : path.startsWith('/app/mision') ? (en ? 'Mission' : 'Misión')
       : 'HELIOS'
     document.title = section === 'HELIOS' ? 'HELIOS' : `HELIOS · ${section}`
   }, [location.pathname, en])
   const alerts = getActiveMissionId() ? 0 : activeAlerts(state, 'active').length
   const primary = state.role === 'astronaut' || workspaceRole === 'crew'
-    ? [...primaryLinks.slice(0, Math.min(4, primaryLinks.length)), spaceLink, ...primaryLinks.slice(Math.min(4, primaryLinks.length))]
+    ? [...primaryLinks.slice(0, Math.min(4, primaryLinks.length)), spaceLink, memoriesLink, ...primaryLinks.slice(Math.min(4, primaryLinks.length))]
     : primaryLinks
   const mobileLinks = [...primary, ...extraLinks]
   const ai = state.notice
@@ -164,6 +167,7 @@ export function Shell({ children }: { children: ReactNode }) {
   const isHistory = location.pathname.startsWith('/app/historial')
   const isAnalysis = location.pathname.startsWith('/app/analisis')
   const isMedical = location.pathname.startsWith('/app/medico')
+  const isMemories = location.pathname.startsWith('/app/memories') || location.pathname.startsWith('/app/recuerdos')
   const section = isHome || isMyHealth
     ? (workspaceRole === 'medic' ? 'is-medical' : workspaceRole === 'psychologist' ? 'is-analysis' : workspaceRole === 'chief' ? 'is-monitor' : 'is-monitor')
     : isMonitor
@@ -184,7 +188,9 @@ export function Shell({ children }: { children: ReactNode }) {
                     ? 'is-mission'
                     : location.pathname.startsWith('/app/riesgos')
                       ? 'is-risks'
-                      : 'is-space'
+                      : isMemories
+                        ? 'is-memories'
+                        : 'is-space'
 
   useEffect(() => {
     const sync = () => document.documentElement.classList.toggle('tab-hidden', document.hidden)

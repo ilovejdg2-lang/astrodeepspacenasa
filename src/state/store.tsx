@@ -239,7 +239,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         connected.current = true
         setBackendMode('connected')
         apply(snapshot.state)
-      } catch (error) {
+      } catch {
         if (!active) return
         detach()
         apply(initial)

@@ -638,6 +638,41 @@ export function QuironChat({ mode, state = null }: { mode: QuironMode; state?: A
                       </div>
                       <div>
                         <div className="quiron-bubble">{formatQuironReply(msg.text)}</div>
+                        {careTopic === 'emotional' && (msg.text.includes('appointment') || msg.text.includes('cita')) && (msg.text.includes('feeling') || msg.text.includes('sientes') || msg.text.includes('talk') || msg.text.includes('hablar')) ? (
+                          <div className="quiron-emotional-options" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '8px' }}>
+                            <button
+                              type="button"
+                              className="quiron-chip"
+                              disabled={pending}
+                              onClick={() => void send(en ? 'I’d like to talk' : 'Me gustaría hablar')}
+                            >
+                              {en ? 'I’d like to talk' : 'Me gustaría hablar'}
+                            </button>
+                            <button
+                              type="button"
+                              className="quiron-chip"
+                              disabled={pending}
+                              onClick={() => {
+                                void send(en ? 'Help me request an appointment' : 'Ayúdame a solicitar una cita')
+                                window.dispatchEvent(new CustomEvent('helios:open-psychologist-modal'))
+                              }}
+                            >
+                              {en ? 'Help me request an appointment' : 'Ayúdame a solicitar una cita'}
+                            </button>
+                          </div>
+                        ) : null}
+                        {careTopic === 'emotional' && (msg.text.includes('space psychologist') || msg.text.includes('psicólogo espacial')) ? (
+                          <div style={{ marginTop: '8px' }}>
+                            <button
+                              type="button"
+                              className="quiron-chip"
+                              style={{ fontWeight: 700, borderColor: '#f5004f', color: '#f5004f' }}
+                              onClick={() => window.dispatchEvent(new CustomEvent('helios:open-psychologist-modal'))}
+                            >
+                              {en ? 'Find a psychologist' : 'Buscar un psicólogo'}
+                            </button>
+                          </div>
+                        ) : null}
                         <div className="quiron-meta">
                           <span>{msg.channel === 'model' && msg.model?.startsWith('gemini-') ? `Gemini (${msg.model})` : channelLabel(msg.channel)}</span>
                           {msg.sources && msg.sources.length > 0 ? <details><summary>{en ? 'Sources' : 'Fuentes'}</summary><ul>{msg.sources.map((source) => <li key={source}>{source}</li>)}</ul></details> : null}

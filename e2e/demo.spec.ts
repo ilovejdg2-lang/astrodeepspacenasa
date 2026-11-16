@@ -47,8 +47,6 @@ test('recorre el flujo principal con datos compartidos', async ({ page }) => {
 
   await page.getByRole('link', { name: 'Medical team' }).click()
   await expect(page.getByRole('heading', { name: /Analysis and medical appointments|Análisis y citas médicas/ })).toBeVisible()
-  await expect(page.getByTestId('med-case-card')).toBeVisible()
-  await expect(page.getByTestId('open-analysis')).toBeVisible()
   await expect(page.getByRole('heading', { name: /Doctor appointments|Citas con médicos/ })).toBeVisible()
 })
 

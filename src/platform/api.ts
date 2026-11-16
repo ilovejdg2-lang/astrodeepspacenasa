@@ -260,6 +260,33 @@ export const platformApi = {
       method: 'POST',
       body: JSON.stringify({ file }),
     }),
+  memories: () => platformFetch<{ items: UserMemory[] }>('/api/platform/memories'),
+  createMemory: (body: { title: string; message: string; imageBase64?: string | null; imageContentType?: string | null }) =>
+    platformFetch<UserMemory>('/api/platform/memories', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+  getMemory: (id: string) => platformFetch<UserMemory>(`/api/platform/memories/${encodeURIComponent(id)}`),
+  updateMemory: (
+    id: string,
+    body: { title?: string; message?: string; imageBase64?: string | null; imageContentType?: string | null; removeImage?: boolean },
+  ) =>
+    platformFetch<UserMemory>(`/api/platform/memories/${encodeURIComponent(id)}`, {
+      method: 'PUT',
+      body: JSON.stringify(body),
+    }),
+  deleteMemory: (id: string) =>
+    platformFetch<{ ok: boolean }>(`/api/platform/memories/${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+    }),
+  memoryImageBlob: async (id: string): Promise<Blob> => {
+    const token = getSessionToken()
+    const headers = new Headers()
+    if (token) headers.set('X-Helios-Session', token)
+    const res = await fetch(apiUrl(`/api/platform/memories/${encodeURIComponent(id)}/image`), { headers })
+    if (!res.ok) throw new Error('Could not load memory image')
+    return res.blob()
+  },
 }
 
 export type Profile = {
@@ -417,4 +444,15 @@ export type Evidence = {
   url: string
   kind: string
   notes: string
+}
+
+export type UserMemory = {
+  id: string
+  profileId: string
+  title: string
+  message: string
+  imageFileId: string | null
+  imageContentType: string | null
+  createdAt: number
+  updatedAt: number
 }
