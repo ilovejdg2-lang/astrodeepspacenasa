@@ -2,6 +2,7 @@ import * as Tooltip from '@radix-ui/react-tooltip'
 import { Activity, AlertTriangle, Box, Brain, BookOpen, Heart, History, Lock, Menu, Moon, Rocket, Stethoscope, Sun, X } from 'lucide-react'
 import { lazy, Suspense, useEffect, useRef, useState, type ReactNode, type SVGProps } from 'react'
 import { Link, NavLink, useLocation } from 'react-router-dom'
+import { profileTitle, roleLabel } from '../platform/copy'
 import { getActiveMissionId, getStoredProfile } from '../platform/session'
 import { useWorkspaceRole } from '../platform/workspace'
 import { RoleSwitcher } from './role/RoleSwitcher'
@@ -62,6 +63,7 @@ export function Shell({ children }: { children: ReactNode }) {
   const { lang, setLang, copy } = useLocale()
   const shell = copy.shell
   const workspaceRole = useWorkspaceRole()
+  const profile = getStoredProfile()
   const [storageNote, setStorageNote] = useState<string | null>(null)
   const [damagedFile, setDamagedFile] = useState<string | null>(null)
   const en = lang === 'en'
@@ -219,6 +221,16 @@ export function Shell({ children }: { children: ReactNode }) {
       {open ? <button className="scrim" aria-label={shell.closeMenu} onClick={() => setOpen(false)} /> : null}
       <aside className={open ? 'sidebar open' : 'sidebar'}>
         <div className="sidebar-top">
+          <Link className="brand-mark" to="/" onClick={() => setOpen(false)} title={en ? 'Roles' : 'Roles'}>
+            <HeliosLogo variant="mark" size={112} />
+            <p className="brand-stack">
+              Health evaluation
+              <br />
+              &amp; life indicators
+              <br />
+              observation system
+            </p>
+          </Link>
           <div className="sidebar-navs">
             <nav className="nav" aria-label={shell.sections}>
               {primary.map((link) => (
@@ -238,6 +250,9 @@ export function Shell({ children }: { children: ReactNode }) {
               ))}
             </nav>
           </div>
+        </div>
+        <div className="sidebar-foot">
+          <HeliosLogo variant="wordmark" />
         </div>
       </aside>
       <div className={(isMonitor || (isHome && workspaceRole === 'chief')) ? 'workspace workspace-monitor' : isCrew ? 'workspace workspace-crew' : isAlerts ? 'workspace workspace-alerts' : isResources ? 'workspace workspace-resources' : isHistory ? 'workspace workspace-history' : isAnalysis ? 'workspace workspace-analysis' : isMedical ? 'workspace workspace-medical' : 'workspace'}>
@@ -264,7 +279,13 @@ export function Shell({ children }: { children: ReactNode }) {
                 {open ? <X aria-hidden="true" size={18} strokeWidth={1.75} /> : <Menu aria-hidden="true" size={18} strokeWidth={1.75} />}
               </button>
             </Hint>
-            {workspaceRole ? <RoleSwitcher /> : null}
+            {profile ? (
+              <Link className="helios-pill profile-pill" to="/misiones" title={profileTitle(profile, en)}>
+                {profile.displayName}
+                {workspaceRole ? ` · ${roleLabel(workspaceRole, en)}` : ''}
+              </Link>
+            ) : null}
+            {profile ? <RoleSwitcher /> : null}
           </div>
           <div className="top-actions">
             <div className="lang-switch" role="group" aria-label={shell.language}>

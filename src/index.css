@@ -259,9 +259,9 @@ a.brand-mark:hover { background: color-mix(in srgb, var(--accent) 8%, transparen
   display: flex; align-items: center; gap: 12px; justify-content: space-between;
   min-height: 72px; padding: 10px 28px;
   flex-wrap: wrap;
-  background: color-mix(in srgb, var(--surface) 94%, transparent);
-  border-bottom: 1px solid color-mix(in srgb, var(--line) 75%, transparent);
-  backdrop-filter: blur(12px);
+  background: color-mix(in srgb, var(--surface) 72%, transparent);
+  border-bottom: 0;
+  backdrop-filter: blur(10px);
 }
 .top-actions { display: flex; gap: 8px; align-items: center; flex-wrap: nowrap; }
 .topbar-pills { gap: 10px; }
@@ -680,6 +680,7 @@ tr[aria-selected="true"] { background: var(--accent-soft); }
   .shell { grid-template-columns: 1fr; min-height: 100dvh; height: 100dvh; }
   .sidebar { display: none; position: fixed; z-index: 30; width: min(88vw, var(--nav-h)); max-width: min(88vw, var(--nav-h)); }
   .sidebar.open { display: flex; animation: drawer-in 180ms ease-out; }
+  .profile-pill { display: none; }
   .scrim { display: block; position: fixed; inset: 0; background: rgba(7, 17, 28, 0.5); z-index: 20; border: 0; }
   .menu-btn { display: none; }
   .mobile-brand {

@@ -58,13 +58,28 @@ test('roles branch: switch roles without losing mission or leaking a care thread
   }
 })
 
-test('app header shows its controls on mobile', async ({ page }) => {
+test('app branding and header controls work on desktop and mobile', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 })
   await enterRole(page, 'comandante')
+
+  await expect(page.locator('.brand-mark')).toBeVisible()
+  await expect(page.locator('.brand-mark .brand-stack')).toContainText('Health evaluation')
+  await expect(page.locator('.sidebar-foot .helios-wordmark')).toBeVisible()
+  await expect(page.locator('.profile-pill')).toContainText('Elena Torres')
+  await expect(page.locator('.role-switch-trigger')).toBeVisible()
+  await expect(page.getByRole('group', { name: 'Idioma' })).toBeVisible()
+  await expect(page.locator('.topbar')).not.toHaveCSS('background-color', 'rgba(0, 0, 0, 0)')
+  await expect(page.locator('.topbar')).toHaveCSS('backdrop-filter', 'blur(10px)')
+  await expect(page.locator('.topbar')).toHaveCSS('border-bottom-width', '0px')
+
   await page.setViewportSize({ width: 390, height: 844 })
   await page.goto('/app/mi-salud')
 
   await expect(page.locator('.topbar')).toBeVisible()
   await expect(page.getByRole('link', { name: 'HELIOS, roles' })).toBeVisible()
+  await expect(page.locator('.topbar')).not.toHaveCSS('background-color', 'rgba(0, 0, 0, 0)')
+  await expect(page.locator('.topbar')).toHaveCSS('backdrop-filter', 'blur(10px)')
+  await expect(page.locator('.topbar')).toHaveCSS('border-bottom-width', '0px')
   await expect(page.locator('.role-switch-trigger')).toBeVisible()
   await expect(page.getByRole('group', { name: 'Idioma' })).toBeVisible()
   await expect(page.getByTestId('theme-toggle')).toBeVisible()
