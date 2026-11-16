@@ -1,10 +1,12 @@
 import { Brain, CalendarDays, Clock3, Stethoscope } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import type { VisitRow } from '../components/mission/AppointmentDesk'
 import { useLocale } from '../i18n'
+import { platformApi } from '../platform/api'
 import { profileDisplayName } from '../platform/copy'
-import { useMissionWorkspace } from './role/useMissionWorkspace'
+import { getActiveMissionId, getStoredProfile } from '../platform/session'
+import { systemText } from '../systemText'
 import '../platform/role-dash.css'
 
 type SpecialtyFilter = 'all' | 'medical' | 'psychological'
@@ -64,18 +66,42 @@ function matchesStatus(visitStatusValue: string | undefined, filter: StatusFilte
 export function MySpacePage() {
   const { lang } = useLocale()
   const en = lang === 'en'
-  const {
-    profile,
-    appointments,
-    appointmentsLoading,
-    appointmentsError,
-    error,
-    refresh,
-  } = useMissionWorkspace()
+  const missionId = getActiveMissionId()
+  const profile = getStoredProfile()
+  const [appointments, setAppointments] = useState<unknown[]>([])
+  const [appointmentsLoading, setAppointmentsLoading] = useState(true)
+  const [appointmentsError, setAppointmentsError] = useState('')
+  const [reload, setReload] = useState(0)
   const [specialty, setSpecialty] = useState<SpecialtyFilter>('all')
   const [status, setStatus] = useState<StatusFilter>('all')
   const [period, setPeriod] = useState<PeriodFilter>('upcoming')
   const now = Date.now()
+
+  useEffect(() => {
+    let active = true
+    if (!missionId) {
+      setAppointments([])
+      setAppointmentsError('')
+      setAppointmentsLoading(false)
+      return () => { active = false }
+    }
+
+    setAppointmentsLoading(true)
+    setAppointmentsError('')
+    platformApi.appointments(missionId)
+      .then((data) => {
+        if (active) setAppointments(data.items)
+      })
+      .catch((error: unknown) => {
+        if (!active) return
+        setAppointments([])
+        setAppointmentsError(error instanceof Error ? error.message : 'Could not load appointments')
+      })
+      .finally(() => {
+        if (active) setAppointmentsLoading(false)
+      })
+    return () => { active = false }
+  }, [missionId, reload])
 
   const mine = useMemo(
     () => appointments.filter(isVisitRow).filter((visit) => visit.requesterId === profile?.id),
@@ -101,8 +127,6 @@ export function MySpacePage() {
         : visit.scheduledAt < now || visit.status === 'completed'
     })
     .sort((left, right) => (left.scheduledAt ?? Infinity) - (right.scheduledAt ?? Infinity))
-
-  const requestError = appointmentsError || error
 
   return (
     <div className="rd rd-crew">
@@ -186,18 +210,31 @@ export function MySpacePage() {
           </div>
         </div>
 
-        {requestError ? (
+        {!missionId ? (
+          <div className="rd-empty">
+            <strong>{en ? 'No active mission' : 'No hay una misión activa'}</strong>
+            <span className="rd-muted">
+              {en ? 'Choose a mission to see its appointment records.' : 'Elegí una misión para consultar sus citas.'}
+            </span>
+            <Link className="rd-btn ghost" style={{ minHeight: 44 }} to="/misiones">
+              {en ? 'Browse missions' : 'Ver misiones'}
+            </Link>
+          </div>
+        ) : appointmentsError ? (
           <div className="rd-empty" role="alert">
             <p className="rd-error">
-              {en ? 'Your appointments could not be loaded.' : 'No se pudieron cargar tus citas.'}
+              {systemText(appointmentsError, lang)}
             </p>
             <button
               className="rd-btn ghost"
               type="button"
+              disabled={appointmentsLoading}
               style={{ minHeight: 44 }}
-              onClick={() => void refresh()}
+              onClick={() => setReload((current) => current + 1)}
             >
-              {en ? 'Retry' : 'Reintentar'}
+              {appointmentsLoading
+                ? (en ? 'Loading…' : 'Cargando…')
+                : (en ? 'Retry' : 'Reintentar')}
             </button>
           </div>
         ) : appointmentsLoading ? (

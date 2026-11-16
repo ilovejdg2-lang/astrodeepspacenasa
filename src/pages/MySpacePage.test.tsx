@@ -2,17 +2,28 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { platformApi } from '../platform/api'
 import { MySpacePage } from './MySpacePage'
-import { useMissionWorkspace } from './role/useMissionWorkspace'
 
 vi.mock('../i18n', () => ({
   useLocale: () => ({ lang: 'es' }),
 }))
 
-vi.mock('./role/useMissionWorkspace', () => ({
-  useMissionWorkspace: vi.fn(),
+vi.mock('../platform/api', () => ({
+  platformApi: { appointments: vi.fn() },
 }))
 
+vi.mock('../platform/session', () => ({
+  getActiveMissionId: () => 'mission-demo-horizon',
+  getStoredProfile: () => ({
+    id: 'mateo-ruiz',
+    displayName: 'Mateo Ruiz',
+    title: 'Crew Member',
+    demoRole: 'crew',
+  }),
+}))
+
+const referenceNow = Date.now()
 const appointments = [
   {
     id: 'psych-upcoming',
@@ -20,7 +31,7 @@ const appointments = [
     professionalId: 'alex-morgan',
     specialty: 'psychological',
     status: 'confirmed',
-    scheduledAt: Date.UTC(2026, 10, 17, 9),
+    scheduledAt: referenceNow + 86_400_000,
     durationMin: 30,
     timezone: 'UTC',
     reason: 'Consulta psicológica de seguimiento',
@@ -33,7 +44,7 @@ const appointments = [
     professionalId: 'sofia-chen',
     specialty: 'medical',
     status: 'confirmed',
-    scheduledAt: Date.UTC(2026, 10, 18, 10),
+    scheduledAt: referenceNow + 2 * 86_400_000,
     durationMin: 30,
     timezone: 'UTC',
     reason: 'Revisión médica de rutina',
@@ -44,7 +55,7 @@ const appointments = [
     professionalId: 'sofia-chen',
     specialty: 'medical',
     status: 'pending_confirm',
-    scheduledAt: Date.UTC(2026, 10, 19, 10),
+    scheduledAt: referenceNow + 3 * 86_400_000,
     reason: 'Solicitud pendiente de respuesta',
   },
   {
@@ -53,7 +64,7 @@ const appointments = [
     professionalId: 'alex-morgan',
     specialty: 'psychological',
     status: 'completed',
-    scheduledAt: Date.UTC(2026, 10, 10, 9),
+    scheduledAt: referenceNow - 6 * 86_400_000,
     reason: 'Consulta anterior',
     professionalNotes: 'Nota privada de uso exclusivo del profesional.',
   },
@@ -63,7 +74,7 @@ const appointments = [
     professionalId: 'sofia-chen',
     specialty: 'medical',
     status: 'confirmed',
-    scheduledAt: Date.UTC(2026, 10, 17, 10),
+    scheduledAt: referenceNow + 86_400_000,
     reason: 'No debe aparecer en mi lista.',
   },
 ]
@@ -71,50 +82,25 @@ const appointments = [
 describe('MySpacePage appointments', () => {
   afterEach(() => {
     cleanup()
-    vi.useRealTimers()
   })
 
   beforeEach(() => {
-    vi.useFakeTimers()
-    vi.setSystemTime(new Date('2026-11-16T08:00:00.000Z'))
-    const workspace = {
-      missionId: 'mission-demo-horizon',
-      profile: {
-        id: 'mateo-ruiz',
-        displayName: 'Mateo Ruiz',
-        title: 'Crew Member',
-        demoRole: 'crew',
-      },
-      detail: null,
-      prep: [],
-      percent: 0,
-      appointments,
-      appointmentsLoading: false,
-      appointmentsError: '',
-      wakeNote: '',
-      symptoms: [],
-      grants: [],
-      error: '',
-      loading: false,
-      refresh: vi.fn(),
-      role: 'crew',
-      mode: 'demo',
-      demo: true,
-    } satisfies ReturnType<typeof useMissionWorkspace>
-    vi.mocked(useMissionWorkspace).mockReturnValue(workspace)
+    vi.mocked(platformApi.appointments).mockResolvedValue({ items: appointments })
   })
 
-  it('shows only the crew member’s backend appointments and keeps professional notes private', () => {
+  it('shows only the crew member’s backend appointments and keeps professional notes private', async () => {
     render(<MemoryRouter><MySpacePage /></MemoryRouter>)
 
-    expect(screen.getByText('Consulta psicológica de seguimiento')).toBeTruthy()
+    expect(await screen.findByText('Consulta psicológica de seguimiento')).toBeTruthy()
     expect(screen.getByText('Revisión médica de rutina')).toBeTruthy()
     expect(screen.queryByText('No debe aparecer en mi lista.')).toBeNull()
     expect(screen.queryByText('Nota privada de uso exclusivo del profesional.')).toBeNull()
   })
 
-  it('filters appointments by specialty, status, and date period', () => {
+  it('filters appointments by specialty, status, and date period', async () => {
     render(<MemoryRouter><MySpacePage /></MemoryRouter>)
+
+    await screen.findByText('Consulta psicológica de seguimiento')
 
     fireEvent.change(screen.getByLabelText('Especialidad'), { target: { value: 'psychological' } })
     expect(screen.getByText('Consulta psicológica de seguimiento')).toBeTruthy()
@@ -128,7 +114,8 @@ describe('MySpacePage appointments', () => {
     expect(screen.getByText('Consulta anterior')).toBeTruthy()
 
     fireEvent.change(screen.getByLabelText('Estado'), { target: { value: 'requested' } })
-    fireEvent.change(screen.getByLabelText('Fecha'), { target: { value: 'any' } })
+    fireEvent.change(screen.getByLabelText('Fecha'), { target: { value: 'all' } })
+    fireEvent.change(screen.getByLabelText('Especialidad'), { target: { value: 'all' } })
     expect(screen.getByText('Solicitud pendiente de respuesta')).toBeTruthy()
   })
 })
