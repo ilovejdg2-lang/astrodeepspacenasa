@@ -303,9 +303,30 @@
 .rd-field select:disabled,
 .rd-field textarea:disabled { opacity: 0.6; }
 .rd-check {
-  display: flex; align-items: center; gap: 8px;
+  display: flex; align-items: flex-start; gap: 8px;
   font-size: 0.88rem; font-weight: 650;
   grid-column: 1 / -1;
+}
+.rd-check input { margin-top: 3px; flex: none; }
+.rd-support-block {
+  margin: 4px 0 0;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid color-mix(in srgb, currentColor 16%, transparent);
+  display: grid;
+  gap: 10px;
+}
+.rd-support-block legend {
+  padding: 0 4px;
+  font-size: 0.86rem;
+  font-weight: 750;
+}
+.rd-support-block .rd-muted { margin: 0; font-size: 0.82rem; line-height: 1.35; }
+.rd-check-consent {
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--rd-accent) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--rd-accent) 35%, transparent);
 }
 .rd-chat {
   display: grid; gap: 8px; max-height: 260px; overflow: auto;
@@ -487,6 +508,63 @@
   font-size: 0.9rem;
   font-weight: 700;
 }
+.chief-launch-done {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.chief-launch-done li {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  min-height: 52px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  border: 1px solid color-mix(in srgb, currentColor 12%, transparent);
+  background: color-mix(in srgb, #fff 72%, transparent);
+}
+.chief-launch-done li > div {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.chief-launch-done strong {
+  font-size: 0.95rem;
+  line-height: 1.3;
+}
+.chief-launch-done li > div span {
+  color: color-mix(in srgb, currentColor 68%, transparent);
+  font-size: 0.82rem;
+}
+.chief-launch-pill {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+.chief-launch-done li.is-done .chief-launch-pill {
+  background: color-mix(in srgb, #0c6843 14%, #fff);
+  color: #0c6843;
+}
+.chief-launch-done li.is-open {
+  border-color: color-mix(in srgb, #f5004f 35%, transparent);
+}
+.chief-launch-done li.is-open .chief-launch-pill {
+  background: color-mix(in srgb, #f5004f 14%, #fff);
+  color: #f5004f;
+}
+:root[data-theme="dark"] .chief-launch-done li {
+  background: rgba(255, 255, 255, 0.04);
+}
+:root[data-theme="dark"] .chief-launch-done li.is-done .chief-launch-pill { color: #6dcea0; }
+:root[data-theme="dark"] .chief-launch-done li.is-open .chief-launch-pill { color: #ff7aa8; }
 .chief-launch.is-locked .chief-launch-list,
 .chief-launch.is-locked .chief-launch-plan,
 .chief-launch.is-locked .chief-launch-actions {
@@ -582,4 +660,50 @@
 @media (max-width: 720px) {
   .chief-launch-plan { grid-template-columns: 1fr; }
   .chief-launch-actions .btn { flex: 1 1 auto; }
+}
+
+.care-feel-modal {
+  width: min(28rem, calc(100vw - 1.5rem));
+  padding: 1.35rem 1.35rem 1.2rem;
+  border-radius: 1.75rem;
+  border: 1px solid color-mix(in srgb, #f5004f 42%, transparent);
+  background:
+    radial-gradient(90% 70% at 100% 0%, color-mix(in srgb, #f5004f 22%, transparent), transparent 58%),
+    var(--surface);
+  box-shadow: 0 1.4rem 3.2rem rgba(20, 8, 16, 0.28);
+}
+.care-feel-modal h2 {
+  margin: 0;
+  font-size: 1.45rem;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+}
+.care-feel-modal .muted {
+  margin: 0.35rem 0 0;
+  line-height: 1.45;
+}
+.care-feel { display: grid; gap: 0.9rem; }
+.care-feel-kicker {
+  margin: 0;
+  color: #c4003f;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+:root[data-theme="dark"] .care-feel-kicker { color: #ff8aaf; }
+.care-feel-modal textarea {
+  min-height: 7.5rem;
+  resize: vertical;
+  line-height: 1.45;
+}
+.care-feel-modal .rd-btn {
+  min-height: 44px;
+  height: auto;
+  padding: 0.55rem 1rem;
+  font-size: 0.95rem;
+}
+.care-feel-modal .rd-btn:focus-visible {
+  outline: 3px solid color-mix(in srgb, #f5004f 55%, transparent);
+  outline-offset: 2px;
 }

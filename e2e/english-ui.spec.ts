@@ -14,7 +14,7 @@ test('English covers dashboard, seeded checklist, risk library and dialogs', asy
   })
   await page.goto('/entrar')
   await page.getByRole('button', { name: 'EN', exact: true }).click()
-  await page.getByRole('button', { name: 'Explore as chief', exact: true }).click()
+  await page.getByRole('button', { name: 'Explore as Mission Commander', exact: true }).click()
   await page.getByRole('button', { name: 'Enter dashboard', exact: true }).first().click()
   const spanish = /Hábitat orbital|Sin completar|Pendiente de revisión|Cargado y verificado|Protección de la nave|Gabinete [AB]|Módulo médico|Estado de |Autorreporte incluido|Repetir medición|Preparación HELIOS/
   for (const path of ['/app/centro', '/app/tripulacion', '/app/tripulacion/mateo-ruiz', '/app/alertas', '/app/recursos', '/app/recursos?tab=checklist', '/app/historial', '/app/analisis', '/app/medico', '/app/mision', '/app/riesgos', '/app/mi-salud', '/misiones', '/misiones/evidencia']) {
@@ -32,12 +32,8 @@ test('English covers dashboard, seeded checklist, risk library and dialogs', asy
       await expect(page.locator('.chief-launch-list')).not.toContainText(/higiene|evaluación|Consumibles/)
     }
     if (path === '/app/recursos') {
-      await page.getByRole('tab', { name: 'Protocols', exact: true }).click()
-      await expect(page.locator('.inv-table')).toContainText('Repeat vital signs measurement')
-      await page.getByRole('button', { name: 'Consult', exact: true }).click()
-      const dialog = page.getByRole('dialog')
-      await expect(dialog).toContainText('Confirm that the person is resting')
-      await dialog.getByRole('button', { name: 'Close', exact: true }).click()
+      await expect(page.getByRole('tab', { name: 'Protocols', exact: true })).toHaveCount(0)
+      await expect(page.getByRole('tab', { name: 'Equipment', exact: true })).toBeVisible()
     }
     if (path === '/app/riesgos') {
       await page.getByRole('tab', { name: 'Risk cards', exact: true }).click()
@@ -55,17 +51,23 @@ test('English covers dashboard, seeded checklist, risk library and dialogs', asy
   await expect(page.locator('html')).toHaveAttribute('lang', 'en')
 })
 
-for (const role of ['crew', 'medic', 'psychologist']) {
+const ROLE_ENTER = {
+  crew: 'Explore as Crew Member',
+  medic: 'Explore as Physician',
+  psychologist: 'Explore as Psychologist',
+} as const
+
+for (const role of ['crew', 'medic', 'psychologist'] as const) {
   test(`English is used in the ${role} workspace and personal health forms`, async ({ page }) => {
     await page.goto('/entrar')
     await page.getByRole('button', { name: 'EN', exact: true }).click()
-    await page.getByRole('button', { name: `Explore as ${role}`, exact: true }).click()
+    await page.getByRole('button', { name: ROLE_ENTER[role], exact: true }).click()
     await page.getByRole('button', { name: 'Enter dashboard', exact: true }).first().click()
     await page.goto('/app/centro')
     await expect(page.locator('main')).toBeVisible()
     await expect(page.locator('main')).not.toContainText(/Hábitat orbital|Sin completar|Sin permiso|Chequeo pendiente|Mesa Ops/)
     await page.goto('/app/mi-salud')
-    await expect(page.locator('main')).toContainText('My health')
+    await expect(page.locator('main')).toContainText('My Health')
     await expect(page.locator('main')).not.toContainText(/Sin completar|Pendiente|Misión demo/)
   })
 }

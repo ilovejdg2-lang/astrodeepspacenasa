@@ -22,7 +22,7 @@ const SYMPTOM_LABEL = {
   es: { cansancio: 'Cansancio', mareo: 'Mareo', cefalea: 'Dolor de cabeza', nausea: 'Náusea', otro: 'Otro' },
 } as const
 
-export function MonitorPage() {
+export function MonitorPage({ embedded = false }: { embedded?: boolean } = {}) {
   const { crewId } = useParams()
   const navigate = useNavigate()
   const { lang } = useLocale()
@@ -40,15 +40,16 @@ export function MonitorPage() {
   const baseline = crew ? `${crew.baseline.hrMin}-${crew.baseline.hrMax} ${unit}` : ''
   const hrAbove = Boolean(crew && hr && hr.value > crew.baseline.hrMax)
   const hrText = hr ? `${formatValue('heart_rate', hr.value)} ${unit}` : null
-  const shellClass = 'page monitor-page'
+  const shellClass = embedded ? 'monitor-page monitor-embedded' : 'page monitor-page'
 
   useEffect(() => {
     if (crew && crew.id !== state.selectedCrewId) dispatch({ type: 'selectCrew', crewId: crew.id })
   }, [crew, state.selectedCrewId, dispatch])
 
   useEffect(() => {
+    if (embedded) return
     document.title = en ? `HELIOS · Monitoring ${crew?.name ?? ''}` : `HELIOS · Monitoreo de ${crew?.name ?? ''}`
-  }, [crew, en])
+  }, [crew, en, embedded])
 
   const nextSteps = useMemo(() => {
     if (!crew || !posture) return [] as string[]
@@ -111,7 +112,9 @@ export function MonitorPage() {
 
   return (
     <div className={shellClass}>
-      <Link className="monitor-back-link" to="/app/tripulacion">{en ? '← Back to crew' : '← Volver a tripulación'}</Link>
+      {embedded ? null : (
+        <Link className="monitor-back-link" to="/app/tripulacion">{en ? '← Back to crew' : '← Volver a tripulación'}</Link>
+      )}
       <CarouselStrip className="crew-carousel" trackClassName="crew-picker" label={en ? 'Crew' : 'Tripulación'}>
         {CREW.map((item) => (
           <button
@@ -127,7 +130,10 @@ export function MonitorPage() {
                   : `${item.name}, seleccionada`
                 : item.name
             }
-            onClick={() => { dispatch({ type: 'selectCrew', crewId: item.id }); navigate(`/app/tripulacion/${item.id}`) }}
+            onClick={() => {
+              dispatch({ type: 'selectCrew', crewId: item.id })
+              if (!embedded) navigate(`/app/tripulacion/${item.id}`)
+            }}
           >
             <CrewHelmet id={item.id} name={item.name} selected={item.id === crew.id} />
             <span aria-hidden="true">{item.name.split(' ')[0]}</span>
@@ -139,7 +145,7 @@ export function MonitorPage() {
         <div className="monitor-avatar">
           <CrewHelmet id={crew.id} name={crew.name} selected />
         </div>
-        <p className="monitor-kicker">{en ? 'Crew monitoring' : 'Monitoreo del tripulante'}</p>
+        <p className="monitor-kicker">{embedded ? (en ? 'Mission center' : 'Centro') : (en ? 'Crew monitoring' : 'Monitoreo del tripulante')}</p>
         <h1 className="monitor-name">{crew.name}</h1>
         <p className="monitor-meta">{crewDuty(crew, lang)} · {crewPlace(crew, lang)}</p>
         <p className="monitor-summary">
@@ -233,7 +239,7 @@ export function MonitorPage() {
             </Link>
           ) : null}
           <Link className="btn" to="/app/mi-salud">
-            {en ? 'My health' : 'Mi salud'}
+            {en ? 'My Health' : 'Mi salud'}
           </Link>
         </div>
 

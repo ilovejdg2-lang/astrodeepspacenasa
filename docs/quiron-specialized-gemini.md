@@ -1,5 +1,13 @@
 # Quirón: conversaciones especializadas con Gemini
 
+## Language · full English
+
+**Quirón is full English by default** (`QUIRON_LOCALE = 'en'`), even when the surrounding HELIOS UI is Spanish.
+
+- Chat suggestions, model replies, care sessions, and analysis payloads default to **English**.
+- API `locale` on Quirón / care endpoints defaults to **`en`** (not Spanish).
+- Seed episode titles used in demo context are stored in English; the UI may still show Spanish via `systemText` when the interface language is `es`.
+
 ## Base revisada
 
 Se actualizaron las referencias de GitHub antes de editar:
@@ -66,8 +74,8 @@ Los esquemas se mantienen sincronizados en `shared/careSchema.ts` y `src/ai/care
 
 | Endpoint | Comportamiento |
 |---|---|
-| `POST /api/platform/missions/:id/quiron` | Conserva `mode`; añade `locale` opcional, por defecto español. |
-| `POST /api/platform/quiron/:id/message` | Conserva `text`; añade idioma, consentimiento y vinculación opcional. Clientes anteriores permanecen en modo local. |
+| `POST /api/platform/missions/:id/quiron` | Conserva `mode`; añade `locale` opcional, **por defecto inglés (full English)**. |
+| `POST /api/platform/quiron/:id/message` | Conserva `text`; añade idioma (**default `en`**), consentimiento y vinculación opcional. Clientes anteriores permanecen en modo local. |
 | `POST /api/platform/quiron/:id/summary/draft` | Nuevo borrador, sin compartir. |
 | `POST /api/platform/quiron/:id/summary` | Aprobación explícita; valida destinatario profesional y admite `expectedMessages` para detectar un borrador obsoleto. |
 | `GET /api/platform/missions/:id/quiron-summaries` | Devuelve resúmenes aprobados propios o dirigidos al profesional autenticado, nunca mensajes privados completos. |

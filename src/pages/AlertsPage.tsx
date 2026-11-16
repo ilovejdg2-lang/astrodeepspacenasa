@@ -1,14 +1,14 @@
 import { systemText } from '../systemText'
 import { useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import type { Alert, AlertStatus } from '../../shared/types'
+import type { Alert, AlertStatus, Integrity, Measurement, MeasurementKind } from '../../shared/types'
 import { Users, ChevronRight } from 'lucide-react'
 import { SciencePanel } from '../components/SciencePanel'
 import { Empty, Modal } from '../components/ui'
 import { isSensorAlert } from '../domain/access'
 import { CREW } from '../domain/crew'
 import { alertKindLabel, alertReasonLabel } from '../domain/alertCopy'
-import { alertTypeLabel, auditActionLabel, formatMission, integrityLabel, rejectLabel, roleLabel } from '../domain/format'
+import { alertTypeLabel, auditActionLabel, formatMission, roleLabel } from '../domain/format'
 import { briefForCrew } from '../domain/scienceBrief'
 import { useLocale } from '../i18n'
 import { useApp } from '../state/store'
@@ -26,12 +26,12 @@ function reasonLines(reason: string) {
 
 function stamp(ms: number, en = true) {
   const locale = en ? 'en-GB' : 'es'
-  const day = new Intl.DateTimeFormat(locale, { timeZone: 'UTC', day: '2-digit', month: 'short' })
+  const formatted = new Intl.DateTimeFormat(locale, { timeZone: 'UTC', day: '2-digit', month: 'short' })
     .format(ms)
     .replace(/\./g, '')
     .replace(/\s+/g, ' ')
     .trim()
-    .toLowerCase()
+  const day = en ? formatted : formatted.toLowerCase()
   const time = new Intl.DateTimeFormat(locale, { timeZone: 'UTC', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(ms)
   return { day, time }
 }
@@ -39,6 +39,84 @@ function stamp(ms: number, en = true) {
 function pickInitial(alerts: Alert[]) {
   const active = alerts.filter((alert) => alert.status === 'active')
   return active.find((alert) => alert.type === 'change')?.id ?? active[0]?.id ?? alerts[0]?.id ?? ''
+}
+
+const READING_NAME: Record<MeasurementKind, { es: string; en: string }> = {
+  heart_rate: { es: 'Pulso', en: 'Pulse' },
+  spo2: { es: 'Oxígeno en la sangre', en: 'Oxygen in the blood' },
+  temperature: { es: 'Temperatura', en: 'Temperature' },
+  sleep_hours: { es: 'Horas de descanso', en: 'Hours of rest' },
+  respiratory_rate: { es: 'Respiración', en: 'Breathing' },
+}
+
+function personFromSensor(sensorId: string) {
+  const id = sensorId.toLowerCase()
+  return CREW.find((person) => id.includes(person.id.split('-')[0])) ?? null
+}
+
+function readingFromSensor(sensorId: string): MeasurementKind | null {
+  const id = sensorId.toLowerCase()
+  if (id.includes('spo2')) return 'spo2'
+  if (id.includes('temp')) return 'temperature'
+  if (id.includes('sleep')) return 'sleep_hours'
+  if (id.includes('-fr-') || id.includes('resp')) return 'respiratory_rate'
+  if (id.includes('-fc-') || id.includes('heart') || id === 'local-repeat') return 'heart_rate'
+  return null
+}
+
+function readingName(kind: MeasurementKind | null, en: boolean) {
+  if (!kind) return en ? 'Measurement' : 'Medición'
+  return en ? READING_NAME[kind].en : READING_NAME[kind].es
+}
+
+function readingNumber(kind: MeasurementKind | null, value: number, en: boolean) {
+  if (kind === 'heart_rate') return en ? `${value} heartbeats per minute` : `${value} latidos por minuto`
+  if (kind === 'spo2') return en ? `${value}% oxygen` : `${value}% de oxígeno`
+  if (kind === 'temperature') return en ? `${value} degrees` : `${value} grados`
+  if (kind === 'sleep_hours') return en ? `${value} hours` : `${value} horas`
+  if (kind === 'respiratory_rate') return en ? `${value} breaths per minute` : `${value} respiraciones por minuto`
+  return String(value)
+}
+
+function usableAnswer(value: Integrity, en: boolean) {
+  if (value === 'valid') return en ? 'Yes' : 'Sí'
+  if (value === 'pending') return en ? 'Not yet' : 'Todavía no'
+  return en ? 'No, it is too old' : 'No, es muy antigua'
+}
+
+function arrivalNote(item: Measurement, en: boolean) {
+  if (item.integrity === 'pending') {
+    return en
+      ? 'We are still checking this number, so it is not used yet.'
+      : 'Todavía se está revisando este número, así que aún no se usa.'
+  }
+  if (item.integrity === 'stale') {
+    return en
+      ? 'This number is too old to say how the person is right now.'
+      : 'Este número es muy antiguo para decir cómo está la persona ahora.'
+  }
+  if (item.origin === 'local') return en ? 'It was saved on this device.' : 'Se guardó en este equipo.'
+  if (item.macValid) return en ? 'It arrived just as it was sent.' : 'Llegó igual que cuando se envió.'
+  return en ? 'We could not confirm that it arrived unchanged.' : 'No pudimos confirmar que llegó sin cambios.'
+}
+
+function rejectedNote(reason: string, detail: string, en: boolean) {
+  if (reason === 'duplicate') {
+    return en
+      ? 'The same reading was sent twice, so it was not saved again.'
+      : 'La misma medición se envió dos veces, así que no se guardó otra vez.'
+  }
+  if (reason === 'altered') {
+    return en
+      ? 'The reading changed before it arrived, so it is not used.'
+      : 'La medición cambió antes de llegar, así que no se usa.'
+  }
+  if (reason === 'out_of_order') {
+    return en
+      ? 'It arrived after a newer reading, so it is not used.'
+      : 'Llegó después de una medición más nueva, así que no se usa.'
+  }
+  return systemText(detail)
 }
 
 export function AlertsPage() {
@@ -98,25 +176,13 @@ export function AlertsPage() {
       <header className="alerts-head">
         <p className="alerts-kicker">{en ? 'Alerts' : 'Alertas'}</p>
         <h1>{en ? 'Alert center' : 'Centro de Alertas'}</h1>
-        <p className="alerts-lede">
-          {en ? 'A sensor notice does not close a health episode.' : 'Un aviso de sensor no cierra un episodio de salud.'}
-          <br />
-          {en ? 'Two equal readings are not presented as an attack.' : 'Dos lecturas iguales no se presentan como ataque'}
-        </p>
       </header>
 
       <section className="alerts-health" aria-labelledby="alerts-health-title">
         <div className="alerts-section-label">
-          <p className="alerts-section-kicker">{en ? 'Health and follow-up' : 'Salud y seguimiento'}</p>
           <h2 id="alerts-health-title" className="alerts-section-title">
             {en ? 'Clinical notices' : 'Avisos clínicos'}
           </h2>
-          <p className="alerts-section-lede">
-            {en
-              ? 'Active, follow-up, and closed health alerts. Space-weather events are listed separately and do not change these counts.'
-              : 'Alertas de salud activas, en seguimiento y cerradas. Los eventos de clima espacial se listan aparte y no modifican estos contadores.'}
-
-          </p>
         </div>
         <div className="alerts-filters" role="group" aria-label={en ? 'Alert status' : 'Estado de las alertas'}>
           {FILTERS.map((filter) => (
@@ -200,18 +266,60 @@ export function AlertsPage() {
         </Modal>
       </section>
 
-      <section className="panel alerts-integrity">
-        <h2>{en ? 'Recent integrity' : 'Integridad reciente'}</h2>
+      <section className="panel alerts-integrity" aria-labelledby="alerts-readings-title">
+        <h2 id="alerts-readings-title">{en ? 'Latest readings' : 'Últimas mediciones'}</h2>
+        <p className="alerts-plain">
+          {en
+            ? 'Each row is one measurement. It shows who it belongs to, the number, and whether we can use it.'
+            : 'Cada fila es una medición. Muestra de quién es, el número y si se puede usar.'}
+        </p>
         <div className="table-wrap">
           <table>
-            <thead><tr><th>{en ? 'Time' : 'Hora'}</th><th>{en ? 'Source' : 'Origen'}</th><th>{en ? 'Data' : 'Dato'}</th><th>{en ? 'Integrity' : 'Integridad'}</th><th>{en ? 'Detail' : 'Detalle'}</th></tr></thead>
+            <thead>
+              <tr>
+                <th>{en ? 'When' : 'Cuándo'}</th>
+                <th>{en ? 'Who' : 'Quién'}</th>
+                <th>{en ? 'The number' : 'El número'}</th>
+                <th>{en ? 'Can we use it?' : '¿Se puede usar?'}</th>
+                <th>{en ? 'Why' : 'Por qué'}</th>
+              </tr>
+            </thead>
             <tbody>
-              {state.measurements.slice(-6).reverse().map((item) => (
-                <tr key={item.id}><td>{formatMission(item.measuredAt)}</td><td>{item.sensorId}</td><td>{item.value} {en && item.unit === 'lpm' ? 'bpm' : item.unit}</td><td>{integrityLabel(item.integrity)}</td><td>{item.origin === 'local' ? (en ? 'Local record' : 'Registro local') : item.macValid ? (en ? 'Valid demonstration MAC' : 'MAC de demostración válido') : (en ? 'No MAC' : 'Sin MAC')}</td></tr>
-              ))}
-              {state.rejected.slice(-4).reverse().map((item) => (
-                <tr key={item.id}><td>{formatMission(item.at)}</td><td>{item.sensorId}</td><td>{item.claimedValue ?? '—'}</td><td>{rejectLabel(item.reason)}</td><td>{systemText(item.detail)}</td></tr>
-              ))}
+              {state.measurements.slice(-6).reverse().map((item) => {
+                const person = CREW.find((crew) => crew.id === item.crewId)
+                return (
+                  <tr key={item.id}>
+                    <td>{formatMission(item.measuredAt)}</td>
+                    <td>
+                      <span className="alerts-who">
+                        <strong>{person?.name ?? crewName(item.crewId)}</strong>
+                        <small>{readingName(item.kind, en)}</small>
+                      </span>
+                    </td>
+                    <td>{readingNumber(item.kind, item.value, en)}</td>
+                    <td>{usableAnswer(item.integrity, en)}</td>
+                    <td>{arrivalNote(item, en)}</td>
+                  </tr>
+                )
+              })}
+              {state.rejected.slice(-4).reverse().map((item) => {
+                const person = personFromSensor(item.sensorId)
+                const kind = readingFromSensor(item.sensorId)
+                return (
+                  <tr key={item.id}>
+                    <td>{formatMission(item.at)}</td>
+                    <td>
+                      <span className="alerts-who">
+                        <strong>{person?.name ?? (en ? 'Unknown device' : 'Equipo desconocido')}</strong>
+                        <small>{readingName(kind, en)}</small>
+                      </span>
+                    </td>
+                    <td>{item.claimedValue == null ? (en ? 'No number' : 'Sin número') : readingNumber(kind, item.claimedValue, en)}</td>
+                    <td>No</td>
+                    <td>{rejectedNote(item.reason, item.detail, en)}</td>
+                  </tr>
+                )
+              })}
             </tbody>
           </table>
         </div>

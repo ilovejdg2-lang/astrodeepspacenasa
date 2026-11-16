@@ -91,7 +91,7 @@ function buildGradual(state: AppState): AppState {
       {
         id: episodeId,
         crewId: 'elena-torres',
-        title: 'Cambio de signos y fatiga',
+        title: 'Change in vital signs and fatigue',
         status: 'open',
         openedAt: NOW - 20 * MINUTE_MS,
         symptomIds: [],
@@ -122,7 +122,7 @@ function buildGradual(state: AppState): AppState {
     idempotencyKey: 'seed-elena-symptom',
     id: 'sym-elena-seed',
     episodeId,
-    episodeTitle: 'Cambio de signos y fatiga',
+    episodeTitle: 'Change in vital signs and fatigue',
     reportedAt: NOW - 8 * MINUTE_MS,
     enforceRole: false,
   })

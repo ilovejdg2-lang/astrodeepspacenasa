@@ -87,8 +87,8 @@ export function MissionChecklistPanel({
       await platformApi.setStage(missionId, 'postmission')
       await onChanged()
       setOk(en
-        ? 'Mission moved to post-mission. This is the demo “mission ended” stage.'
-        : 'Misión pasada a posmisión. Esa es la etapa demo de “misión terminada”.')
+        ? 'Mission completed. Open items stay open. New clinical actions are closed.'
+        : 'Misión finalizada. Lo pendiente sigue pendiente. No se abren acciones clínicas nuevas.')
     } catch (err) {
       setError(err instanceof Error ? err.message : (en ? 'Could not end mission' : 'No se pudo terminar la misión'))
     } finally {
@@ -114,9 +114,6 @@ export function MissionChecklistPanel({
         plannedCrewCount: lockedPeople,
         durationDays: duration,
       })
-      if (stage === 'draft') {
-        await platformApi.setStage(missionId, 'preflight').catch(() => undefined)
-      }
       setPlanSaved(true)
       setDaysTouched(false)
       setOk(en
@@ -260,17 +257,34 @@ export function MissionChecklistPanel({
           <h2>{en ? 'Mission status' : 'Estado de la misión'}</h2>
           <span className="chief-launch-chip">{stageLabel(stage || '', en)}</span>
         </div>
-        <p className="muted">{stageBlurb(stage || '', en)}</p>
-        <p className="chief-launch-locked" role="status">
-          {en
-            ? 'Prep checklist is permanently closed after takeoff. It cannot be reopened.'
-            : 'El checklist de preparación quedó cerrado de forma definitiva tras el despegue. No se puede reabrir.'}
-        </p>
         <p className="muted">
-          {en ? 'Prep snapshot at deploy' : 'Snapshot de prep al despegar'}: <strong>{percent}%</strong>
-          {' · '}
-          {en ? 'Crew locked' : 'Tripulación bloqueada'}
+          {en
+            ? 'Preparation is locked. This is what was ready at launch.'
+            : 'La preparación está cerrada. Esto es lo que quedó listo al despegar.'}
         </p>
+        <div className="chief-launch-meter" aria-live="polite">
+          <div className="chief-launch-meter-top">
+            <strong>{en ? 'Ready' : 'Listo'}</strong>
+            <span className={percent >= 80 ? 'is-ok' : 'is-warn'}>{percent}%</span>
+          </div>
+          <div className="chief-launch-bar" role="progressbar" aria-valuenow={percent} aria-valuemin={0} aria-valuemax={100}>
+            <span style={{ width: `${Math.min(100, percent)}%` }} />
+          </div>
+        </div>
+        <ul className="chief-launch-done">
+          {prep.map((item) => {
+            const done = item.status === 'cargado_verificado'
+            return (
+              <li key={item.id} className={done ? 'is-done' : 'is-open'}>
+                <span className="chief-launch-pill">{done ? (en ? 'Complete' : 'Completo') : (en ? 'Open' : 'Pendiente')}</span>
+                <div>
+                  <strong>{systemText(item.title)}</strong>
+                  {item.qtyRequired != null ? <span>{(item.qtyAvailable ?? 0)} {en ? 'of' : 'de'} {item.qtyRequired}</span> : null}
+                </div>
+              </li>
+            )
+          })}
+        </ul>
         {stage === 'aboard' ? (
           <div className="rd-actions" style={{ marginTop: 12 }}>
             <button
@@ -279,14 +293,14 @@ export function MissionChecklistPanel({
               disabled={busy || !canEndMission}
               onClick={() => void endMission()}
             >
-              {en ? 'End mission → Post-mission' : 'Terminar misión → Posmisión'}
+              {en ? 'Complete mission' : 'Finalizar misión'}
             </button>
           </div>
         ) : null}
         {stage === 'postmission' ? (
           <p className="muted">
             {en
-              ? 'Mission ended (post-mission). Review stays available; no more crew adds; checklist stays closed.'
+              ? 'Mission ended (Completed). Review stays available; no more crew adds; checklist stays closed.'
               : 'Misión terminada (posmisión). La revisión sigue disponible; no se agregan integrantes; el checklist permanece cerrado.'}
           </p>
         ) : null}

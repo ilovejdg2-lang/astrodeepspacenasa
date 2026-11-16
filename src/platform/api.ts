@@ -1,6 +1,26 @@
+import type { PainMapReport } from '../domain/painMap'
 import { systemText } from '../systemText'
 import { uiLang } from '../locale'
 import { apiUrl } from '../api/baseUrl'
+
+function connectionMessage() {
+  return uiLang() === 'en'
+    ? "This couldn't load right now. Try again in a moment."
+    : 'No se pudo cargar ahora. Probá de nuevo en un momento.'
+}
+
+function errorMessage(status: number, data: unknown) {
+  const record = data && typeof data === 'object' ? data as { message?: unknown } : {}
+  const raw = typeof record.message === 'string'
+    ? record.message
+    : Array.isArray(record.message)
+      ? record.message.filter((item): item is string => typeof item === 'string').join(', ')
+      : ''
+  if (status >= 500 || /^error\s+\d+$/i.test(raw) || /bad gateway|service unavailable/i.test(raw)) {
+    return connectionMessage()
+  }
+  return systemText(raw || connectionMessage())
+}
 import { getActiveMissionId, getSessionToken } from './session'
 import { careConversationSchema, careDraftSchema, type CareAiOptions } from '../../shared/careSchema'
 
@@ -13,16 +33,14 @@ async function platformFetch<T>(path: string, init?: RequestInit): Promise<T> {
   if (token) headers.set('X-Helios-Session', token)
   const missionId = getActiveMissionId()
   if (missionId) headers.set('X-Helios-Mission', missionId)
-  const response = await fetch(apiUrl(path), { ...init, headers })
-  const data = await response.json().catch(() => ({}))
-  if (!response.ok) {
-    const message = typeof data?.message === 'string'
-      ? data.message
-      : Array.isArray(data?.message)
-        ? data.message.join(', ')
-        : `Error ${response.status}`
-    throw new Error(systemText(message))
+  let response: Response
+  try {
+    response = await fetch(apiUrl(path), { ...init, headers })
+  } catch {
+    throw new Error(connectionMessage())
   }
+  const data = await response.json().catch(() => ({}))
+  if (!response.ok) throw new Error(errorMessage(response.status, data))
   return data as T
 }
 
@@ -128,6 +146,27 @@ export const platformApi = {
     platformFetch<{ items: unknown[] }>(
       `/api/platform/missions/${id}/symptoms${subjectId ? `?subjectId=${encodeURIComponent(subjectId)}` : ''}`,
     ),
+  listPainMaps: (id: string, subjectId?: string) =>
+    platformFetch<{ items: PainMapReport[] }>(
+      `/api/platform/missions/${id}/pain-maps${subjectId ? `?subjectId=${encodeURIComponent(subjectId)}` : ''}`,
+    ),
+  createPainMap: (id: string, body: Record<string, unknown>) =>
+    platformFetch<PainMapReport>(`/api/platform/missions/${id}/pain-maps`, { method: 'POST', body: JSON.stringify(body) }),
+  correctPainMap: (id: string, reportId: string, body: Record<string, unknown>) =>
+    platformFetch<PainMapReport>(`/api/platform/missions/${id}/pain-maps/${encodeURIComponent(reportId)}/corrections`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+  setPainStatus: (id: string, reportId: string, status: string) =>
+    platformFetch<PainMapReport>(`/api/platform/missions/${id}/pain-maps/${encodeURIComponent(reportId)}/status`, {
+      method: 'POST',
+      body: JSON.stringify({ status }),
+    }),
+  addPainClinicalNote: (id: string, reportId: string, body: string, appointmentId?: string | null) =>
+    platformFetch<PainMapReport>(`/api/platform/missions/${id}/pain-maps/${encodeURIComponent(reportId)}/clinical-notes`, {
+      method: 'POST',
+      body: JSON.stringify({ body, appointmentId: appointmentId ?? null }),
+    }),
   listIndicators: (id: string, opts?: { subjectId?: string; kind?: string }) => {
     const params = new URLSearchParams()
     if (opts?.subjectId) params.set('subjectId', opts.subjectId)
@@ -185,6 +224,28 @@ export const platformApi = {
       method: 'POST',
       body: JSON.stringify({ accept }),
     }),
+  rescheduleAppointment: (appointmentId: string, scheduledAt: number) =>
+    platformFetch(`/api/platform/appointments/${appointmentId}/reschedule`, {
+      method: 'POST',
+      body: JSON.stringify({ scheduledAt }),
+    }),
+  cancelAppointment: (appointmentId: string, reason: string) =>
+    platformFetch(`/api/platform/appointments/${appointmentId}/cancel`, {
+      method: 'POST',
+      body: JSON.stringify({ reason }),
+    }),
+  completeAppointment: (appointmentId: string, outcome: string, professionalNotes: string) =>
+    platformFetch(`/api/platform/appointments/${appointmentId}/complete`, {
+      method: 'POST',
+      body: JSON.stringify({ outcome, professionalNotes }),
+    }),
+  slots: (id: string, professionalId: string, day: string) =>
+    platformFetch<{ slots: { start: number; label: string }[] }>(
+      `/api/platform/missions/${id}/slots?professionalId=${encodeURIComponent(professionalId)}&day=${encodeURIComponent(day)}`,
+    ),
+  review: (id: string) => platformFetch<{ review: MissionReview; versions: { id: string; version: number; createdAt: number }[] }>(`/api/platform/missions/${id}/review`),
+  saveReview: (id: string) => platformFetch<{ id: string; version: number }>(`/api/platform/missions/${id}/review`, { method: 'POST', body: '{}' }),
+  inventory: (id: string) => platformFetch<{ items: { name: string; kind: string; qtyOnHand: number; qtyPlanned: number }[]; movements: unknown[] }>(`/api/platform/missions/${id}/inventory`),
   evidence: () => platformFetch<{ items: Evidence[] }>('/api/platform/evidence'),
   storageStatus: () =>
     platformFetch<{
@@ -222,6 +283,13 @@ export type Mission = {
   durationDays: number
   plannedCrewCount: number
   timezone: string
+  wakeHourUtc?: number
+  actualStart?: string | null
+  actualReturn?: string | null
+  closedAt?: number | null
+  closedBy?: string | null
+  demoKey?: string | null
+  simulated?: boolean
   activities: string[]
   commsNotes: string
   storageNotes: string
@@ -283,6 +351,37 @@ export type PrepItem = {
   qtyRequired: number | null
   qtyAvailable: number | null
   evidence: string
+  ownerProfileId?: string | null
+}
+
+export type MissionReview = {
+  simulated: true
+  stage: string
+  disclaimer: { en: string; es: string }
+  flight: {
+    name: string
+    destination: string
+    timezone: string
+    actualStart: string | null
+    actualReturn: string | null
+    closedAt: number | null
+    closedBy: string | null
+    durationDays: number
+    crewCount: number
+    prepPercent: number
+  }
+  indicators: { kind: string; count: number; staleCount: number }[]
+  rest: { profileId: string; sleepEpisodes: number; checkInsCompleted: number; checkInsPending: number }[]
+  episodes: { open: number; monitoring: number; resolved: number }
+  alerts: { id: string; title: string; status: string; subjectProfileId: string | null }[]
+  resources: { name: string; kind: string; qtyOnHand: number; qtyPlanned: number; movements: number; note: string }[]
+  care: {
+    visibleDetail: boolean
+    byStatus: Record<string, number>
+    pendingAtClose: { id: string; status: string; specialty: string; label: string }[]
+  }
+  lessons: { kind: 'observation' | 'proposal'; text: { en: string; es: string }; basis: { en: string; es: string } }[]
+  recommendations: { kind: 'observation' | 'proposal'; text: { en: string; es: string }; basis: { en: string; es: string } }[]
 }
 
 export type PrepSuggestion = {

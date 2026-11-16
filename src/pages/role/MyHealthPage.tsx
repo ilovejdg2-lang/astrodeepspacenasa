@@ -4,8 +4,9 @@ import { Link } from 'react-router-dom'
 import { HealthIndicatorsPanel } from '../../components/health/HealthIndicatorsPanel'
 import { OfflineSyncBar } from '../../components/health/OfflineSyncBar'
 import { PlatformIndicatorCharts } from '../../components/health/PlatformIndicatorCharts'
+import { AppointmentDesk, type VisitRow } from '../../components/mission/AppointmentDesk'
+import { PainMapSection } from '../../components/health/pain/PainMapSection'
 import { DailyCarePanel } from '../../components/role/DailyCarePanel'
-import { DEMO_REVIEW_PROTOCOL } from '../../domain/demoReviewProtocol'
 import { CrewArt } from '../../components/role/RoleArt'
 import { useLocale } from '../../i18n'
 import { platformApi, type HealthIndicatorReading } from '../../platform/api'
@@ -16,13 +17,13 @@ import { RoleContextBar } from './RoleContextBar'
 import { useMissionWorkspace } from './useMissionWorkspace'
 
 type GrantRow = PlatformGrant & { id: string; granteeProfileId: string; categories: string[] }
-type ApptRow = { id: string; specialty?: string; status?: string; reason?: string }
+type ApptRow = VisitRow
 
 export function MyHealthPage() {
   const { lang } = useLocale()
   const en = lang === 'en'
   useEffect(() => {
-    document.title = en ? 'HELIOS · My health' : 'HELIOS · Mi salud'
+    document.title = en ? 'HELIOS · My Health' : 'HELIOS · Mi salud'
   }, [en])
   const {
     missionId,
@@ -96,7 +97,7 @@ export function MyHealthPage() {
       <div className="rd-bg" aria-hidden="true"><CrewArt /></div>
       <header className="rd-head">
         <p className="rd-kicker">{en ? 'Personal space' : 'Espacio personal'}</p>
-        <h1>{en ? 'My health' : 'Mi salud'}</h1>
+        <h1>{en ? 'My Health' : 'Mi salud'}</h1>
         <RoleContextBar
           missionName={detail?.mission.name}
           stage={detail?.mission.stage}
@@ -121,26 +122,7 @@ export function MyHealthPage() {
       <OfflineSyncBar />
 
       <section className="rd-card">
-        <h2>{en ? 'Demo review protocol' : 'Protocolo de revisión demo'}</h2>
-        <p className="rd-muted">{en ? DEMO_REVIEW_PROTOCOL.disclaimer.en : DEMO_REVIEW_PROTOCOL.disclaimer.es}</p>
-        <ul className="health-mini-list">
-          {DEMO_REVIEW_PROTOCOL.rules.map((rule) => (
-            <li key={rule.id}>
-              <strong>{rule.id}</strong>
-              {' · '}
-              {en ? rule.summary.en : rule.summary.es}
-            </li>
-          ))}
-        </ul>
-      </section>
-
-      <section className="rd-card">
         <h2>{en ? 'Mission routine' : 'Rutina de misión'}</h2>
-        <p className="rd-muted">
-          {en
-            ? 'Pending routine tasks are not proof of illness or wellness.'
-            : 'Las tareas pendientes de la rutina no demuestran enfermedad ni bienestar.'}
-        </p>
         <ul className="health-mini-list">
           {routine.map((item) => (
             <li key={item.id}>
@@ -152,17 +134,30 @@ export function MyHealthPage() {
         </ul>
       </section>
 
+      {missionId && profile?.id ? (
+        <PainMapSection
+          en={en}
+          missionId={missionId}
+          profileId={profile.id}
+          stage={detail?.mission.stage}
+          appointments={appointments as VisitRow[]}
+          onChanged={() => refresh({ silent: true })}
+        />
+      ) : null}
+
       <DailyCarePanel
         variant="hub"
         missionId={missionId}
         wakeNote={wakeNote}
         symptomCount={symptoms.length}
         appointmentCount={appointments.length}
+        stage={detail?.mission.stage}
         onChanged={() => refresh({ silent: true })}
       />
 
       <HealthIndicatorsPanel
         missionId={missionId}
+        writable={detail?.mission.stage === 'aboard'}
         onChanged={async () => {
           await reloadIndicators()
           await refresh({ silent: true })
@@ -170,6 +165,18 @@ export function MyHealthPage() {
       />
 
       <PlatformIndicatorCharts missionId={missionId} />
+
+      {missionId ? (
+        <AppointmentDesk
+          missionId={missionId}
+          stage={detail?.mission.stage}
+          profileId={profile?.id}
+          scope="mine"
+          members={detail?.members || []}
+          appointments={appointments as VisitRow[]}
+          onChanged={() => refresh({ silent: true })}
+        />
+      ) : null}
 
       <section className="rd-card" data-testid="consent-demo">
         <h2>{en ? 'Act: appointments, grants & urgent help' : 'Actuar: citas, permisos y ayuda urgente'}</h2>
@@ -182,39 +189,7 @@ export function MyHealthPage() {
           <button
             type="button"
             className="rd-btn"
-            disabled={!missionId}
-            onClick={() => void (async () => {
-              if (!missionId) return
-              await platformApi.requestAppointment(missionId, {
-                specialty: 'medico',
-                reason: en ? 'Non-urgent follow-up' : 'Seguimiento no urgente',
-                modality: 'aboard',
-              })
-              await refresh({ silent: true })
-            })()}
-          >
-            {en ? 'Request medic appointment' : 'Solicitar cita médica'}
-          </button>
-          <button
-            type="button"
-            className="rd-btn ghost"
-            disabled={!missionId}
-            onClick={() => void (async () => {
-              if (!missionId) return
-              await platformApi.requestAppointment(missionId, {
-                specialty: 'psicologo',
-                reason: en ? 'Emotional support (can wait)' : 'Apoyo emocional (puede esperar)',
-                modality: 'aboard',
-              })
-              await refresh({ silent: true })
-            })()}
-          >
-            {en ? 'Request psychology appointment' : 'Solicitar cita psicología'}
-          </button>
-          <button
-            type="button"
-            className="rd-btn"
-            disabled={!missionId || !medicId || grantBusy}
+            disabled={!missionId || !medicId || grantBusy || detail?.mission.stage !== 'aboard'}
             onClick={() => void (async () => {
               if (!missionId || !medicId) return
               setGrantBusy(true)
@@ -235,7 +210,7 @@ export function MyHealthPage() {
           <button
             type="button"
             className="rd-btn ghost"
-            disabled={!missionId || !psychId || grantBusy}
+            disabled={!missionId || !psychId || grantBusy || detail?.mission.stage !== 'aboard'}
             onClick={() => void (async () => {
               if (!missionId || !psychId) return
               setGrantBusy(true)
@@ -257,7 +232,7 @@ export function MyHealthPage() {
             type="button"
             className="rd-btn"
             style={{ background: '#b3003a', color: '#fff' }}
-            disabled={!missionId}
+            disabled={!missionId || detail?.mission.stage !== 'aboard'}
             onClick={() => void (async () => {
               if (!missionId) return
               const result = await platformApi.urgent(missionId) as { limitation?: string; requested?: boolean }
@@ -306,11 +281,6 @@ export function MyHealthPage() {
 
       <section className="rd-card">
         <h2>{en ? 'Responsible progress (optional)' : 'Progreso responsable (opcional)'}</h2>
-        <p className="rd-muted">
-          {en
-            ? 'Counts preparation learning and logging only — never “better vitals” or hiding symptoms. You can turn this off.'
-            : 'Cuenta solo aprendizaje de preparación y registros — nunca “mejores vitales” ni ocultar síntomas. Podés desactivarlo.'}
-        </p>
         <label className="rd-field" style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
           <input
             type="checkbox"

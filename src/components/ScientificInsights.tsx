@@ -40,12 +40,15 @@ export function ScientificInsights({ compact = false }: { compact?: boolean }) {
   const liveCount = studies.filter((s) => s.fetchedAt && !s.message).length
   const cachedCount = studies.filter((s) => s.cached).length
   return (
-    <section className="panel" data-testid="nasa-osdr-provenance">
-      <h2>{compact ? 'OSDR' : 'Scientific Health Insights · OSDR'}</h2>
+    <section className="panel env-card" data-testid="nasa-osdr-provenance">
+      <div>
+        <p className="env-kicker">NASA OSDR</p>
+        <h2>{compact ? (en ? 'Research studies' : 'Estudios') : 'Scientific Health Insights · OSDR'}</h2>
+      </div>
       <p className="badge">
         {en
-          ? `OSDR · live ${liveCount}/${OSDR_DEMO_STUDIES.length}${cachedCount ? ` · cached ${cachedCount}` : ''}`
-          : `OSDR · vivo ${liveCount}/${OSDR_DEMO_STUDIES.length}${cachedCount ? ` · caché ${cachedCount}` : ''}`}
+          ? `${liveCount} of ${OSDR_DEMO_STUDIES.length} available${cachedCount ? ` · ${cachedCount} cached` : ''}`
+          : `${liveCount} de ${OSDR_DEMO_STUDIES.length} disponibles${cachedCount ? ` · ${cachedCount} en caché` : ''}`}
       </p>
       {!compact ? (
         <>
@@ -61,10 +64,10 @@ export function ScientificInsights({ compact = false }: { compact?: boolean }) {
           </p>
         </>
       ) : (
-        <p className="muted">
+        <p className="env-purpose">
           {en
-            ? 'Research metadata · not clinical · not personal telemetry'
-            : 'Metadatos de investigación · no clínico · no telemetría personal'}
+            ? 'Study titles for context — not clinical results or your health data.'
+            : 'Títulos de estudios como contexto, no resultados clínicos ni tus datos de salud.'}
         </p>
       )}
       <button className="chip" type="button" onClick={() => setAttempt((a) => a + 1)}>
@@ -72,24 +75,17 @@ export function ScientificInsights({ compact = false }: { compact?: boolean }) {
       </button>
       <div aria-live="polite" aria-busy={loading}>
         {loading ? (
-          <p>{en ? 'Loading OSDR…' : 'Consultando OSDR…'}</p>
+          <p>{en ? 'Loading studies…' : 'Consultando estudios…'}</p>
         ) : compact ? (
-          <ul className="risks-brief-list" style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: 6 }}>
+          <ul className="env-list">
             {studies.map((study) => (
-              <li key={study.studyId} data-testid={`osdr-${study.studyId}`} style={{ padding: '8px 10px', borderRadius: 12, border: '1px solid color-mix(in srgb, currentColor 12%, transparent)' }}>
-                <strong style={{ display: 'block', fontSize: '0.9rem' }}>{study.metadata?.title ?? study.studyId}</strong>
+              <li key={study.studyId} className="env-study" data-testid={`osdr-${study.studyId}`}>
+                <a href={study.repoUrl} target="_blank" rel="noreferrer">{study.metadata?.title ?? study.studyId}</a>
                 {study.message ? (
-                  <span className="muted">{en ? 'Unavailable' : 'No disponible'}</span>
+                  <span role="alert">{en ? 'OSDR unavailable' : 'OSDR no disponible'}</span>
                 ) : (
-                  <span className="muted">
-                    {study.cached ? (en ? 'Cached' : 'Caché') : (en ? 'NASA fetch' : 'Consulta NASA')}
-                    {study.fetchedAt ? ` · ${study.fetchedAt}` : ''}
-                  </span>
+                  <span className="env-meta">{study.studyId} · {study.cached ? (en ? 'Cached' : 'Caché') : (en ? 'Live' : 'En vivo')}</span>
                 )}
-                {' · '}
-                <a href={study.repoUrl} target="_blank" rel="noreferrer">
-                  {study.studyId}
-                </a>
               </li>
             ))}
           </ul>

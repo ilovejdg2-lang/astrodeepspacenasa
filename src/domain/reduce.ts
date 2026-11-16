@@ -99,6 +99,7 @@ export type Action =
       name: string;
       location: string;
       status: Resource['status'];
+      category: Resource['category'];
     }
   | {
       type: 'createCommunication';
@@ -842,6 +843,7 @@ function updateResource(
     name: string;
     location: string;
     status: Resource['status'];
+    category: Resource['category'];
   },
 ): AppState {
   if (!canUseInventory(state.role))
@@ -859,7 +861,14 @@ function updateResource(
     return withNotice(state, 'err', 'Nombre y ubicación son obligatorios.');
   const resources = state.resources.map((item) =>
     item.id === current.id
-      ? { ...item, name, location, status: action.status }
+      ? {
+          ...item,
+          name,
+          location,
+          status: action.status,
+          category: action.category,
+          kind: action.category === 'supply' ? 'consumable' : 'reusable',
+        }
       : item,
   );
   const bumped = nextSeq({ ...state, resources });

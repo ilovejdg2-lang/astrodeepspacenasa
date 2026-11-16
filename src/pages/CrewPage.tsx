@@ -87,11 +87,6 @@ export function CrewPage() {
         <header className="crew-heading">
           <p className="crew-kicker">{en ? 'Crew' : 'Tripulación'}</p>
           <h1>{en ? 'Four people, one record' : 'Cuatro personas, un mismo registro'}</h1>
-          <p>
-            {en ? 'Observed state and evidence quality are calculated separately.' : 'El estado observado y la calidad de la evidencia se calculan aparte.'}
-            <br />
-            {en ? 'Missing data does not mean stability.' : 'Falta de datos no significa estabilidad.'}
-          </p>
         </header>
       </div>
 

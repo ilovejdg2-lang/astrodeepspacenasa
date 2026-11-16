@@ -21,7 +21,15 @@ export function PlatformIndicatorCharts({ missionId }: { missionId: string | nul
         const kinds = chartablePlatformKinds(data.items)
         setKind((current) => kinds.includes(current) ? current : (kinds[0] ?? current))
       })
-      .catch((err) => setError(err instanceof Error ? err.message : 'Error'))
+      .catch((err) => {
+        const raw = err instanceof Error ? err.message : ''
+        if (!raw || /^Error \d+$/.test(raw) || raw === 'Operation not permitted.') {
+          setItems([])
+          setError('')
+          return
+        }
+        setError(raw)
+      })
   }, [missionId])
 
   const kinds = useMemo(() => chartablePlatformKinds(items), [items])
@@ -37,11 +45,6 @@ export function PlatformIndicatorCharts({ missionId }: { missionId: string | nul
   return (
     <section className="rd-card" data-testid="platform-indicator-charts">
       <h2>{en ? 'Platform indicator history' : 'Historial de indicadores (platform)'}</h2>
-      <p className="rd-muted">
-        {en
-          ? 'Care-layer readings from My health. Each chart uses a single unit — incompatible units are never mixed on one axis.'
-          : 'Lecturas de la capa de cuidado (Mi salud). Cada gráfico usa una sola unidad — nunca se mezclan unidades incompatibles en el mismo eje.'}
-      </p>
       {error ? <p className="rd-error" role="alert">{error}</p> : null}
       {kinds.length === 0 ? (
         <p className="rd-muted">{en ? 'No platform indicators to chart yet.' : 'Todavía no hay indicadores platform para graficar.'}</p>

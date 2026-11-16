@@ -15,7 +15,13 @@ describe('system display localization', () => {
   })
   it('keeps unknown notes and identifiers intact', () => {
     expect(systemText('Mi nota personal: prueba 123', 'en')).toBe('Mi nota personal: prueba 123')
+    expect(systemText('My personal note: prueba 123', 'es')).toBe('My personal note: prueba 123')
     expect(systemText('mission-helios-demo', 'en')).toBe('mission-helios-demo')
+  })
+  it('treats the English catalog as the source and Spanish as the translation', () => {
+    expect(systemText('Mission not found', 'en')).toBe('Mission not found')
+    expect(systemText('Mission not found', 'es')).toBe('Misión no encontrada')
+    expect(systemText('Oximeter available and verified', 'es')).toBe('Oxímetro disponible y verificado')
   })
   it('recomputes history language without changing the snapshot', () => {
     const state = createInitialState('gradual-fatigue')

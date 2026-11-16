@@ -1,13 +1,14 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { UserPlus } from 'lucide-react'
-import { MissionProcessStrip } from '../../components/platform/MissionProcessStrip'
-import { AboardCheckInBoard } from '../../components/role/AboardCheckInBoard'
 import { useLocale } from '../../i18n'
 import { platformApi } from '../../platform/api'
-import { profileDisplayName, roleLabel, stageBlurb } from '../../platform/copy'
+import { MISSION_PROCESS_STEPS, profileDisplayName, roleLabel, stageHint, stageLabel } from '../../platform/copy'
+import { systemText } from '../../systemText'
 import { getActiveMissionId } from '../../platform/session'
+import { MissionReviewPanel } from '../../components/mission/MissionReviewPanel'
 import { MissionCrewOverview } from '../../components/role/MissionCrewOverview'
+import { MonitorPage } from '../MonitorPage'
 import { RoleContextBar } from './RoleContextBar'
 import { useMissionWorkspace } from './useMissionWorkspace'
 import '../../platform/role-dash.css'
@@ -16,7 +17,7 @@ import '../../platform/role-dash.css'
 export function ChiefHome() {
   const { lang } = useLocale()
   const en = lang === 'en'
-  const { detail, role, mode, loading, missionId, refresh, percent, error: workspaceError } = useMissionWorkspace()
+  const { detail, role, mode, loading, missionId, refresh, percent, prep, error: workspaceError } = useMissionWorkspace()
   const activeMissionId = missionId || getActiveMissionId()
   const rosterLocked = Boolean(detail?.mission.rosterLocked)
   const stage = detail?.mission.stage
@@ -92,19 +93,28 @@ export function ChiefHome() {
               : `Integrantes activos: ${crewSeatCount || 0} / previstos ${plannedCrew ?? '—'}`}
           </p>
           {stage ? (
-            <>
-              <p className="muted chief-invite-note">{stageBlurb(stage, en)}</p>
-              <MissionProcessStrip stage={stage} en={en} compact />
-            </>
+            <p className="muted chief-invite-note" data-testid="mission-stage-line">
+              {en ? 'Mission stage' : 'Etapa de misión'}
+              {': '}
+              <strong>{stageLabel(stage, en)}</strong>
+              {MISSION_PROCESS_STEPS.includes(stage as (typeof MISSION_PROCESS_STEPS)[number])
+                ? ` · ${MISSION_PROCESS_STEPS.indexOf(stage as (typeof MISSION_PROCESS_STEPS)[number]) + 1}/${MISSION_PROCESS_STEPS.length}`
+                : ''}
+              {stageHint(stage, en) ? ` — ${stageHint(stage, en)}` : ''}
+            </p>
           ) : null}
           {loading ? <p className="muted">{en ? 'Loading…' : 'Cargando…'}</p> : null}
           {crewAddsBlocked ? (
             <p className="muted chief-invite-note">
-              {en
-                ? 'Mission deployed: no more astronauts can be added.'
-                : 'Misión desplegada: ya no se pueden agregar más astronautas.'}
+              {stage === 'aboard'
+                ? (en
+                  ? 'Mission deployed: no more astronauts can be added.'
+                  : 'Misión desplegada: ya no se pueden agregar más astronautas.')
+                : (en
+                  ? 'This mission is completed. Crew setup and new clinical operations stay closed.'
+                  : 'Esta misión está finalizada. La tripulación y las operaciones clínicas nuevas quedan cerradas.')}
             </p>
-          ) : analysisStale ? (
+          ) : analysisStale && stage === 'preflight' ? (
             <p className="muted chief-invite-note">
               {en
                 ? 'Changes pending: run analysis again before takeoff.'
@@ -158,7 +168,7 @@ export function ChiefHome() {
                 </button>
                 <Link className="btn" to="/misiones">{en ? 'Mission hub' : 'Hub de misiones'}</Link>
                 <Link className="btn" to="/app/tripulacion">{en ? 'Crew board' : 'Tablero de tripulación'}</Link>
-                <Link className="btn" to="/app/mi-salud">{en ? 'My health' : 'Mi salud'}</Link>
+                <Link className="btn" to="/app/mi-salud">{en ? 'My Health' : 'Mi salud'}</Link>
               </div>
 
               <div className="chief-pending" style={{ marginTop: 14 }}>
@@ -202,10 +212,51 @@ export function ChiefHome() {
         </div>
       </div>
 
-      {activeMissionId && stage === 'aboard' ? (
-        <AboardCheckInBoard missionId={activeMissionId} en={en} />
+      {stage === 'draft' ? (
+        <section className="panel" data-testid="draft-setup">
+          <h2>{en ? 'Set up your mission' : 'Configurá la misión'}</h2>
+          <p className="muted">
+            {en
+              ? 'This draft has no checklist, health records, visits, or flight history. Nothing here is filled from another mission.'
+              : 'Este borrador no tiene checklist, registros de salud, citas ni historial de vuelo. No se rellena con datos de otra misión.'}
+          </p>
+          <ol>
+            <li>{en ? 'Mission details' : 'Datos de la misión'}</li>
+            <li>{en ? 'Crew setup' : 'Tripulación'}</li>
+            <li>{en ? 'Preparation plan' : 'Plan de preparación'}</li>
+            <li>{en ? 'Checklist review' : 'Revisión del checklist'}</li>
+          </ol>
+          <div className="row" style={{ gap: 8, flexWrap: 'wrap' }}>
+            <Link className="btn btn-primary" to="/misiones/nueva">{en ? 'Mission details' : 'Datos de la misión'}</Link>
+            <Link className="btn" to="/app/recursos?tab=checklist">{en ? 'Preparation plan' : 'Plan de preparación'}</Link>
+          </div>
+        </section>
       ) : null}
 
+      {stage === 'preflight' && activeMissionId ? (
+        <section className="panel" data-testid="preflight-board">
+          <h2>{en ? 'Preparation Checklist' : 'Checklist de preparación'}</h2>
+          <p>{en ? 'Progress' : 'Avance'}: <strong>{percent}%</strong></p>
+          <p className="muted">{en ? 'Flight cannot start until applicable items are at least 80% and every critical item is complete.' : 'El vuelo no puede empezar hasta 80% de los ítems aplicables y todos los críticos completos.'}</p>
+          <ul>
+            {prep.filter((item) => item.applies && item.status !== 'cargado_verificado').map((item) => (
+              <li key={item.id}>
+                {item.critical ? (en ? 'Critical · ' : 'Crítico · ') : ''}
+                {systemText(item.title)}
+                {item.ownerProfileId ? ` · ${profileDisplayName(item.ownerProfileId)}` : ''}
+              </li>
+            ))}
+          </ul>
+          <p className="muted">{en ? 'Next: finish the missing critical items, then confirm start from the checklist.' : 'Siguiente: completá los críticos faltantes y confirmá el inicio desde el checklist.'}</p>
+          <Link className="btn btn-primary" to="/app/recursos?tab=checklist">{en ? 'Open checklist' : 'Abrir checklist'}</Link>
+        </section>
+      ) : null}
+
+      {stage === 'postmission' && activeMissionId ? (
+        <MissionReviewPanel missionId={activeMissionId} en={en} canSave={role === 'chief'} />
+      ) : null}
+
+      {stage === 'draft' ? null : (
       <section className="panel mission-prep-access" aria-label={en ? 'Preparation quick access' : 'Acceso rápido a preparación'}>
         <div>
           <h2>{en ? 'Resources & checklist' : 'Recursos y checklist'}</h2>
@@ -213,8 +264,33 @@ export function ChiefHome() {
         </div>
         <Link className="btn btn-primary" to="/app/recursos?tab=checklist" data-testid="open-mission-checklist">{en ? 'Open checklist' : 'Abrir checklist'}</Link>
       </section>
+      )}
 
-      <MissionCrewOverview />
+      {activeMissionId ? (
+        <section className="panel" data-testid="platform-roster">
+          <h2>{en ? 'Crew' : 'Tripulación'}</h2>
+          {stage === 'draft' ? (
+            <p className="muted">
+              {en
+                ? 'Only the creator is assigned, as Mission Commander. Add the rest of the crew before preparation.'
+                : 'Solo está asignada la persona que creó la misión, como comandante. Sumá al resto antes de la preparación.'}
+            </p>
+          ) : null}
+          <ul>
+            {(detail?.members || []).filter((member) => member.status === 'active').map((member) => (
+              <li key={member.id}>
+                {profileDisplayName(member.profileId)}
+                {' · '}
+                {roleLabel(member.role, en)}
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : (
+        <MissionCrewOverview />
+      )}
+
+      <MonitorPage embedded />
     </div>
   )
 }

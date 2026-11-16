@@ -1,11 +1,12 @@
 import { useEffect } from 'react'
 import { Navigate } from 'react-router-dom'
+import { readStored } from '../../locale'
 import { getActiveMissionId, getSessionToken } from '../../platform/session'
 
-/** La experiencia de cuidado vive dentro del dashboard (/app/mi-salud). */
+/** Care lives in the dashboard at /app/mi-salud. */
 export function CarePage() {
   useEffect(() => {
-    document.title = 'HELIOS · Mi salud'
+    document.title = readStored() === 'es' ? 'HELIOS · Mi salud' : 'HELIOS · My Health'
   }, [])
 
   if (!getSessionToken()) return <Navigate to="/entrar" replace />

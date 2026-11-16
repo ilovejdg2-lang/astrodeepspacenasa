@@ -1,13 +1,12 @@
 import { systemText } from '../systemText'
-import { RadiationPanel } from '../components/NasaEnvironment'
+import { RadiationPanel, SpaceWeatherPanel } from '../components/NasaEnvironment'
 import { AlertTriangle, ExternalLink } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { SPACE_HAZARDS } from '../domain/spaceHazards'
 import { EVA_METABOLIC_BANDS } from '../../shared/nasaSources'
 import { NASA_RISKS, RISK_CATEGORY_LABEL, type RiskCategory } from '../../shared/risks'
 import { ScientificInsights } from '../components/ScientificInsights'
-import { Empty } from '../components/ui'
 import { useLocale } from '../i18n'
 import './risks-brief.css'
 
@@ -32,38 +31,26 @@ export function RisksPage() {
 
   const hazard = SPACE_HAZARDS.find((h) => h.id === hazardId) ?? SPACE_HAZARDS[0]
 
-  const priorityRisks = useMemo(() => {
-    const mapped = HAZARD_TO_CATEGORY[hazardId]
-    const pool = NASA_RISKS.filter((item) => {
-      if (category !== 'all' && item.category !== category) return false
-      if (mapped && mapped !== 'all' && category === 'all') return item.category === mapped
-      return true
-    })
-    return pool.slice(0, 5)
-  }, [category, hazardId])
-
   return (
     <div className="page risks-brief">
       <header className="risks-brief-head">
         <p className="risks-brief-kicker">
           <AlertTriangle aria-hidden="true" size={12} strokeWidth={2.25} style={{ display: 'inline', verticalAlign: '-1px', marginRight: 6 }} />
-          {en ? 'Mission brief · NASA' : 'Briefing de misión · NASA'}
+          {en ? 'Crew guide' : 'Guía de tripulación'}
         </p>
-        <h1>{en ? 'What matters now' : 'Qué importa ahora'}</h1>
+        <h1>{en ? 'Signs and what to do' : 'Señales y qué hacer'}</h1>
         <p>
           {en
-            ? 'Scan the hazard. Act. Open live NASA only if you need numbers.'
-            : 'Mirás el peligro. Actuás. Abrís NASA en vivo solo si necesitás números.'}
-          {' · '}
-          <Link to="/misiones/evidencia">{en ? 'Sources' : 'Fuentes'}</Link>
+            ? 'Pick a situation. See what you might feel and how to lower the chance. This is a guide, not a diagnosis.'
+            : 'Elegí una situación. Mirá qué podés sentir y cómo bajar la chance. Es una guía, no un diagnóstico.'}
         </p>
       </header>
 
       <div className="risks-brief-tabs" role="tablist" aria-label={en ? 'Risk views' : 'Vistas de riesgo'}>
         {(
           [
-            ['brief', en ? 'Brief' : 'Brief'],
-            ['live', en ? 'Live NASA' : 'NASA en vivo'],
+            ['brief', en ? 'Guide' : 'Guía'],
+            ['live', en ? 'Space weather' : 'Clima espacial'],
             ['library', en ? 'Risk cards' : 'Fichas'],
           ] as const
         ).map(([id, label]) => (
@@ -74,97 +61,100 @@ export function RisksPage() {
       </div>
 
       {tab === 'brief' ? (
-        <>
-          <section className="risks-brief-panel" aria-label={en ? 'Five hazards' : 'Cinco peligros'}>
-            <div className="spread" style={{ alignItems: 'baseline' }}>
-              <h2>{en ? '5 hazards' : '5 peligros'}</h2>
-              <a href="https://www.nasa.gov/hrp/hazards/" target="_blank" rel="noreferrer">
-                <ExternalLink aria-hidden="true" size={14} strokeWidth={1.75} /> HRP
-              </a>
-            </div>
-            <div className="risks-brief-grid">
-              {SPACE_HAZARDS.map((item) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  className={`risks-brief-hazard${hazardId === item.id ? ' is-on' : ''}`}
-                  data-testid={`hazard-${item.id}`}
-                  aria-pressed={hazardId === item.id}
-                  onClick={() => {
-                    setHazardId(item.id)
-                    const mapped = HAZARD_TO_CATEGORY[item.id]
-                    if (mapped) setCategory(mapped === 'all' ? 'all' : mapped)
-                  }}
-                >
-                  <strong>{en ? item.title.en : item.title.es}</strong>
-                  <span>{en ? item.prepFollowUp.en : item.prepFollowUp.es}</span>
-                </button>
-              ))}
-            </div>
-          </section>
+        <div className="risks-guide">
+          <div className="risks-guide-nav" role="group" aria-label={en ? 'Situations' : 'Situaciones'}>
+            {SPACE_HAZARDS.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                className={`risks-brief-hazard${hazardId === item.id ? ' is-on' : ''}`}
+                data-testid={`hazard-${item.id}`}
+                aria-pressed={hazardId === item.id}
+                onClick={() => {
+                  setHazardId(item.id)
+                  const mapped = HAZARD_TO_CATEGORY[item.id]
+                  if (mapped) setCategory(mapped === 'all' ? 'all' : mapped)
+                }}
+              >
+                {en ? item.title.en : item.title.es}
+              </button>
+            ))}
+          </div>
 
           {hazard ? (
-            <section className="risks-brief-panel" data-testid={`hazard-detail-${hazard.id}`}>
+            <section className="risks-guide-detail" data-testid={`hazard-detail-${hazard.id}`}>
               <h2>{en ? hazard.title.en : hazard.title.es}</h2>
-              <p>{en ? hazard.summary.en : hazard.summary.es}</p>
+              <p className="risks-guide-watch">{en ? hazard.watch.en : hazard.watch.es}</p>
+              <div className="risks-guide-pair">
+                <article>
+                  <h3>{en ? 'You might notice' : 'Podés notar'}</h3>
+                  <ul>
+                    {hazard.signs.map((item) => (
+                      <li key={item.en}>{en ? item.en : item.es}</li>
+                    ))}
+                  </ul>
+                </article>
+                <article>
+                  <h3>{en ? 'What helps' : 'Qué ayuda'}</h3>
+                  <ul>
+                    {hazard.avoid.map((item) => (
+                      <li key={item.en}>{en ? item.en : item.es}</li>
+                    ))}
+                  </ul>
+                </article>
+              </div>
               <p className="risks-brief-meta">
-                <strong>{en ? 'Do now' : 'Hacer ahora'}:</strong>{' '}
-                {en ? hazard.prepFollowUp.en : hazard.prepFollowUp.es}
+                {en
+                  ? 'Tell the medic if it gets worse. HELIOS does not diagnose.'
+                  : 'Avisá a la médica si empeora. HELIOS no diagnostica.'}
+                {' · '}
+                <a href={hazard.sources[0]?.url ?? 'https://www.nasa.gov/hrp/hazards/'} target="_blank" rel="noreferrer">
+                  <ExternalLink aria-hidden="true" size={14} strokeWidth={1.75} />
+                  {en ? 'NASA source' : 'Fuente NASA'}
+                </a>
               </p>
-              <p className="risks-brief-meta">
-                <strong>HELIOS:</strong> {en ? hazard.heliosContext.en : hazard.heliosContext.es}
-              </p>
-              <div className="risks-brief-chiprow">
-                <Link className="chip" to="/app/mi-salud">{en ? 'My health' : 'Mi salud'}</Link>
-                <button type="button" className="chip" onClick={() => setTab('live')}>
-                  {en ? 'Live NASA' : 'NASA en vivo'}
+              <div className="risks-guide-actions">
+                <Link className="btn btn-primary" to="/app/mi-salud">{en ? 'Log symptoms' : 'Anotar síntomas'}</Link>
+                <button type="button" className="btn" onClick={() => setTab('live')}>
+                  {en ? 'Space weather' : 'Clima espacial'}
                 </button>
               </div>
             </section>
           ) : null}
-
-          <section className="risks-brief-panel">
-            <h2>{en ? 'Priority risk cards' : 'Fichas prioritarias'}</h2>
-            <p className="risks-brief-meta">
-              {en ? 'Top matches for this hazard. Full library under Risk cards.' : 'Principales para este peligro. Biblioteca completa en Fichas.'}
-            </p>
-            {priorityRisks.length === 0 ? (
-              <Empty title={en ? 'No matches' : 'Sin coincidencias'} text={en ? 'Open Risk cards.' : 'Abrí Fichas.'} />
-            ) : (
-              <ul className="risks-brief-list">
-                {priorityRisks.map((risk) => (
-                  <li key={risk.id} data-testid={`risk-${risk.id}`}>
-                    <div className="spread">
-                      <h3>{systemText(risk.title)}</h3>
-                      <span className="badge">{systemText(RISK_CATEGORY_LABEL[risk.category])}</span>
-                    </div>
-                    <p>{systemText(risk.summary)}</p>
-                    <a href={risk.sourceUrl} target="_blank" rel="noreferrer">
-                      {risk.sourceTitle}
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
-        </>
+        </div>
       ) : null}
 
       {tab === 'live' ? (
-        <>
-          <p className="risks-brief-meta">
+        <div className="env-stack">
+          <p className="env-lead">
             {en
-              ? 'Environment context only · not personal dose · UTC stamps on every fetch.'
-              : 'Solo contexto ambiental · no dosis personal · marcas UTC en cada consulta.'}
+              ? 'NASA space and research data for context — not personal measurements or medical alerts.'
+              : 'Datos de NASA sobre el espacio y la investigación: solo contexto, no mediciones personales ni alertas médicas.'}
           </p>
+          <SpaceWeatherPanel />
           <RadiationPanel compact />
           <ScientificInsights compact />
-          <p className="risks-brief-meta">
-            {en
-              ? `EVA metabolic bands (xEMU ref.): ≤${EVA_METABOLIC_BANDS.lowMax} / ${EVA_METABOLIC_BANDS.mediumMax} / ~${EVA_METABOLIC_BANDS.highDesignLimit} BTU/hr · no live EMU feed.`
-              : `Bandas metabólicas EVA (ref. xEMU): ≤${EVA_METABOLIC_BANDS.lowMax} / ${EVA_METABOLIC_BANDS.mediumMax} / ~${EVA_METABOLIC_BANDS.highDesignLimit} BTU/hr · sin feed EMU en vivo.`}
-          </p>
-        </>
+          <section className="env-reference" aria-label={en ? 'Spacewalk effort reference' : 'Referencia de esfuerzo en caminata espacial'}>
+            <div className="env-reference-head">
+              <h2>{en ? 'Spacewalk effort' : 'Esfuerzo en caminata espacial'}</h2>
+              <p>{en ? 'Reference ranges · no live suit data' : 'Rangos de referencia · sin datos del traje en vivo'}</p>
+            </div>
+            <dl className="env-bands">
+              <div>
+                <dt>{en ? 'Light' : 'Leve'}</dt>
+                <dd>≤{EVA_METABOLIC_BANDS.lowMax} <span>BTU/hr</span></dd>
+              </div>
+              <div>
+                <dt>{en ? 'Moderate' : 'Moderado'}</dt>
+                <dd>≤{EVA_METABOLIC_BANDS.mediumMax} <span>BTU/hr</span></dd>
+              </div>
+              <div>
+                <dt>{en ? 'Heavy' : 'Intenso'}</dt>
+                <dd>~{EVA_METABOLIC_BANDS.highDesignLimit} <span>BTU/hr</span></dd>
+              </div>
+            </dl>
+          </section>
+        </div>
       ) : null}
 
       {tab === 'library' ? (

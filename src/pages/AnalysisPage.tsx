@@ -43,7 +43,7 @@ export function AnalysisPage() {
           dispatch({ type: 'selectEpisode', episodeId: next.id })
         }}>
           {!chosen ? <option value="">{en ? 'Select a case' : 'Seleccioná un caso'}</option> : null}
-          {state.episodes.map((item) => <option key={item.id} value={item.id}>{CREW.find((crew) => crew.id === item.crewId)?.name} · {systemText(item.title)}</option>)}
+          {state.episodes.map((item) => <option key={item.id} value={item.id}>{CREW.find((crew) => crew.id === item.crewId)?.name} · {systemText(item.title, lang)}</option>)}
         </select>
       </label>
       {chosen ? <QuironAnalysis key={`${chosen.id}-${lang}`} episodeId={chosen.id} /> : (
@@ -132,7 +132,7 @@ function QuironAnalysis({ episodeId }: { episodeId: string }) {
         <div className="an-request-head">
           <div>
             <h2 id="analysis-person">{name}</h2>
-            <p>{systemText(episode.title)}</p>
+            <p>{systemText(episode.title, lang)}</p>
           </div>
           <span className="badge">{en ? 'Quirón AI' : 'IA Quirón'}</span>
         </div>

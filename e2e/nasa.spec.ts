@@ -40,14 +40,13 @@ test('NASA environmental panels isolate data and expose missing quantities', asy
   await expect(page.getByTestId('donki-alerts')).toHaveCount(0)
   await expect(page.getByRole('main')).not.toContainText('NASA DONKI')
 
-  await page.goto('/app/mision', { waitUntil: 'domcontentloaded' })
+  await page.goto('/app/riesgos', { waitUntil: 'domcontentloaded' })
+  await page.getByRole('tab', { name: 'Space weather', exact: true }).click()
   await expect(
-    page.getByRole('heading', { name: 'Space Weather Monitoring' }),
+    page.getByRole('heading', { name: 'Space weather', exact: true }),
   ).toBeVisible()
   await expect(page.getByText('NASA fixture for UI test')).toBeVisible()
-  await expect(
-    page.getByText(/Preliminary DONKI|Información preliminar/),
-  ).toBeVisible()
+  await expect(page.getByText(/Not your exposure/)).toBeVisible()
   await page.route('**/api/nasa/radlab/measurements*', (route) =>
     route.fulfill({
       json: {
@@ -74,8 +73,9 @@ test('NASA environmental panels isolate data and expose missing quantities', asy
     route.fulfill({ status: 503, json: { message: 'offline' } }),
   )
   await page.goto('/app/riesgos', { waitUntil: 'domcontentloaded' })
+  await page.getByRole('tab', { name: 'Space weather', exact: true }).click()
   await expect(
-    page.getByRole('heading', { name: 'Radiation Analysis' }),
+    page.getByRole('heading', { name: 'Radiation readings' }),
   ).toBeVisible()
   await expect(
     page.getByText(
@@ -83,7 +83,7 @@ test('NASA environmental panels isolate data and expose missing quantities', asy
     ),
   ).toBeVisible()
   await expect(
-    page.getByRole('heading', { name: 'Scientific Health Insights · OSDR' }),
+    page.getByRole('heading', { name: 'Research studies' }),
   ).toBeVisible()
   await expect(
     page
@@ -103,7 +103,8 @@ test('DONKI outage is explicit and leaves simulator accessible', async ({
   page,
 }) => {
   await page.route('**/api/nasa/donki/events*', (route) => route.abort())
-  await page.goto('/app/mision', { waitUntil: 'domcontentloaded' })
+  await page.goto('/app/riesgos', { waitUntil: 'domcontentloaded' })
+  await page.getByRole('tab', { name: /Space weather|Clima espacial/ }).click()
   await expect(
     page
       .getByRole('alert')
@@ -132,9 +133,10 @@ test('verified RadLab example works through the real Nest endpoint', async ({
     route.fulfill({ status: 503, json: { message: 'NASA unavailable' } }),
   )
   await page.goto('/app/riesgos', { waitUntil: 'domcontentloaded' })
+  await page.getByRole('tab', { name: /Space weather|Clima espacial/ }).click()
   await page
     .getByRole('button', {
-      name: /Load verified local example|Cargar ejemplo local verificado/,
+      name: /Verified example|Ejemplo verificado/,
     })
     .click()
   await expect(

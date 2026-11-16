@@ -1,5 +1,6 @@
 import { lazy, Suspense, type ReactNode } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+import { useWorkspaceRole } from './platform/workspace'
 import { RouteFallback } from './components/RouteFallback'
 import { Shell } from './components/Shell'
 import { AppProvider } from './state/store'
@@ -21,7 +22,6 @@ const RoleHome = lazy(() => import('./pages/role/RoleHome').then((m) => ({ defau
 const MyHealthPage = lazy(() => import('./pages/role/MyHealthPage').then((m) => ({ default: m.MyHealthPage })))
 const MonitorGate = lazy(() => import('./pages/role/MonitorGate').then((m) => ({ default: m.MonitorGate })))
 const MissionPage = lazy(() => import('./pages/MissionPage').then((m) => ({ default: m.MissionPage })))
-const MonitorPage = lazy(() => import('./pages/MonitorPage').then((m) => ({ default: m.MonitorPage })))
 const CrewPage = lazy(() => import('./pages/CrewPage').then((m) => ({ default: m.CrewPage })))
 const ResourcesPage = lazy(() => import('./pages/ResourcesPage').then((m) => ({ default: m.ResourcesPage })))
 const AlertsPage = lazy(() => import('./pages/AlertsPage').then((m) => ({ default: m.AlertsPage })))
@@ -35,6 +35,13 @@ function LazyPage({ children }: { children: ReactNode }) {
   return <Suspense fallback={<RouteFallback />}>{children}</Suspense>
 }
 
+/** A crew member sees only their own health. Other people's monitoring stays with the commander and the clinicians. */
+function NotForCrew({ children }: { children: ReactNode }) {
+  const role = useWorkspaceRole()
+  if (role === 'crew') return <Navigate to="/app/centro" replace />
+  return children
+}
+
 function Dashboard() {
   return (
     <MissionGate>
@@ -42,19 +49,19 @@ function Dashboard() {
         <Shell>
           <LazyPage>
             <Routes>
-              <Route index element={<MonitorGate />} />
+              <Route index element={<NotForCrew><MonitorGate /></NotForCrew>} />
               <Route path="centro" element={<RoleHome />} />
-              <Route path="monitor" element={<MonitorGate />} />
+              <Route path="monitor" element={<NotForCrew><MonitorGate /></NotForCrew>} />
               <Route path="mi-salud" element={<MyHealthPage />} />
               <Route path="mision" element={<MissionPage />} />
-              <Route path="tripulacion" element={<CrewPage />} />
-              <Route path="tripulacion/:crewId" element={<MonitorPage />} />
+              <Route path="tripulacion" element={<NotForCrew><CrewPage /></NotForCrew>} />
+              <Route path="tripulacion/:crewId" element={<NotForCrew><MonitorGate /></NotForCrew>} />
               <Route path="recursos" element={<ResourcesPage />} />
-              <Route path="alertas" element={<AlertsPage />} />
-              <Route path="historial" element={<HistoryPage />} />
-              <Route path="analisis" element={<AnalysisPage />} />
+              <Route path="alertas" element={<NotForCrew><AlertsPage /></NotForCrew>} />
+              <Route path="historial" element={<NotForCrew><HistoryPage /></NotForCrew>} />
+              <Route path="analisis" element={<NotForCrew><AnalysisPage /></NotForCrew>} />
               <Route path="riesgos" element={<RisksPage />} />
-              <Route path="medico" element={<MedicalPage />} />
+              <Route path="medico" element={<NotForCrew><MedicalPage /></NotForCrew>} />
               <Route path="mi-espacio" element={<MySpacePage />} />
               <Route path="*" element={<Navigate to="/app" replace />} />
             </Routes>

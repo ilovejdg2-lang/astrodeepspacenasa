@@ -3,7 +3,7 @@ import { Activity, AlertTriangle, Box, Brain, BookOpen, Heart, History, Lock, Me
 import { lazy, Suspense, useEffect, useRef, useState, type ReactNode, type SVGProps } from 'react'
 import { Link, NavLink, useLocation } from 'react-router-dom'
 import { profileTitle, roleLabel } from '../platform/copy'
-import { getStoredProfile } from '../platform/session'
+import { getActiveMissionId, getStoredProfile } from '../platform/session'
 import { useWorkspaceRole } from '../platform/workspace'
 import { RoleSwitcher } from './role/RoleSwitcher'
 import { activeAlerts } from '../domain/selectors'
@@ -14,7 +14,6 @@ import { noticeText } from '../noticeLocale'
 import { platformApi } from '../platform/api'
 import { HeliosLogo } from './HeliosLogo'
 import { Hint } from './Hint'
-import { MissionDemoButton } from './MissionDemo'
 import { PageEnter } from './PageEnter'
 
 const EcgBackdrop = lazy(() => import('./EcgBackdrop').then((m) => ({ default: m.EcgBackdrop })))
@@ -102,7 +101,7 @@ export function Shell({ children }: { children: ReactNode }) {
           ? (en ? 'Wellbeing' : 'Bienestar')
           : (en ? 'My day' : 'Mi día')
   const homeLink = { to: '/app/centro', label: homeLabel, icon: Activity, end: false }
-  const healthLink = { to: '/app/mi-salud', label: en ? 'My health' : 'Mi salud', icon: Heart, end: false }
+  const healthLink = { to: '/app/mi-salud', label: en ? 'My Health' : 'Mi salud', icon: Heart, end: false }
   const monitorLink = { to: '/app/monitor', label: shell.monitor, icon: Activity, end: false }
   const crewLink = { to: '/app/tripulacion', label: shell.crew, icon: HelmetIcon, end: false }
   const alertsLink = { to: '/app/alertas', label: shell.alerts, icon: AlertTriangle, end: false }
@@ -110,20 +109,26 @@ export function Shell({ children }: { children: ReactNode }) {
   const historyLink = { to: '/app/historial', label: shell.history, icon: History, end: false }
   const analysisLink = { to: '/app/analisis', label: shell.analysis, icon: Brain, end: false }
   const medicalLink = { to: '/app/medico', label: shell.medical, icon: Stethoscope, end: false }
-  // Crew records contain individual monitoring; the chief home shows the mission overview.
-  const primaryLinks = workspaceRole === 'chief'
-    ? [homeLink, alertsLink, crewLink]
-    : [alertsLink, monitorLink, crewLink]
-  const extraLinks = [
-    ...(workspaceRole === 'chief' ? [] : [homeLink]),
-    healthLink,
-    analysisLink,
-    medicalLink,
-    resourcesLink,
-    historyLink,
-    { to: '/app/mision', label: shell.mission, icon: Rocket, end: false },
-    { to: '/app/riesgos', label: shell.risks, icon: BookOpen, end: false },
-  ]
+  const missionLink = { to: '/app/mision', label: shell.mission, icon: Rocket, end: false }
+  const risksLink = { to: '/app/riesgos', label: shell.risks, icon: BookOpen, end: false }
+  // Crew members do not get the shared monitor, the crew roster, or other people's alerts.
+  const primaryLinks = workspaceRole === 'crew'
+    ? [homeLink, healthLink]
+    : workspaceRole === 'chief'
+      ? [homeLink, monitorLink, alertsLink, crewLink]
+      : [alertsLink, monitorLink, crewLink]
+  const extraLinks = workspaceRole === 'crew'
+    ? [resourcesLink, missionLink, risksLink]
+    : [
+        ...(workspaceRole === 'chief' ? [] : [homeLink]),
+        healthLink,
+        analysisLink,
+        medicalLink,
+        resourcesLink,
+        historyLink,
+        missionLink,
+        risksLink,
+      ]
   const spaceLink = { to: '/app/mi-espacio', label: shell.space, icon: Lock, end: false }
   const [open, setOpen] = useState(false)
   const [more, setMore] = useState(false)
@@ -131,7 +136,25 @@ export function Shell({ children }: { children: ReactNode }) {
   const moreButton = useRef<HTMLButtonElement>(null)
   const morePanel = useRef<HTMLDivElement>(null)
   const location = useLocation()
-  const alerts = activeAlerts(state, 'active').length
+  useEffect(() => {
+    const path = location.pathname
+    if (path.startsWith('/app/monitor')) return
+    const section = path.startsWith('/app/mi-salud') ? (en ? 'My Health' : 'Mi salud')
+      : path.startsWith('/app/centro') ? (en ? 'Mission center' : 'Centro de misión')
+      : path.startsWith('/app/monitor') ? (en ? 'Monitor' : 'Monitor')
+      : path.startsWith('/app/tripulacion') ? (en ? 'Crew' : 'Tripulación')
+      : path.startsWith('/app/alertas') ? (en ? 'Alerts' : 'Alertas')
+      : path.startsWith('/app/recursos') ? (en ? 'Resources' : 'Recursos')
+      : path.startsWith('/app/historial') ? (en ? 'History' : 'Historial')
+      : path.startsWith('/app/analisis') ? (en ? 'Analysis' : 'Análisis')
+      : path.startsWith('/app/riesgos') ? (en ? 'NASA risks' : 'Riesgos NASA')
+      : path.startsWith('/app/medico') ? (en ? 'Medical team' : 'Equipo médico')
+      : path.startsWith('/app/mi-espacio') ? (en ? 'My space' : 'Mi espacio')
+      : path.startsWith('/app/mision') ? (en ? 'Mission' : 'Misión')
+      : 'HELIOS'
+    document.title = section === 'HELIOS' ? 'HELIOS' : `HELIOS · ${section}`
+  }, [location.pathname, en])
+  const alerts = getActiveMissionId() ? 0 : activeAlerts(state, 'active').length
   const primary = state.role === 'astronaut' || workspaceRole === 'crew'
     ? [...primaryLinks.slice(0, Math.min(4, primaryLinks.length)), spaceLink, ...primaryLinks.slice(Math.min(4, primaryLinks.length))]
     : primaryLinks
@@ -141,7 +164,7 @@ export function Shell({ children }: { children: ReactNode }) {
   const previousAlerts = useRef(alerts)
   const isHome = location.pathname === '/app' || location.pathname === '/app/' || location.pathname.startsWith('/app/centro')
   const isMyHealth = location.pathname.startsWith('/app/mi-salud')
-  const isMonitor = location.pathname.startsWith('/app/monitor') || /^\/app\/tripulacion\/[^/]+/.test(location.pathname)
+  const isMonitor = location.pathname.startsWith('/app/monitor')
   const isCrew = location.pathname.startsWith('/app/tripulacion')
   const isAlerts = location.pathname.startsWith('/app/alertas')
   const isResources = location.pathname.startsWith('/app/recursos')
@@ -228,16 +251,18 @@ export function Shell({ children }: { children: ReactNode }) {
         <div className="sidebar-top">
           <Link
             className="brand-mark"
-            to={workspaceRole === 'chief' ? '/app/centro' : '/app'}
+            to="/"
             onClick={() => setOpen(false)}
-            title={workspaceRole === 'chief' ? homeLabel : (en ? 'Emergency monitor' : 'Monitor de emergencia')}
+            title={en ? 'Roles' : 'Roles'}
           >
             <HeliosLogo variant="mark" size={112} />
-            <span className="brand-stack">
-              Health evaluation<br />
-              &amp; life indicators<br />
+            <p className="brand-stack">
+              Health evaluation
+              <br />
+              &amp; life indicators
+              <br />
               observation system
-            </span>
+            </p>
           </Link>
           <div className="sidebar-navs">
             <nav className="nav" aria-label={shell.sections}>
@@ -260,7 +285,7 @@ export function Shell({ children }: { children: ReactNode }) {
           </div>
         </div>
         <div className="sidebar-foot">
-          <MissionDemoButton />
+          <HeliosLogo variant="wordmark" />
         </div>
       </aside>
       <div className={(isMonitor || (isHome && workspaceRole === 'chief')) ? 'workspace workspace-monitor' : isCrew ? 'workspace workspace-crew' : isAlerts ? 'workspace workspace-alerts' : isResources ? 'workspace workspace-resources' : isHistory ? 'workspace workspace-history' : isAnalysis ? 'workspace workspace-analysis' : isMedical ? 'workspace workspace-medical' : 'workspace'}>
@@ -276,8 +301,8 @@ export function Shell({ children }: { children: ReactNode }) {
         <header className="topbar">
           <Link
             className="mobile-brand"
-            to={workspaceRole === 'chief' ? '/app/centro' : '/app'}
-            aria-label={workspaceRole === 'chief' ? homeLabel : (en ? 'Emergency monitor' : 'Monitor de emergencia')}
+            to="/"
+            aria-label={en ? 'Roles' : 'Roles'}
           >
             <HeliosLogo variant="wordmark" />
           </Link>
