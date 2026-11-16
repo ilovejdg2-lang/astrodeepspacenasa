@@ -256,6 +256,7 @@ export interface RejectedPacket {
   at: number
   claimedValue: number | null
   sensorId: string | null
+  crewId?: CrewId
   detail: string
 }
 

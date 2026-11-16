@@ -1,7 +1,7 @@
 import { Brain, Check, ClipboardPlus, Heart, Package, RefreshCw } from 'lucide-react'
 import { useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import type { MeasurementKind } from '../../shared/types'
+import type { MeasurementKind, Speed } from '../../shared/types'
 import { runLocalAnalysis } from '../domain/analysis'
 import { CREW, crewDuty, crewPlace } from '../domain/crew'
 import { ageLabel, formatValue, kindLabel } from '../domain/format'
@@ -22,7 +22,7 @@ const SYMPTOM_LABEL = {
 
 export function MonitorPage({ embedded = false }: { embedded?: boolean } = {}) {
   const { lang } = useLocale()
-  const { state, dispatch } = useApp()
+  const { state, dispatch, backendMode } = useApp()
   const en = lang === 'en'
   const crew = CREW.find((item) => item.id === state.selectedCrewId) ?? CREW[0]
   const posture = crew ? crewPosture(state, crew.id) : null
@@ -35,7 +35,7 @@ export function MonitorPage({ embedded = false }: { embedded?: boolean } = {}) {
   const resources = state.resources.filter((item) => item.quantity > 0).slice(0, 3)
   const unit = en ? 'bpm' : 'lpm'
   const baseline = crew ? `${crew.baseline.hrMin}-${crew.baseline.hrMax} ${unit}` : ''
-  const hrAbove = Boolean(crew && hr && hr.value > crew.baseline.hrMax)
+  const hrAbove = Boolean(crew && trusted && hr && hr.value > crew.baseline.hrMax)
   const hrText = hr ? `${formatValue('heart_rate', hr.value)} ${unit}` : null
   const shellClass = embedded ? 'monitor-page monitor-embedded' : 'page monitor-page'
 
@@ -71,6 +71,25 @@ export function MonitorPage({ embedded = false }: { embedded?: boolean } = {}) {
           </button>
         ))}
       </CarouselStrip>
+
+      <section className="monitor-live" aria-label={en ? 'Simulated live monitoring' : 'Monitoreo simulado en vivo'}>
+        <div>
+          <strong aria-live="polite">{state.clock.running ? (en ? 'Simulation running' : 'Simulación en marcha') : (en ? 'Simulation paused' : 'Simulación en pausa')}</strong>
+          <p>{en ? 'When the scenario allows it, readings arrive each mission minute (about 6 seconds at 10×). Not real sensors.' : 'Si el escenario lo permite, hay lecturas cada minuto de misión (unos 6 segundos a 10×). No son sensores reales.'}</p>
+          <p className="muted">{en ? 'Mission time' : 'Hora de misión'}: {new Date(state.clock.simulatedAt).toLocaleString(en ? 'en-GB' : 'es-ES', { timeZone: 'UTC', dateStyle: 'short', timeStyle: 'medium' })} UTC · {backendMode === 'connected' ? 'NestJS' : (en ? 'Local simulator' : 'Simulador local')}</p>
+        </div>
+        <div className="monitor-live-controls">
+          <label htmlFor="monitor-speed">{en ? 'Speed' : 'Velocidad'}</label>
+          <select id="monitor-speed" value={state.clock.speed} onChange={(event) => dispatch({ type: 'setSpeed', speed: Number(event.target.value) as Speed })}>
+            <option value={1}>1×</option>
+            <option value={5}>5×</option>
+            <option value={10}>10×</option>
+          </select>
+          <button className="btn btn-primary" type="button" data-testid="monitor-play-pause" aria-pressed={state.clock.running} onClick={() => dispatch({ type: 'setRunning', running: !state.clock.running })}>
+            {state.clock.running ? (en ? 'Pause' : 'Pausar') : (en ? 'Resume' : 'Reanudar')}
+          </button>
+        </div>
+      </section>
 
       <header className="monitor-id">
         <div className="monitor-avatar">
@@ -115,6 +134,7 @@ export function MonitorPage({ embedded = false }: { embedded?: boolean } = {}) {
           <dl className="trust-metrics">
             <Vital stateNow={state.clock.simulatedAt} crewId={crew.id} kind="spo2" />
             <Vital stateNow={state.clock.simulatedAt} crewId={crew.id} kind="temperature" />
+            <Vital stateNow={state.clock.simulatedAt} crewId={crew.id} kind="respiratory_rate" />
             <Vital stateNow={state.clock.simulatedAt} crewId={crew.id} kind="sleep_hours" />
           </dl>
         </div>
@@ -156,14 +176,14 @@ function Vital({ crewId, kind, stateNow }: { crewId: (typeof CREW)[number]['id']
   const { state } = useApp()
   const reading = latestMeasurement(state, crewId, kind)
   const trusted = reading ? isReliable(reading, stateNow) : false
-  const unit = kind === 'spo2' ? '%' : kind === 'temperature' ? 'C' : 'h'
+  const unit = kind === 'spo2' ? '%' : kind === 'temperature' ? '°C' : kind === 'respiratory_rate' ? 'rpm' : 'h'
   return (
     <div className="trust-metric">
       <dt>{kindLabel(kind)}</dt>
       <dd>
         {reading ? (
           <>
-            <strong>{formatValue(kind, reading.value)}{kind === 'spo2' ? '%' : unit === 'C' ? 'C' : 'h'}</strong>
+            <strong>{formatValue(kind, reading.value)}{unit}</strong>
             <span>{trusted ? (en ? 'Current' : 'Vigente') : (en ? 'Not current' : 'No vigente')}</span>
           </>
         ) : (

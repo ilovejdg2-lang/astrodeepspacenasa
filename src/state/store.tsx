@@ -120,7 +120,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let active = true
     async function initialize() {
-      const fallback = () => createInitialState('gradual-fatigue')
+      const fallback = (): AppState => {
+        const initial = createInitialState('gradual-fatigue')
+        // Only fresh sessions start automatically; a saved pause is respected.
+        return { ...initial, clock: { ...initial.clock, running: true, speed: 10 } }
+      }
       let initial: AppState = fallback()
       try {
         const loaded = await Promise.race([

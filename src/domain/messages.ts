@@ -66,6 +66,7 @@ function reject(state: AppState, packet: LinkPacket, reason: 'duplicate' | 'alte
         at: state.clock.simulatedAt,
         claimedValue: packet.value,
         sensorId: packet.sensorId,
+        crewId: packet.crewId,
         detail,
       },
     ],

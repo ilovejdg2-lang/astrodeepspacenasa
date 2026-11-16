@@ -36,6 +36,7 @@ import {
   appendLiveSample,
   createInitialState,
   latentHeartRate,
+  liveVitalSamples,
 } from './scenarios';
 import { addAudit, hasKey, nextSeq, rememberKey, withNotice } from './stateOps';
 import { spacePreview } from './spacePreview';
@@ -254,65 +255,32 @@ function applyMinute(state: AppState, minute: number): AppState {
   ) {
     return state;
   }
-  if (state.scenarioId === 'gradual-fatigue') {
-    const value = latentHeartRate(
-      state.scenarioId,
-      'elena-torres',
-      minute,
-      state.seed,
-    );
-    if (value === null) return state;
-    return appendLiveSample(
-      state,
-      'elena-torres',
-      'heart_rate',
-      value,
-      `live-elena-${minute}`,
-    );
-  }
-  if (state.scenarioId === 'frozen-sensor') {
-    return appendLiveSample(
-      state,
-      'elena-torres',
-      'heart_rate',
-      81,
-      `live-frozen-${minute}`,
-      90,
-      'sensor-03',
-    );
-  }
-  if (state.scenarioId === 'pulse-escalation') {
-    const value = latentHeartRate(
-      state.scenarioId,
-      'elena-torres',
-      minute,
-      state.seed,
-    );
-    if (value === null) return state;
-    return appendLiveSample(
-      state,
-      'elena-torres',
-      'heart_rate',
-      value,
-      `live-escalation-${minute}`,
-    );
-  }
   let next = state;
+  const measuredAt = state.clock.originAt + minute * MINUTE_MS;
   for (const crewId of [
     'elena-torres',
     'mateo-ruiz',
     'sofia-chen',
     'alex-morgan',
   ] as const) {
-    const value = latentHeartRate('baseline', crewId, minute, state.seed);
+    // Sofía has deliberately missing telemetry in the fatigue scenario.
+    if (state.scenarioId === 'gradual-fatigue' && crewId === 'sofia-chen') continue;
+    const frozen = state.scenarioId === 'frozen-sensor' && crewId === 'elena-torres';
+    const value = frozen ? 81 : latentHeartRate(state.scenarioId, crewId, minute, state.seed);
     if (value === null) continue;
     next = appendLiveSample(
       next,
       crewId,
       'heart_rate',
       value,
-      `live-${crewId}-${minute}`,
+      `live-${crewId}-heart_rate-${minute}`,
+      frozen ? 90 : 96,
+      frozen ? 'sensor-03' : undefined,
+      measuredAt,
     );
+    for (const sample of liveVitalSamples(state.scenarioId, crewId, minute, state.seed)) {
+      next = appendLiveSample(next, crewId, sample.kind, sample.value, `live-${crewId}-${sample.kind}-${minute}`, 96, undefined, measuredAt);
+    }
   }
   return next;
 }

@@ -404,6 +404,14 @@ a.brand-mark:hover { background: color-mix(in srgb, var(--accent) 8%, transparen
   box-shadow: 0 0 0 4px var(--accent), 0 0 0 8px color-mix(in srgb, var(--accent) 18%, transparent);
 }
 .monitor-id { display: grid; gap: 6px; max-width: 52rem; }
+.monitor-live {
+  display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px 20px;
+  padding: 14px 18px; border: 1px solid var(--line); border-radius: 18px; background: var(--surface);
+}
+.monitor-live p { margin: 3px 0 0; font-size: 0.88rem; }
+.monitor-live-controls { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.monitor-live-controls label { font-weight: 650; }
+.monitor-live-controls select { min-height: 40px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink); padding: 0 8px; }
 .monitor-kicker { margin: 0; color: var(--ink); font-size: 1.05rem; font-weight: 600; }
 .monitor-name {
   margin: 0; color: var(--accent); font-size: clamp(2.4rem, 4.2vw, 3.7rem); font-weight: 800;
@@ -429,7 +437,7 @@ a.brand-mark:hover { background: color-mix(in srgb, var(--accent) 8%, transparen
 .monitor-card-trust { display: grid; gap: 10px; align-content: start; }
 .monitor-card-trust h2 { font-size: 1.15rem; font-weight: 800; }
 .monitor-card-trust > p { margin: 0; color: var(--ink); font-size: 0.95rem; line-height: 1.45; }
-.trust-metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 8px 0 0; }
+.trust-metrics { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 8px 0 0; }
 .trust-metric {
   background: var(--surface-2); border-radius: 18px; padding: 14px 12px; display: grid; gap: 6px;
 }
@@ -698,7 +706,7 @@ tr[aria-selected="true"] { background: var(--accent-soft); }
   }
   .hr-value { font-size: clamp(2.8rem, 12vw, 3.6rem); }
   .heart-wave { height: 88px; }
-  .trust-metrics { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  .trust-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
   .trust-metric { padding: 10px 8px; border-radius: 14px; min-width: 0; }
   .trust-metric strong { font-size: 1.15rem; overflow-wrap: anywhere; }
   .trust-metric span { font-size: 0.78rem; }

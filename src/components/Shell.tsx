@@ -22,6 +22,7 @@ import { HeliosLogo } from './HeliosLogo'
 import { Hint } from './Hint'
 import { PageEnter } from './PageEnter'
 import { QuironDashboard } from './quiron/QuironDashboard'
+import { MissionDemoButton } from './MissionDemo'
 
 function beep() {
   const audio = new AudioContext()
@@ -263,6 +264,7 @@ export function Shell({ children }: { children: ReactNode }) {
               </Link>
             ) : null}
             {getStoredProfile() ? <RoleSwitcher /> : null}
+            <MissionDemoButton />
           </div>
           <div className="top-actions">
             <div className="lang-switch" role="group" aria-label={shell.language}>

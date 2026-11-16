@@ -322,10 +322,26 @@ export function appendLiveSample(
   messageId: string,
   signalQuality = 96,
   sensorId?: string,
+  measuredAt = state.clock.simulatedAt,
 ): AppState {
   const crew = crewOf(crewId)
-  const sample = reading(crew, kind, value, state.clock.simulatedAt, messageId, signalQuality, sensorId)
+  const sample = reading(crew, kind, value, measuredAt, messageId, signalQuality, sensorId)
   return send(state, sample)
+}
+
+/** Deterministic, slightly varying simulated vitals; sleep is a daily report, not a live sensor. */
+export function liveVitalSamples(scenarioId: ScenarioId, crewId: CrewId, minute: number, seed: number): {
+  kind: 'spo2' | 'temperature' | 'respiratory_rate'; value: number
+}[] {
+  const crew = crewOf(crewId)
+  const phase = ((minute + seed + CREW.indexOf(crew)) % 5 + 5) % 5
+  const fatigue = scenarioId === 'gradual-fatigue' && crewId === 'elena-torres'
+  const { baseline } = crew
+  return [
+    { kind: 'spo2', value: fatigue ? 96 + phase % 3 : baseline.spo2Max - 2 + phase % 3 },
+    { kind: 'temperature', value: Number((fatigue ? 36.8 + phase * 0.1 : baseline.tempMin + phase * 0.1).toFixed(1)) },
+    { kind: 'respiratory_rate', value: fatigue ? 14 + phase : baseline.respMin + phase % (baseline.respMax - baseline.respMin + 1) },
+  ]
 }
 
 export function latentHeartRate(scenarioId: ScenarioId, crewId: CrewId, minute: number, seed: number): number | null {
