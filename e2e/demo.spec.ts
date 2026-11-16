@@ -46,19 +46,10 @@ test('recorre el flujo principal con datos compartidos', async ({ page }) => {
   await expect(page.getByTestId('resource-oximeter')).toContainText('2')
 
   await page.getByRole('link', { name: 'Medical team' }).click()
-  await page.getByTestId('comm-subject').fill('Resumen de Elena')
-  await page.getByTestId('comm-body').fill('Se observó un cambio. Se pide revisión humana.')
-  await page.getByTestId('save-draft').click()
-  await expect(page.getByTestId('notice')).toContainText('Draft saved')
-  await page.getByTestId('queue-comm').click()
-  await expect(page.getByTestId('notice')).toContainText('The message is queued')
-  await expect(page.getByRole('cell', { name: 'Queued' })).toBeVisible()
-
-  await page.getByTestId('deliver-comm').click()
-  await expect(page.getByRole('cell', { name: 'Sent', exact: true })).toBeVisible()
-  await expect(page.getByRole('cell', { name: 'Received', exact: true })).toHaveCount(0)
-  await page.getByTestId('confirm-comm').click()
-  await expect(page.getByRole('cell', { name: 'Received', exact: true })).toHaveCount(1)
+  await expect(page.getByRole('heading', { name: /Analysis and medical appointments|Análisis y citas médicas/ })).toBeVisible()
+  await expect(page.getByTestId('med-case-card')).toBeVisible()
+  await expect(page.getByTestId('open-analysis')).toBeVisible()
+  await expect(page.getByRole('heading', { name: /Doctor appointments|Citas con médicos/ })).toBeVisible()
 })
 
 test('la pantalla principal no tiene violaciones críticas de accesibilidad', async ({ page }) => {

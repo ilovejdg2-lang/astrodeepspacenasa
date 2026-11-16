@@ -3,6 +3,10 @@ import { uiLang, type Lang } from './locale'
 // Display translations for established system/seed copy. Never apply to user
 // notes or chat messages, and never replace IDs or data sent back to the API.
 const PAIRS: readonly (readonly [string, string])[] = [
+  ['Finalizada', 'Completed'],
+  ['Posmisión', 'Completed'],
+  ['Preembarque', 'Preflight'],
+  ['A bordo', 'In Flight'],
   ['HELIOS Demo · Hábitat orbital', 'HELIOS Demo · Orbital habitat'],
   ['Órbita baja (simulación)', 'Low Earth orbit (simulation)'],
   ['Operaciones de hábitat', 'Habitat operations'],
@@ -33,7 +37,7 @@ const PAIRS: readonly (readonly [string, string])[] = [
   ['Apoyo de salud conductual disponible', 'Behavioral health support available'],
   ['Revisión de exposición y protección', 'Exposure and protection review'],
   ['Revisión de monitoreo de esfuerzo para EVA de demostración', 'Exertion monitoring review for demonstration EVA'],
-  ['Agenda de revisiones de posmisión', 'Post-mission review schedule'],
+  ['Agenda de revisiones de posmisión', 'Mission Review schedule'],
   ['Categoría a revisar por operaciones. No es una lista de medicamentos.', 'Category for operations review. This is not a medication list.'],
   ['El inventario marca el kit por revisar.', 'The inventory flags the kit for review.'],
   ['Equipo reutilizable en módulo médico.', 'Reusable equipment in the medical module.'],
@@ -42,7 +46,7 @@ const PAIRS: readonly (readonly [string, string])[] = [
   ['Incluye el espacio privado de Quirón Bot y el canal a psicología.', 'Includes the private Quirón Bot space and the psychology channel.'],
   ['Referencia HRP/OSDR. Este prototipo no calcula dosis.', 'HRP/OSDR reference. This prototype does not calculate dose.'],
   ['Basado en NTRS xEMU/HS3: FC y tasa metabólica como contexto. No hay telemetría de traje pública en este MVP.', 'Based on NTRS xEMU/HS3: heart rate and metabolic rate as context. No public suit telemetry is available in this MVP.'],
-  ['Se activa al pasar a posmisión; no cierra episodios abiertos.', 'Activates at post-mission; does not close open episodes.'],
+  ['Se activa al pasar a posmisión, después de cerrar todos los episodios de salud abiertos.', 'Activates when the mission is Completed, after all open health episodes are closed.'],
   ['Material de higiene', 'Hygiene supplies'],
   ['Consumibles de higiene para la duración planificada.', 'Hygiene consumables for the planned duration.'],
   ['Regla logística HELIOS (demo)', 'HELIOS logistics rule (demo)'],
@@ -71,6 +75,9 @@ const PAIRS: readonly (readonly [string, string])[] = [
   ['Consumibles de higiene', 'Hygiene consumables'],
   ['Estimación logística revisable.', 'Logistics estimate subject to review.'],
   ['Regla HELIOS: personas × días + reserva 10%', 'HELIOS rule: people × days + 10% reserve'],
+  ['Regla HELIOS: personas × días + 10%', 'HELIOS rule: people × days + 10%'],
+  ['Preparación HELIOS / inventario', 'HELIOS preparation / inventory'],
+  ['Planificación HELIOS (demo)', 'HELIOS planning (demo)'],
   ['Tasa demo; pendiente de validación operativa.', 'Demo rate; pending operational validation.'],
   ['Canal de asistencia y demora', 'Support channel and delay'],
   ['Características de comunicación de la misión.', 'Mission communication characteristics.'],
@@ -86,6 +93,7 @@ const PAIRS: readonly (readonly [string, string])[] = [
   ['Citar documento concreto, no solo el catálogo.', 'Cite the specific document, not just the catalog.'],
   ['No todo estudio es humano ni clínico.', 'Not every study involves humans or clinical research.'],
   ['Autorreporte incluido en el escenario. No se generó un diagnóstico.', 'Self-report included in the scenario. No diagnosis was generated.'],
+  ['Fatiga mayor a la habitual hoy, especialmente en la mañana.', 'More fatigue than usual today, especially this morning.'],
   ['Repetir medición de signos (demostración v1)', 'Repeat vital signs measurement (demonstration v1)'],
   ['Registrar una medición nueva en reposo, con el mismo equipo o uno de respaldo.', 'Record a new resting measurement using the same or backup equipment.'],
   ['Confirmar síntomas con la persona (demostración v1)', 'Confirm symptoms with the person (demonstration v1)'],
@@ -103,26 +111,26 @@ const PAIRS: readonly (readonly [string, string])[] = [
   ['La tripulación está bloqueada. No se pueden aceptar nuevos integrantes.', 'The roster is locked. New members cannot be accepted.'],
   ['Solicitud no encontrada', 'Request not found'],
   ['Solicitud enviada. Conocer el código no otorga acceso a salud ni roles privilegiados.', 'Request sent. Knowing the code does not grant access to health data or privileged roles.'],
-  ['Solo se editan datos generales en borrador o preembarque', 'General information can only be edited in draft or pre-flight'],
+  ['Solo se editan datos generales en borrador o preembarque', 'General information can only be edited in Draft or Preflight'],
   ['No se puede bajar criticidad sin justificación versionada en este prototipo', 'Criticality cannot be reduced without a versioned justification in this prototype'],
-  ['El análisis de IA de checklist solo está disponible antes del despliegue (borrador o preembarque).', 'AI checklist analysis is only available before deployment (draft or pre-flight).'],
+  ['El análisis de IA de checklist solo está disponible antes del despliegue (borrador o preembarque).', 'AI checklist analysis is only available before deployment (Draft or Preflight).'],
   ['Solo se puede guardar el checklist de IA antes del despliegue.', 'The AI checklist can only be saved before deployment.'],
   ['El checklist de IA ya está guardado y la tripulación está bloqueada.', 'The AI checklist has already been saved and the roster is locked.'],
   ['No hay ítems de checklist para guardar', 'There are no checklist items to save'],
-  ['El jefe debe confirmar el comienzo', 'The chief must confirm the start'],
+  ['El jefe debe confirmar el comienzo', 'The Mission Commander must confirm the start'],
   ['No se puede iniciar', 'Cannot start'],
   ['Intervalo inválido', 'Invalid interval'],
   ['El intervalo se solapa con otro episodio de sueño', 'This interval overlaps another sleep episode'],
-  ['El destinatario debe ser médico o psicólogo de la misión', 'The recipient must be the mission medic or psychologist'],
+  ['El destinatario debe ser médico o psicólogo de la misión', 'The recipient must be the mission Physician or Psychologist'],
   ['Solo quien otorgó puede revocar', 'Only the person who granted access can revoke it'],
-  ['El jefe ve estado operativo según política informada; no chats privados.', 'The chief sees operational status under the stated policy, not private chats.'],
+  ['El jefe ve estado operativo según política informada; no chats privados.', 'The Mission Commander sees operational status under the stated policy, not private chats.'],
   ['Ese horario ya está ocupado', 'That time slot is already booked'],
   ['Solicitud registrada. No está confirmada hasta aceptación válida.', 'Request recorded. Confirmation requires valid acceptance.'],
   ['Cita no encontrada', 'Appointment not found'],
-  ['Solo el profesional o el jefe pueden confirmar', 'Only the professional or chief can confirm'],
+  ['Solo el profesional o el jefe pueden confirmar', 'Only the professional or the Mission Commander can confirm'],
   ['No pertenecés a esta misión', 'You are not a member of this mission'],
   ['Rol insuficiente en esta misión', 'Your role does not allow this action in this mission'],
-  ['El jefe no accede a este dato clínico/privado', 'The chief cannot access this clinical/private information'],
+  ['El jefe no accede a este dato clínico/privado', 'The Mission Commander cannot access this clinical or private information'],
   ['Sin autorización de la persona para esta categoría', 'The person has not authorized access to this category'],
   ['Sueño insuficiente, desajustes circadianos y sobrecarga', 'Insufficient sleep, circadian disruption and overload'],
   ['Fatiga, desincronización del sueño y carga de trabajo pueden afectar el rendimiento y el bienestar.', 'Fatigue, disrupted sleep and workload can affect performance and wellbeing.'],
@@ -146,7 +154,7 @@ const PAIRS: readonly (readonly [string, string])[] = [
   ['No indica antibióticos ni tratamientos.', 'Does not recommend antibiotics or treatments.'],
   ['Alteraciones sensoriomotoras', 'Sensorimotor changes'],
   ['Cambios de orientación y adaptación sensoriomotora pueden acompañar el tránsito y el aterrizaje.', 'Orientation and sensorimotor adaptation changes may occur during transit and landing.'],
-  ['Apoya el seguimiento de síntomas como mareo y las revisiones de posmisión.', 'Supports follow-up of symptoms such as dizziness and post-mission reviews.'],
+  ['Apoya el seguimiento de síntomas como mareo y las revisiones de posmisión.', 'Supports follow-up of symptoms such as dizziness and Mission Review items.'],
   ['No diagnostica vértigo ni prescribe medicación.', 'Does not diagnose vertigo or prescribe medication.'],
   ['Cálculos renales', 'Kidney stones'],
   ['El riesgo renal se documenta en el HRP; requiere revisión médica y planificación de recursos.', 'Renal risk is documented in the HRP; it requires medical review and resource planning.'],
@@ -154,7 +162,7 @@ const PAIRS: readonly (readonly [string, string])[] = [
   ['Solo señala que debe revisarse; no aprueba un producto concreto.', 'Only flags the need for review; does not approve a specific product.'],
   ['Cambios neurooculares', 'Neuro-ocular changes'],
   ['Los cambios asociados a la visión en el espacio requieren seguimiento especializado.', 'Vision-related changes in space require specialist follow-up.'],
-  ['Incluye revisiones pendientes en preparación y posmisión.', 'Includes pending preparation and post-mission reviews.'],
+  ['Incluye revisiones pendientes en preparación y posmisión.', 'Includes pending preparation and Mission Review items.'],
   ['No interpreta una medición ocular inexistente en este simulador.', 'Does not interpret eye measurements that are absent from this simulator.'],
   ['EVA, hipoxia y descompresión', 'EVA, hypoxia and decompression'],
   ['Las actividades extravehiculares implican riesgos de atmósfera y descompresión documentados.', 'Extravehicular activities involve documented atmospheric and decompression risks.'],
@@ -199,7 +207,8 @@ const PAIRS: readonly (readonly [string, string])[] = [
   ['Asunto y cuerpo del borrador actualizados.', 'Draft subject and body updated.'],
   ['El análisis no modificó inventario, alertas ni comunicaciones.', 'The analysis did not change inventory, alerts or communications.'],
   ['Este rol simulado no cambia la etapa de la misión.', 'This simulated role cannot change the mission stage.'],
-  ['No se puede volver al checklist de preembarque. La etapa solo avanza (preembarque → a bordo → posmisión).', 'Cannot return to the pre-flight checklist. Stages only move forward (pre-flight → aboard → post-mission).'],
+  ['No se puede volver al checklist de preembarque. La etapa solo avanza (preembarque → a bordo → posmisión).', 'Cannot return to the Preflight checklist. Stages only move forward (Preflight → In Flight → Completed).'],
+  ['No se puede pasar a posmisión mientras haya episodios abiertos. La etapa actual se conserva.', 'The mission cannot move to Completed while health episodes are open. The current stage is unchanged.'],
   ['Este rol simulado no actualiza la lista de preparación.', 'This simulated role cannot update the preparation list.'],
   ['Checklist cerrado: solo se edita en preembarque. No se puede reabrir después del despegue.', 'Checklist closed: editing is only allowed before boarding. It cannot be reopened after takeoff.'],
   ['No existe ese elemento de preparación.', 'That preparation item does not exist.'],
@@ -271,22 +280,116 @@ const PAIRS: readonly (readonly [string, string])[] = [
   ['Marcar qué falta y qué lecturas son antiguas o no confiables.', 'Identify missing information and old or unreliable readings.'],
   ['Dejar la orientación en borrador hasta que una persona la ponga en cola.', 'Keep guidance in draft until a person queues it.'],
   ['La revisión humana no se sustituye por el motor local ni por un modelo.', 'Neither the local engine nor a model replaces human review.'],
+  ['No se pueden registrar chequeos, síntomas, descanso ni citas fuera de la etapa a bordo.', 'Daily Check-ins, symptoms, rest, and visits are available only while the mission is in flight.'],
+  ['La misión ya finalizó. Podés consultar el historial, pero no iniciar una operación nueva. El texto del formulario se conserva en esta pantalla.', 'This mission is completed. You can read the history, but you cannot start a new operation. The text in the form stays on this screen.'],
+  ['Ese horario ya está ocupado', 'That time is already taken'],
+  ['Fuera de la disponibilidad del profesional', 'Outside the professional’s availability'],
+  ['Ya existe una solicitud igual para ese horario', 'An identical request already exists for that time'],
+  ['Solicitud registrada. No está confirmada hasta aceptación válida.', 'Request saved. It is not confirmed until a valid acceptance.'],
+  ['El motivo es obligatorio', 'A reason is required'],
+  ['Elegí un profesional de la misión', 'Choose a professional on this mission'],
+  ['Elegí atención médica o psicológica', 'Choose medical or psychological care'],
+  ['Elegí un horario', 'Choose a time'],
+  ['Solo el profesional asignado puede responder', 'Only the assigned professional can respond'],
+  ['La preparación todavía no comenzó. Guardá el plan y generá el checklist para pasar a preembarque.', 'Preparation has not started. Save the plan and generate the checklist to move to preflight.'],
+  ['El checklist de preparación está en solo lectura en esta etapa.', 'The preparation checklist is read-only at this stage.'],
+  ['El acompañamiento de Quirón durante el vuelo solo está disponible a bordo.', 'Quirón’s in-flight support is available only while the mission is in flight.'],
+  ['Sesión demo expirada', 'Demo session expired'],
+  ['Seleccioná un perfil demo', 'Choose a demo profile'],
+  ['Kit de evaluación verificado', 'Verified evaluation kit'],
+  ['Oxímetros (cobertura + redundancia)', 'Oximeters (coverage and redundancy)'],
+  ['Consumibles de higiene', 'Hygiene consumables'],
+  ['Kit de primeros auxilios revisado', 'Reviewed first-aid kit'],
+  ['Canal de asistencia y demora', 'Assistance channel and delay'],
+  ['Recursos de descanso', 'Rest resources'],
+  ['Plan de agua y consumibles base', 'Water and base consumables plan'],
+  ['Racha de sueño corto observada', 'Short sleep stretch observed'],
+  ['Reportes de dolor de cabeza en seguimiento', 'Headache reports in follow-up'],
+  ['Cambio de frecuencia observado y luego dentro del rango', 'Heart-rate change observed, then back in range'],
+  ['Cierre administrativo al finalizar la misión. No es una consulta realizada ni un caso resuelto.', 'Administrative close when the mission ended. This was not a completed visit and not a resolved case.'],
+  ['No pertenecés a esta misión', 'You are not on this mission'],
+  ['Misión no encontrada', 'Mission not found'],
+  ['No se pueden registrar chequeos, síntomas, descanso ni citas fuera de la etapa a bordo.', 'Check-ins, symptoms, rest, and appointments can only be recorded while the mission is in flight.'],
+  ['La misión ya finalizó. Podés consultar el historial, pero no iniciar una operación nueva. El texto del formulario se conserva en esta pantalla.', 'This mission has ended. You can review the history, but you cannot start a new clinical record. The text you entered stays on this screen.'],
+  ['Sin autorización de la persona para esta categoría', 'This person has not authorized this category'],
+  ['El jefe no accede a este dato clínico/privado', 'The chief does not access this clinical or private record'],
+  ['Reporte de dolor inválido', 'Invalid pain report'],
+  ['El modelo corporal no es compatible con esta versión', 'This body model version is not supported'],
+  ['El origen del mapa de dolor es autorreporte', 'A pain map is a self-report'],
+  ['Indicá entre 1 y 8 ubicaciones', 'Mark between 1 and 8 locations'],
+  ['La marca queda fuera del modelo corporal', 'That mark sits outside the body model'],
+  ['La marca necesita coordenadas locales del modelo', 'That mark needs coordinates on the body model'],
+  ['La normal de la marca no es válida', 'That mark has an invalid surface direction'],
+  ['Ubicación de dolor inválida', 'Invalid pain location'],
+  ['La intensidad es un autorreporte de 0 a 10', 'Intensity is a self-report from 0 to 10'],
+  ['Cada marca necesita una descripción', 'Each mark needs a description'],
+  ['El reporte anterior no existe', 'The earlier report does not exist'],
+  ['Solo quien reportó puede corregir este mapa', 'Only the person who reported this map can correct it'],
+  ['Solo el médico de la misión puede agregar una observación clínica', 'Only the mission physician can add a clinical note'],
+  ['La observación clínica no puede estar vacía', 'The clinical note cannot be empty'],
+  ['La observación clínica la escribe el médico, no reemplaza el autorreporte', 'The physician writes the clinical note. It does not replace the self-report'],
+  ['La observación clínica no modifica el autorreporte', 'A clinical note does not change the self-report'],
+  ['La cita no corresponde a esta persona', 'That visit does not belong to this person'],
+  ['Estado de seguimiento inválido', 'Invalid follow-up status'],
+  ['Reporte de dolor no encontrado', 'Pain report not found'],
+  ['No se puede reconfigurar la misión en esta etapa.', 'Mission setup is not available at this stage.'],
+  ['Quirón ya no guía la preparación en esta etapa.', 'Quirón no longer guides preparation at this stage.'],
+  ['Solo se puede finalizar una misión que está a bordo.', 'Only an in-flight mission can be completed.'],
+  ['El informe de revisión se guarda cuando la misión está finalizada.', 'A review report can be saved only after the mission is completed.'],
+  ['El síntoma necesita una descripción', 'A symptom needs a description'],
+  ['El vuelo solo puede comenzar desde preembarque', 'A flight can start only from Preflight'],
+  ['Hubo cambios desde el último análisis: volvé a analizar antes de despegar', 'The plan changed since the last analysis. Run it again before takeoff.'],
 ]
 
-const ordered = [...PAIRS].sort((a, b) => b[0].length - a[0].length)
-
-export function systemText(text: string, lang: Lang = uiLang()): string {
-  if (lang !== 'en') return text
-  // A single replacement pass avoids translating fragments of an already
-  // translated phrase and preserves unknown/user-provided content verbatim.
-  const exact = PAIRS.find(([es]) => es === text)
-  if (exact) return exact[1]
-  const expanded = text
-    .replace(/Preparaci\u00f3n ([\d.]+)% < 80% \(regla HELIOS de simulaci\u00f3n\)/g, 'Preparation $1% < 80% (HELIOS simulation rule)')
-    .replace(/(\d+) cr\u00edtico\(s\) sin verificar/g, '$1 critical item(s) not verified')
-    .replace(/Repetici\u00f3n local de frecuencia card\u00edaca: ([\d.]+) lpm\./g, 'Local heart-rate repeat: $1 bpm.')
-  return expanded.replace(pattern, (match) => translations.get(match) ?? match)
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
-const translations = new Map(ordered)
-const pattern = new RegExp(ordered.map(([es]) => es.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|'), 'g')
+const esToEn = new Map(PAIRS)
+const enToEs = new Map<string, string>()
+for (const [es, en] of PAIRS) {
+  const current = enToEs.get(en)
+  const code = (value: string) => /^[a-z0-9_]+$/.test(value)
+  if (!current || (code(current) && !code(es)) || (!code(es) && es.length > current.length)) {
+    enToEs.set(en, es)
+  }
+}
+const esPhrases = [...esToEn.keys()].sort((a, b) => b.length - a.length)
+const enPhrases = [...enToEs.keys()].filter((phrase) => phrase.length >= 24).sort((a, b) => b.length - a.length)
+const esPattern = new RegExp(esPhrases.map(escapeRegExp).join('|'), 'g')
+const enPattern = enPhrases.length ? new RegExp(enPhrases.map(escapeRegExp).join('|'), 'g') : null
+
+export function systemText(text: string, lang: Lang = uiLang()): string {
+  if (!text) return text
+  if (lang === 'es') {
+    const exact = enToEs.get(text)
+    if (exact) return exact
+    const expanded = text
+      .replace(/Preparation ([\d.]+)% < 80% \(HELIOS simulation rule\)/g, 'Preparación $1% < 80% (regla HELIOS de simulación)')
+      .replace(/(\d+) critical item\(s\) not verified/g, '$1 crítico(s) sin verificar')
+      .replace(/Local heart-rate repeat: ([\d.]+) bpm\./g, 'Repetición local de frecuencia cardíaca: $1 lpm.')
+    return enPattern ? expanded.replace(enPattern, (match) => enToEs.get(match) ?? match) : expanded
+  }
+  const exact = esToEn.get(text)
+  if (exact) return exact
+  if (enToEs.has(text)) return text
+  const expanded = text
+    .replace(/Preparaci\u00f3n ([\d.]+)% < 80% \(regla HELIOS de simulaci\u00f3n\)/g, 'Preparation $1% < 80% (HELIOS simulation rule)')
+    .replace(/Preparaci\u00f3n ([\d.]+)% < 80% \(regla HELIOS: 80% o m\u00e1s para despegar\)/g, 'Preparation $1% < 80% (HELIOS simulation rule)')
+    .replace(/(\d+) cr\u00edtico\(s\) sin verificar/g, '$1 critical item(s) not verified')
+    .replace(/Repetici\u00f3n local de frecuencia card\u00edaca: ([\d.]+) lpm\./g, 'Local heart-rate repeat: $1 bpm.')
+    .replace(/Equipo reutilizable de evaluaci\u00f3n a bordo\. Cantidad fija de kit \(no por d\u00eda\)\./g, 'Reusable onboard evaluation equipment. Fixed kit quantity (not per day).')
+    .replace(/Cobertura compartida con redundancia m\u00ednima; no se multiplica por d\u00eda\./g, 'Shared coverage with minimum redundancy; not multiplied by day.')
+    .replace(/Estimaci\u00f3n log\u00edstica: (\d+) personas \u00d7 (\d+) d\u00edas \+ 10% de reserva = (\d+)\. Revisable en misi\u00f3n\./g, 'Logistics estimate: $1 people \u00d7 $2 days + 10% reserve = $3. Reviewable on the mission.')
+    .replace(/Recurso m\u00e9dico m\u00ednimo de la nave\. No sustituye evaluaci\u00f3n cl\u00ednica real\./g, 'Minimum ship medical resource. Does not replace a real clinical evaluation.')
+    .replace(/Procedimiento de enlace Tierra documentado\. No implica chat cl\u00ednico en vivo\./g, 'Documented Earth-link procedure. It does not imply a live clinical chat.')
+    .replace(/Material no cl\u00ednico de bienestar: al menos 1 set por persona \((\d+)\)\./g, 'Non-clinical wellbeing material: at least 1 set per person ($1).')
+    .replace(/Cobertura base de consumibles de soporte: referencia (\d+) persona-d\u00edas \((\d+)\u00d7(\d+)\)\. Validaci\u00f3n operativa pendiente\./g, 'Base support-consumable coverage: reference $1 person-days ($2\u00d7$3). Operational validation is still pending.')
+    .replace(/Cantidad planificada: /g, 'Planned quantity: ')
+    .replace(/(\d+) unidades \(m\u00e1x\. 2 o \u2308personas\/2\u2309\)/g, '$1 units (max of 2 or ceil(people/2))')
+    .replace(/(\d+) raciones \((\d+)\u00d7(\d+)\+10%\)/g, '$1 rations ($2\u00d7$3+10%)')
+    .replace(/Procedimiento \(sin cantidad\)/g, 'Procedure (no quantity)')
+    .replace(/(\d+) sets \(1 por persona\)/g, '$1 sets (1 per person)')
+    .replace(/(\d+) persona-d\u00edas \((\d+)\u00d7(\d+)\)/g, '$1 person-days ($2\u00d7$3)')
+  return expanded.replace(esPattern, (match) => esToEn.get(match) ?? match)
+}

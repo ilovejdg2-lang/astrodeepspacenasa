@@ -1,5 +1,7 @@
 # Gemini en Quirón AI
 
+**Quirón language: full English by default** (`QUIRON_LOCALE = 'en'`), independent of the HELIOS UI language. See also `docs/quiron-specialized-gemini.md`.
+
 Implementación incremental en React/Vite y NestJS; no se añadieron dependencias, no se cambió la base de datos y no se hicieron commits, merges, pushes ni despliegues.
 
 ## Configuración privada

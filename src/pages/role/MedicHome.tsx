@@ -1,10 +1,12 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { PainCasePanel } from '../../components/health/pain/PainMapSection'
 import { SharedCareSummaries } from '../../components/quiron/SharedCareSummaries'
 import { Link } from 'react-router-dom'
 import { useLocale } from '../../i18n'
 import { profileDisplayName } from '../../platform/copy'
-import { grantToSubject } from '../../platform/grants'
+import { grantToSubject, isActiveGrant, type PlatformGrant } from '../../platform/grants'
 import { MedicArt } from '../../components/role/RoleArt'
+import { AppointmentDesk, type VisitRow } from '../../components/mission/AppointmentDesk'
 import { AboardCheckInBoard } from '../../components/role/AboardCheckInBoard'
 import { RoleContextBar } from './RoleContextBar'
 import { useMissionWorkspace } from './useMissionWorkspace'
@@ -20,8 +22,22 @@ type CaseRow = {
 export function MedicHome() {
   const { lang } = useLocale()
   const en = lang === 'en'
-  const { profile, detail, appointments, grants, loading, error, role, mode, missionId } = useMissionWorkspace()
+  const { profile, detail, appointments, grants, loading, error, role, mode, missionId, refresh } = useMissionWorkspace()
   const [selected, setSelected] = useState<string | null>(() => sessionStorage.getItem('helios-medic-case'))
+  const [painVisit, setPainVisit] = useState<string | null>(null)
+
+  useEffect(() => {
+    const openCase = (event: Event) => {
+      const detail = (event as CustomEvent<{ subjectId?: string; appointmentId?: string }>).detail
+      if (!detail?.subjectId) return
+      setSelected(detail.subjectId)
+      setPainVisit(detail.appointmentId || null)
+      sessionStorage.setItem('helios-medic-case', detail.subjectId)
+      window.setTimeout(() => document.getElementById('medic-pain-map')?.scrollIntoView({ block: 'start' }), 50)
+    }
+    window.addEventListener('helios:open-pain-case', openCase)
+    return () => window.removeEventListener('helios:open-pain-case', openCase)
+  }, [])
 
   const cases: CaseRow[] = useMemo(() => {
     const members = detail?.members.filter((m) => m.status === 'active' && m.profileId !== profile?.id) ?? []
@@ -60,7 +76,7 @@ export function MedicHome() {
         />
         <p className="rd-muted">
           {en
-            ? 'Your own heart rate is not the hero of this workspace. Personal health lives under “My health”. After revoke, this list must show “Ask access” — that is the consent demo for judges.'
+            ? 'Your own heart rate is not the hero of this workspace. Personal health lives under “My Health”. After revoke, this list must show “Ask access” — that is the consent demo for judges.'
             : 'Tu frecuencia cardíaca no es el bloque protagonista. La salud personal está en “Mi salud”. Tras revocar, esta lista debe decir “Pedir acceso”: esa es la demo de consentimiento para el jurado.'}
         </p>
       </header>
@@ -72,26 +88,18 @@ export function MedicHome() {
       {error ? <p className="plat-error">{error}</p> : null}
       {loading ? <p className="rd-muted">{en ? 'Loading…' : 'Cargando…'}</p> : null}
 
-      <section className="rd-card">
-        <h2>{en ? 'Schedule strip' : 'Franja de agenda'}</h2>
-        {appointments.length === 0 ? (
-          <div className="rd-empty">
-            <strong>{en ? 'No appointments' : 'Sin citas'}</strong>
-            <span className="rd-muted">{en ? 'Confirm or reschedule when requests arrive.' : 'Confirmá o reprogramá cuando lleguen solicitudes.'}</span>
-          </div>
-        ) : (
-          <ul className="rd-list">
-            {appointments.slice(0, 4).map((item, index) => (
-              <li className="rd-row" key={index}>
-                <div>
-                  <strong>{en ? 'Visit' : 'Consulta'} #{index + 1}</strong>
-                  <span>{JSON.stringify(item).slice(0, 90)}</span>
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+      {missionId ? (
+        <AppointmentDesk
+          missionId={missionId}
+          stage={detail?.mission.stage}
+          profileId={profile?.id}
+          scope="assigned"
+          specialty="medical"
+          members={detail?.members || []}
+          appointments={appointments as VisitRow[]}
+          onChanged={() => refresh({ silent: true })}
+        />
+      ) : null}
 
       <div className="rd-layout">
         <section className="rd-card">
@@ -130,10 +138,19 @@ export function MedicHome() {
               <p><strong>{active.label}</strong></p>
               <p className="rd-muted">{active.reason}</p>
               <p className="rd-muted">{en ? 'Measurements and alerts appear only inside the granted permission. No psych notes are copied automatically.' : 'Mediciones y alertas aparecen solo dentro del permiso. No se copian notas psicológicas automáticamente.'}</p>
+              {missionId ? <PainCasePanel
+                en={en}
+                missionId={missionId}
+                subjectId={active.id}
+                stage={detail?.mission.stage}
+                allowed={(grants as PlatformGrant[]).some((grant) => isActiveGrant(grant) && grant.subjectProfileId === active.id && grant.granteeProfileId === profile?.id && (grant.categories || []).includes('symptoms'))}
+                appointments={(appointments as VisitRow[]).map((visit) => ({ id: visit.id, reason: visit.reason, scheduledAt: visit.scheduledAt, requesterId: visit.requesterId }))}
+                highlightAppointmentId={painVisit}
+              /> : null}
               <div className="rd-actions">
                 <Link className="rd-btn" to="/app/medico">{en ? 'Review case' : 'Revisar caso'}</Link>
                 <Link className="rd-btn ghost" to="/misiones/evidencia">{en ? 'Evidence' : 'Consultar evidencia'}</Link>
-                <Link className="rd-btn ghost" to="/app/mi-salud">{en ? 'My health' : 'Ver mi salud'}</Link>
+                <Link className="rd-btn ghost" to="/app/mi-salud">{en ? 'My Health' : 'Ver mi salud'}</Link>
               </div>
             </>
           ) : (
@@ -156,7 +173,7 @@ export function MedicHome() {
         <h2>{en ? 'Requests & follow-ups' : 'Solicitudes y seguimientos'}</h2>
         <div className="rd-actions">
           <Link className="rd-btn" to="/app/medico">{en ? 'Log follow-up' : 'Registrar seguimiento'}</Link>
-          <Link className="rd-btn ghost" to="/app/mi-salud">{en ? 'My health' : 'Mi salud'}</Link>
+          <Link className="rd-btn ghost" to="/app/mi-salud">{en ? 'My Health' : 'Mi salud'}</Link>
         </div>
       </section>
     </div>

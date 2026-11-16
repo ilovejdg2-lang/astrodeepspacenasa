@@ -9,7 +9,7 @@ export function SciencePanel({ brief }: { brief: ScienceBrief }) {
       <h3>{copy.cause}</h3>
       <p>{brief.cause}</p>
       <h3>{copy.signals}</h3>
-      {brief.signals.length === 0 ? <p className="muted">{brief.note}</p> : (
+      {brief.signals.length > 0 ? (
         <ul className="science-signals">
           {brief.signals.map((signal) => (
             <li key={signal.label}>
@@ -18,7 +18,7 @@ export function SciencePanel({ brief }: { brief: ScienceBrief }) {
             </li>
           ))}
         </ul>
-      )}
+      ) : null}
       <h3>{copy.nasa}</h3>
       <ul className="science-sources">
         {brief.sources.map((source) => (
@@ -29,7 +29,6 @@ export function SciencePanel({ brief }: { brief: ScienceBrief }) {
           </li>
         ))}
       </ul>
-      <p className="callout">{brief.note}</p>
     </section>
   )
 }

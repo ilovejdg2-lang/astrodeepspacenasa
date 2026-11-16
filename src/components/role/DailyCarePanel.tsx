@@ -1,6 +1,5 @@
 import { systemText } from '../../systemText'
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
 import { useLocale } from '../../i18n'
 import { platformApi } from '../../platform/api'
 import { enqueueOfflineOp, isBrowserOnline } from '../../platform/offlineQueue'
@@ -20,25 +19,18 @@ function timeToTodayMs(value: string) {
 
 type ModalKind = 'checkin' | 'update' | null
 
-/**
- * Acciones de cuidado diario.
- * - hub: Mi salud → tarjetas que abren modales
- * - quick: Mi día → vista rápida + modal de chequeo
- */
 export function DailyCarePanel({
   missionId,
   wakeNote,
   symptomCount,
   onChanged,
-  variant = 'hub',
-  appointmentCount = 0,
+  stage,
 }: {
   missionId: string | null
   wakeNote: string
   symptomCount: number
   onChanged: () => Promise<void> | void
-  variant?: 'hub' | 'quick'
-  appointmentCount?: number
+  stage?: string
 }) {
   const { lang } = useLocale()
   const en = lang === 'en'
@@ -53,8 +45,15 @@ export function DailyCarePanel({
   const [emotional, setEmotional] = useState(en ? 'stable' : 'estable')
   const [hasSymptoms, setHasSymptoms] = useState(false)
   const [symptom, setSymptom] = useState('')
+  const [sleepHours, setSleepHours] = useState('7')
+  const [mood, setMood] = useState(3)
+  const [comments, setComments] = useState('')
+  const [wantPsych, setWantPsych] = useState(false)
+  const [wantMedic, setWantMedic] = useState(false)
+  const [shareConsent, setShareConsent] = useState(false)
+  const wantsSupport = wantPsych || wantMedic
+  const writable = stage === 'aboard'
 
-  const incomplete = !wakeNote || /incomplete|sin completar|pending/i.test(wakeNote)
   const dayStatus = systemText(wakeNote) || (en ? 'Incomplete' : 'Sin completar')
 
   useEffect(() => {
@@ -85,6 +84,18 @@ export function DailyCarePanel({
   }
 
   async function saveCheckIn() {
+    if (wantsSupport && !shareConsent) {
+      setError(
+        en
+          ? 'To request a psychologist or doctor, you must authorize sharing this check-in.'
+          : 'Para pedir psicología o médico, debés autorizar compartir este chequeo.',
+      )
+      return
+    }
+    if (hasSymptoms && !symptom.trim()) {
+      setError(en ? 'Describe today’s symptoms, or uncheck that option.' : 'Describí los síntomas de hoy, o desmarcá esa opción.')
+      return
+    }
     await run(async () => {
       await platformApi.wake(missionId!, true)
       const wakeAt = timeToTodayMs(wakeTime)
@@ -99,15 +110,25 @@ export function DailyCarePanel({
       await platformApi.completeWake(missionId!, {
         wokeAt: wakeTime,
         sleptAt: sleepTime,
-        sleep: en ? 'logged' : 'registrado',
-        rest,
+        sleepHours: Number(sleepHours),
+        sleepQuality: rest,
         physical,
-        emotional,
-        symptoms: hasSymptoms,
+        mood,
+        moodNote: emotional,
+        symptoms: hasSymptoms ? symptom.trim() : '',
+        comments,
+        supportRequested: wantsSupport && shareConsent,
+        supportKinds: wantsSupport && shareConsent
+          ? [wantPsych ? 'psychologist' : null, wantMedic ? 'medic' : null].filter(Boolean)
+          : [],
+        shareConsent: wantsSupport ? shareConsent : false,
         recordedAt: new Date().toISOString(),
       })
       setModal(null)
-    }, en ? `Day logged · woke at ${wakeTime}` : `Día registrado · te levantaste a las ${wakeTime}`)
+      setWantPsych(false)
+      setWantMedic(false)
+      setShareConsent(false)
+    }, en ? `Day saved · woke at ${wakeTime}` : `Día guardado · te levantaste a las ${wakeTime}`)
   }
 
   async function saveSymptom() {
@@ -132,7 +153,7 @@ export function DailyCarePanel({
       }
       setSymptom('')
       setModal(null)
-    }, en ? 'Symptom saved' : 'Síntoma guardado')
+    }, en ? 'Note saved' : 'Nota guardada')
   }
 
   async function saveNap() {
@@ -159,11 +180,15 @@ export function DailyCarePanel({
         <input id="wake-time" type="time" value={wakeTime} onChange={(e) => setWakeTime(e.target.value)} disabled={busy} />
       </div>
       <div className="rd-field">
-        <label htmlFor="rest-score">{en ? 'Rest quality (1–5)' : 'Calidad del descanso (1–5)'}</label>
+        <label htmlFor="sleep-hours">{en ? 'Sleep duration (hours)' : 'Duración del sueño (horas)'}</label>
+        <input id="sleep-hours" type="number" min={0} max={24} step={0.5} value={sleepHours} onChange={(e) => setSleepHours(e.target.value)} disabled={busy} />
+      </div>
+      <div className="rd-field">
+        <label htmlFor="rest-score">{en ? 'Sleep quality (1–5)' : 'Calidad del sueño (1–5)'}</label>
         <input id="rest-score" type="number" min={1} max={5} value={rest} onChange={(e) => setRest(Number(e.target.value) || 1)} disabled={busy} />
       </div>
       <div className="rd-field">
-        <label htmlFor="physical">{en ? 'Physical state' : 'Estado físico'}</label>
+        <label htmlFor="physical">{en ? 'Physical well-being' : 'Bienestar físico'}</label>
         <select id="physical" value={physical} onChange={(e) => setPhysical(e.target.value)} disabled={busy}>
           <option value={en ? 'good' : 'bien'}>{en ? 'Good' : 'Bien'}</option>
           <option value={en ? 'acceptable' : 'aceptable'}>{en ? 'Acceptable' : 'Aceptable'}</option>
@@ -172,7 +197,11 @@ export function DailyCarePanel({
         </select>
       </div>
       <div className="rd-field">
-        <label htmlFor="emotional">{en ? 'Emotional state' : 'Estado emocional'}</label>
+        <label htmlFor="mood-score">{en ? 'Mood (1–5)' : 'Ánimo (1–5)'}</label>
+        <input id="mood-score" type="number" min={1} max={5} value={mood} onChange={(e) => setMood(Number(e.target.value) || 1)} disabled={busy} />
+      </div>
+      <div className="rd-field">
+        <label htmlFor="emotional">{en ? 'Mood note' : 'Nota de ánimo'}</label>
         <select id="emotional" value={emotional} onChange={(e) => setEmotional(e.target.value)} disabled={busy}>
           <option value={en ? 'stable' : 'estable'}>{en ? 'Stable' : 'Estable'}</option>
           <option value={en ? 'anxious' : 'ansioso'}>{en ? 'Anxious' : 'Ansioso/a'}</option>
@@ -180,53 +209,106 @@ export function DailyCarePanel({
           <option value={en ? 'stressed' : 'estresado'}>{en ? 'Stressed' : 'Estresado/a'}</option>
         </select>
       </div>
+      <div className="rd-field" style={{ gridColumn: '1 / -1' }}>
+        <label htmlFor="checkin-symptoms">{en ? 'Symptoms' : 'Síntomas'}</label>
+        <input id="checkin-symptoms" value={symptom} onChange={(e) => setSymptom(e.target.value)} disabled={busy} placeholder={en ? 'Optional' : 'Opcional'} />
+      </div>
+      <div className="rd-field" style={{ gridColumn: '1 / -1' }}>
+        <label htmlFor="checkin-comments">{en ? 'Additional comments' : 'Comentarios adicionales'}</label>
+        <input id="checkin-comments" value={comments} onChange={(e) => setComments(e.target.value)} disabled={busy} />
+      </div>
       <label className="rd-check" htmlFor="has-symptoms">
         <input id="has-symptoms" type="checkbox" checked={hasSymptoms} onChange={(e) => setHasSymptoms(e.target.checked)} disabled={busy} />
         <span>{en ? 'I have symptoms today' : 'Hoy tengo síntomas'}</span>
       </label>
+      <fieldset className="rd-support-block" style={{ gridColumn: '1 / -1' }}>
+        <legend>{en ? 'Professional support' : 'Apoyo profesional'}</legend>
+        <p className="rd-muted">
+          {en
+            ? 'Optional. If you ask for a psychologist or doctor, you must give permission to share this check-in.'
+            : 'Opcional. Si pedís psicología o médico, debés dar permiso para compartir este chequeo.'}
+        </p>
+        <label className="rd-check" htmlFor="want-psych">
+          <input
+            id="want-psych"
+            type="checkbox"
+            checked={wantPsych}
+            onChange={(e) => {
+              setWantPsych(e.target.checked)
+              if (!e.target.checked && !wantMedic) setShareConsent(false)
+            }}
+            disabled={busy}
+          />
+          <span>{en ? 'I want psychological support' : 'Quiero atención psicológica'}</span>
+        </label>
+        <label className="rd-check" htmlFor="want-medic">
+          <input
+            id="want-medic"
+            type="checkbox"
+            checked={wantMedic}
+            onChange={(e) => {
+              setWantMedic(e.target.checked)
+              if (!e.target.checked && !wantPsych) setShareConsent(false)
+            }}
+            disabled={busy}
+          />
+          <span>{en ? 'I want medical support' : 'Quiero atención médica'}</span>
+        </label>
+        {wantsSupport ? (
+          <label className="rd-check rd-check-consent" htmlFor="share-consent">
+            <input
+              id="share-consent"
+              type="checkbox"
+              checked={shareConsent}
+              onChange={(e) => setShareConsent(e.target.checked)}
+              disabled={busy}
+              required
+            />
+            <span>
+              {en
+                ? 'I authorize sharing this check-in with the selected professional(s). Private chat stays private until I allow it.'
+                : 'Autorizo compartir este chequeo con el/los profesional(es) seleccionado(s). Lo privado sigue privado hasta que yo lo permita.'}
+            </span>
+          </label>
+        ) : null}
+      </fieldset>
       <div className="rd-actions" style={{ gridColumn: '1 / -1' }}>
-        <button type="button" className="rd-btn" disabled={busy || !missionId || !wakeTime} onClick={() => void saveCheckIn()}>
-          {en ? 'Save my day' : 'Guardar mi día'}
-        </button>
         <button
           type="button"
-          className="rd-btn ghost"
-          disabled={busy || !missionId}
-          onClick={() => {
-            setWakeTime(nowTimeValue())
-            void run(async () => {
-              await platformApi.wake(missionId!, true)
-            }, en ? 'Marked as just woke up' : 'Marcado: acabo de despertar')
-          }}
+          className="rd-btn"
+          disabled={busy || !missionId || !wakeTime || (wantsSupport && !shareConsent)}
+          onClick={() => void saveCheckIn()}
         >
-          {en ? 'I just woke up' : 'Acabo de despertar'}
+          {en ? 'Save the day' : 'Guardar el día'}
         </button>
       </div>
     </div>
   )
 
   const updateForm = (
-    <>
+    <div className="care-feel">
+      <p className="care-feel-kicker">{en ? 'Mood' : 'Ánimo'}</p>
       <div className="rd-field">
-        <label htmlFor="symptom-now">{en ? 'Symptom or how you feel' : 'Síntoma o cómo te sentís'}</label>
-        <input
+        <label htmlFor="symptom-now">{en ? 'What is weighing on you?' : '¿Qué te está pesando?'}</label>
+        <textarea
           id="symptom-now"
+          rows={4}
           value={symptom}
           onChange={(e) => setSymptom(e.target.value)}
-          placeholder={en ? 'e.g. mild headache' : 'ej. dolor de cabeza leve'}
+          placeholder={en ? 'e.g. I feel low because the day ran long' : 'p. ej. me siento mal porque el día fue largo'}
           disabled={busy}
         />
       </div>
       <div className="rd-actions">
         <button type="button" className="rd-btn" disabled={busy || !symptom.trim() || !missionId} onClick={() => void saveSymptom()}>
-          {en ? 'Save symptom' : 'Guardar síntoma'}
+          {en ? 'Save how I feel' : 'Guardar cómo me siento'}
         </button>
         <button type="button" className="rd-btn ghost" disabled={busy || !missionId} onClick={() => void saveNap()}>
-          {en ? 'Log nap' : 'Registrar siesta'}
+          {en ? 'Log a nap' : 'Anotar una siesta'}
         </button>
       </div>
-      <p className="rd-muted">{en ? `Symptoms on file: ${symptomCount}` : `Síntomas registrados: ${symptomCount}`}</p>
-    </>
+      <p className="rd-muted">{en ? `Notes saved: ${symptomCount}` : `Notas guardadas: ${symptomCount}`}</p>
+    </div>
   )
 
   const feedback = (
@@ -237,87 +319,12 @@ export function DailyCarePanel({
     </>
   )
 
-  if (variant === 'quick') {
-    return (
-      <div className="rd-stack">
-        {feedback}
-        <section className="rd-card">
-          <h2>{en ? 'Today at a glance' : 'Hoy de un vistazo'}</h2>
-          <p className="rd-muted">
-            {en ? 'Quick status for your shift. Full records live in My health.' : 'Estado rápido de tu turno. El detalle vive en Mi salud.'}
-          </p>
-          <ul className="health-mini-list">
-            <li>
-              <strong>{en ? 'Daily check-in' : 'Chequeo del día'}</strong>
-              {' · '}
-              {incomplete ? (en ? 'Pending' : 'Pendiente') : dayStatus}
-            </li>
-            <li>
-              <strong>{en ? 'Symptoms' : 'Síntomas'}</strong>
-              {' · '}
-              {symptomCount}
-            </li>
-            <li>
-              <strong>{en ? 'Appointments' : 'Citas'}</strong>
-              {' · '}
-              {appointmentCount}
-            </li>
-          </ul>
-          <div className="rd-actions">
-            <button type="button" className="rd-btn" disabled={!missionId} onClick={() => setModal('checkin')}>
-              {incomplete
-                ? (en ? 'Register daily check-in' : 'Registrar chequeo del día')
-                : (en ? 'Update check-in' : 'Actualizar chequeo')}
-            </button>
-            <button type="button" className="rd-btn ghost" disabled={!missionId} onClick={() => setModal('update')}>
-              {en ? 'Log symptom / nap' : 'Registrar síntoma / siesta'}
-            </button>
-            <Link className="rd-btn ghost" to="/app/mi-salud">
-              {en ? 'Open My health' : 'Ir a Mi salud'}
-            </Link>
-          </div>
-        </section>
-
-        <section className="rd-card">
-          <h2>{en ? 'Talk with Quirón' : 'Hablar con Quirón'}</h2>
-          <div className="rd-actions">
-            <button type="button" className="rd-btn" disabled={!missionId} onClick={() => openQuiron('physical')}>
-              {en ? 'Physical health' : 'Salud física'}
-            </button>
-            <button type="button" className="rd-btn ghost" disabled={!missionId} onClick={() => openQuiron('emotional')}>
-              {en ? 'Emotional wellbeing' : 'Bienestar emocional'}
-            </button>
-          </div>
-        </section>
-
-        <Modal
-          open={modal === 'checkin'}
-          title={en ? 'Daily check-in' : 'Chequeo del día'}
-          description={en ? 'Log rest and how you feel today.' : 'Registrá descanso y cómo te sentís hoy.'}
-          onClose={() => setModal(null)}
-        >
-          {feedback}
-          {checkInForm}
-        </Modal>
-        <Modal
-          open={modal === 'update'}
-          title={en ? 'Update anytime' : 'Actualizar en cualquier momento'}
-          description={en ? 'Add a symptom or log a nap.' : 'Agregá un síntoma o registrá una siesta.'}
-          onClose={() => setModal(null)}
-        >
-          {feedback}
-          {updateForm}
-        </Modal>
-      </div>
-    )
-  }
-
   return (
     <div className="rd-stack">
       {feedback}
 
       <section className="rd-card">
-        <h2>{en ? 'Daily check-in' : 'Chequeo del día'}</h2>
+        <h2>{en ? 'Daily Check-in' : 'Chequeo diario'}</h2>
         <p className="rd-muted">
           {en ? 'Status:' : 'Estado:'}{' '}
           <strong>{dayStatus}</strong>
@@ -328,18 +335,23 @@ export function DailyCarePanel({
             : 'Abrí el formulario cuando estés listo — no queda abierto en la página.'}
         </p>
         <div className="rd-actions">
-          <button type="button" className="rd-btn" disabled={!missionId} onClick={() => setModal('checkin')}>
+          <button type="button" className="rd-btn" disabled={!missionId || !writable} onClick={() => setModal('checkin')}>
             {en ? 'Register daily check-in' : 'Registrar chequeo del día'}
           </button>
         </div>
       </section>
 
       <section className="rd-card">
-        <h2>{en ? 'Update anytime' : 'Actualizar en cualquier momento'}</h2>
-        <p className="rd-muted">{en ? `Symptoms on file: ${symptomCount}` : `Síntomas registrados: ${symptomCount}`}</p>
+        <h2>{en ? 'How you feel' : 'Cómo te sentís'}</h2>
+        <p className="rd-muted">
+          {en
+            ? 'Write what is bothering you. Body pain is marked on the 3D body.'
+            : 'Escribí qué te molesta. El dolor del cuerpo se marca en el cuerpo 3D.'}
+        </p>
+        <p className="rd-muted">{en ? `Notes saved: ${symptomCount}` : `Notas guardadas: ${symptomCount}`}</p>
         <div className="rd-actions">
-          <button type="button" className="rd-btn" disabled={!missionId} onClick={() => setModal('update')}>
-            {en ? 'Log symptom or nap' : 'Registrar síntoma o siesta'}
+          <button type="button" className="rd-btn" disabled={!missionId || !writable} onClick={() => setModal('update')}>
+            {en ? 'Write how you feel' : 'Escribir cómo me siento'}
           </button>
         </div>
       </section>
@@ -352,10 +364,10 @@ export function DailyCarePanel({
             : 'Abrí Quirón y elegí salud física o bienestar emocional dentro del chat.'}
         </p>
         <div className="rd-actions">
-          <button type="button" className="rd-btn" disabled={!missionId} onClick={() => openQuiron('physical')}>
+          <button type="button" className="rd-btn" disabled={!missionId || stage === 'postmission' || stage === 'archived' || stage === 'cancelled'} onClick={() => openQuiron('physical')}>
             {en ? 'Physical health' : 'Salud física'}
           </button>
-          <button type="button" className="rd-btn ghost" disabled={!missionId} onClick={() => openQuiron('emotional')}>
+          <button type="button" className="rd-btn ghost" disabled={!missionId || !writable} onClick={() => openQuiron('emotional')}>
             {en ? 'Emotional wellbeing' : 'Bienestar emocional'}
           </button>
         </div>
@@ -363,7 +375,7 @@ export function DailyCarePanel({
 
       <Modal
         open={modal === 'checkin'}
-        title={en ? 'Daily check-in' : 'Chequeo del día'}
+        title={en ? 'Daily Check-in' : 'Chequeo diario'}
         description={en ? 'Log rest and how you feel today.' : 'Registrá descanso y cómo te sentís hoy.'}
         onClose={() => setModal(null)}
       >
@@ -372,8 +384,9 @@ export function DailyCarePanel({
       </Modal>
       <Modal
         open={modal === 'update'}
-        title={en ? 'Update anytime' : 'Actualizar en cualquier momento'}
-        description={en ? 'Add a symptom or log a nap.' : 'Agregá un síntoma o registrá una siesta.'}
+        className="care-feel-modal"
+        title={en ? 'How you feel' : 'Cómo te sentís'}
+        description={en ? 'A note about your mood. Aches and pain go on the 3D body map, not here.' : 'Una nota de ánimo. El dolor del cuerpo va en el mapa 3D, no acá.'}
         onClose={() => setModal(null)}
       >
         {feedback}

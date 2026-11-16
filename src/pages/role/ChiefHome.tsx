@@ -1,14 +1,15 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { UserPlus } from 'lucide-react'
-import { MissionProcessStrip } from '../../components/platform/MissionProcessStrip'
-import { AboardCheckInBoard } from '../../components/role/AboardCheckInBoard'
 import { useLocale } from '../../i18n'
 import { platformApi } from '../../platform/api'
-import { profileDisplayName, roleLabel, stageBlurb } from '../../platform/copy'
+import { profileDisplayName, roleLabel } from '../../platform/copy'
+import { systemText } from '../../systemText'
 import { getActiveMissionId } from '../../platform/session'
+import { MissionReviewPanel } from '../../components/mission/MissionReviewPanel'
+import { MissionProcessStrip } from '../../components/platform/MissionProcessStrip'
 import { MissionCrewOverview } from '../../components/role/MissionCrewOverview'
-import { RoleContextBar } from './RoleContextBar'
+import { MonitorPage } from '../MonitorPage'
 import { useMissionWorkspace } from './useMissionWorkspace'
 import '../../platform/role-dash.css'
 
@@ -16,12 +17,13 @@ import '../../platform/role-dash.css'
 export function ChiefHome() {
   const { lang } = useLocale()
   const en = lang === 'en'
-  const { detail, role, mode, loading, missionId, refresh, percent, error: workspaceError } = useMissionWorkspace()
+  const { detail, role, loading, missionId, refresh, percent, prep, error: workspaceError } = useMissionWorkspace()
   const activeMissionId = missionId || getActiveMissionId()
   const rosterLocked = Boolean(detail?.mission.rosterLocked)
   const stage = detail?.mission.stage
+  const hasMissionDetail = Boolean(detail?.mission)
   const afterDeploy = stage === 'aboard' || stage === 'postmission' || stage === 'archived' || stage === 'cancelled'
-  const crewAddsBlocked = afterDeploy || rosterLocked
+  const crewAddsBlocked = hasMissionDetail && (afterDeploy || rosterLocked)
   const analysisStale = Boolean(detail?.mission.analysisStale)
   const [inviteOpen, setInviteOpen] = useState(false)
   const [missionCode, setMissionCode] = useState(detail?.mission.code || '')
@@ -49,12 +51,6 @@ export function ChiefHome() {
   }, [activeMissionId, missionCode])
 
   const pending = (detail?.members || []).filter((member) => member.status === 'pending')
-  /** Personas del equipo visible (cascos): excluye mesa Ops. Default = 4. */
-  const crewSeatCount = (detail?.members || []).filter(
-    (member) => member.status === 'active' && member.role !== 'ops',
-  ).length
-  const plannedCrew = detail?.mission.plannedCrewCount
-
   async function decide(membershipId: string, accept: boolean) {
     if (!activeMissionId || (accept && crewAddsBlocked)) return
     setBusyId(membershipId)
@@ -80,38 +76,25 @@ export function ChiefHome() {
       <div className="chief-center-bar">
         <div>
           <h1 className="chief-center-title">{en ? 'Mission center' : 'Centro de misión'}</h1>
-          <RoleContextBar
-            missionName={detail?.mission.name}
-            stage={stage}
-            role={role}
-            mode={mode}
-          />
-          <p className="muted chief-invite-note" data-testid="crew-seat-count">
-            {en
-              ? `Active members: ${crewSeatCount || 0} / planned ${plannedCrew ?? '—'}`
-              : `Integrantes activos: ${crewSeatCount || 0} / previstos ${plannedCrew ?? '—'}`}
-          </p>
-          {stage ? (
-            <>
-              <p className="muted chief-invite-note">{stageBlurb(stage, en)}</p>
-              <MissionProcessStrip stage={stage} en={en} compact />
-            </>
-          ) : null}
           {loading ? <p className="muted">{en ? 'Loading…' : 'Cargando…'}</p> : null}
-          {crewAddsBlocked ? (
+          {!loading && crewAddsBlocked ? (
             <p className="muted chief-invite-note">
-              {en
-                ? 'Mission deployed: no more astronauts can be added.'
-                : 'Misión desplegada: ya no se pueden agregar más astronautas.'}
+              {stage === 'aboard'
+                ? (en
+                  ? 'Mission deployed: no more astronauts can be added.'
+                  : 'Misión desplegada: ya no se pueden agregar más astronautas.')
+                : (en
+                  ? 'This mission is completed. Crew setup and new clinical operations stay closed.'
+                  : 'Esta misión está finalizada. La tripulación y las operaciones clínicas nuevas quedan cerradas.')}
             </p>
-          ) : analysisStale ? (
+          ) : !loading && analysisStale && stage === 'preflight' ? (
             <p className="muted chief-invite-note">
               {en
                 ? 'Changes pending: run analysis again before takeoff.'
                 : 'Hay cambios pendientes: volvé a analizar antes de despegar.'}
             </p>
           ) : null}
-          {workspaceError || error ? <p className="field-error" role="alert">{workspaceError || error}</p> : null}
+          {!loading && (workspaceError || error) ? <p className="field-error" role="alert">{workspaceError || error}</p> : null}
           {note ? <p className="muted chief-invite-note">{note}</p> : null}
         </div>
         <div className="chief-invite">
@@ -158,7 +141,7 @@ export function ChiefHome() {
                 </button>
                 <Link className="btn" to="/misiones">{en ? 'Mission hub' : 'Hub de misiones'}</Link>
                 <Link className="btn" to="/app/tripulacion">{en ? 'Crew board' : 'Tablero de tripulación'}</Link>
-                <Link className="btn" to="/app/mi-salud">{en ? 'My health' : 'Mi salud'}</Link>
+                <Link className="btn" to="/app/mi-salud">{en ? 'My Health' : 'Mi salud'}</Link>
               </div>
 
               <div className="chief-pending" style={{ marginTop: 14 }}>
@@ -202,10 +185,43 @@ export function ChiefHome() {
         </div>
       </div>
 
-      {activeMissionId && stage === 'aboard' ? (
-        <AboardCheckInBoard missionId={activeMissionId} en={en} />
+      <MonitorPage embedded content="actions" />
+
+      {stage === 'draft' ? (
+        <section className="panel" data-testid="draft-setup">
+          <h2>{en ? 'Set up your mission' : 'Configurá la misión'}</h2>
+          <MissionProcessStrip stage={stage} en={en} showStatus />
+          <div className="row" style={{ gap: 8, flexWrap: 'wrap' }}>
+            <Link className="btn btn-primary" to="/misiones/nueva">{en ? 'Mission details' : 'Datos de la misión'}</Link>
+            <Link className="btn" to="/app/recursos?tab=checklist">{en ? 'Preparation plan' : 'Plan de preparación'}</Link>
+          </div>
+        </section>
       ) : null}
 
+      {stage === 'preflight' && activeMissionId ? (
+        <section className="panel" data-testid="preflight-board">
+          <h2>{en ? 'Preparation Checklist' : 'Checklist de preparación'}</h2>
+          <p>{en ? 'Progress' : 'Avance'}: <strong>{percent}%</strong></p>
+          <p className="muted">{en ? 'Flight cannot start until applicable items are at least 80% and every critical item is complete.' : 'El vuelo no puede empezar hasta 80% de los ítems aplicables y todos los críticos completos.'}</p>
+          <ul>
+            {prep.filter((item) => item.applies && item.status !== 'cargado_verificado').map((item) => (
+              <li key={item.id}>
+                {item.critical ? (en ? 'Critical · ' : 'Crítico · ') : ''}
+                {systemText(item.title)}
+                {item.ownerProfileId ? ` · ${profileDisplayName(item.ownerProfileId)}` : ''}
+              </li>
+            ))}
+          </ul>
+          <p className="muted">{en ? 'Next: finish the missing critical items, then confirm start from the checklist.' : 'Siguiente: completá los críticos faltantes y confirmá el inicio desde el checklist.'}</p>
+          <Link className="btn btn-primary" to="/app/recursos?tab=checklist">{en ? 'Open checklist' : 'Abrir checklist'}</Link>
+        </section>
+      ) : null}
+
+      {stage === 'postmission' && activeMissionId ? (
+        <MissionReviewPanel missionId={activeMissionId} en={en} canSave={role === 'chief'} />
+      ) : null}
+
+      {stage === 'draft' ? null : (
       <section className="panel mission-prep-access" aria-label={en ? 'Preparation quick access' : 'Acceso rápido a preparación'}>
         <div>
           <h2>{en ? 'Resources & checklist' : 'Recursos y checklist'}</h2>
@@ -213,8 +229,32 @@ export function ChiefHome() {
         </div>
         <Link className="btn btn-primary" to="/app/recursos?tab=checklist" data-testid="open-mission-checklist">{en ? 'Open checklist' : 'Abrir checklist'}</Link>
       </section>
+      )}
 
-      <MissionCrewOverview />
+      {activeMissionId ? (
+        <section className="panel" data-testid="platform-roster">
+          <h2>{en ? 'Crew' : 'Tripulación'}</h2>
+          {stage === 'draft' ? (
+            <p className="muted">
+              {en
+                ? 'Only the creator is assigned, as Mission Commander. Add the rest of the crew before preparation.'
+                : 'Solo está asignada la persona que creó la misión, como comandante. Sumá al resto antes de la preparación.'}
+            </p>
+          ) : null}
+          <ul>
+            {(detail?.members || []).filter((member) => member.status === 'active').map((member) => (
+              <li key={member.id}>
+                {profileDisplayName(member.profileId)}
+                {' · '}
+                {roleLabel(member.role, en)}
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : (
+        <MissionCrewOverview />
+      )}
+
     </div>
   )
 }

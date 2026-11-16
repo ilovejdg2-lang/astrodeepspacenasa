@@ -5,7 +5,7 @@ test.use({ channel: process.env.PLAYWRIGHT_CHANNEL as 'chrome' | undefined })
 async function spanishInterface(page: Page) {
   await page.goto('/entrar')
   await page.getByRole('button', { name: 'EN', exact: true }).click()
-  await page.getByRole('button', { name: 'Explore as chief', exact: true }).click()
+  await page.getByRole('button', { name: 'Explore as Mission Commander', exact: true }).click()
   await page.getByRole('button', { name: 'Enter dashboard', exact: true }).first().click()
   await page.goto('/app/centro')
   await page.getByRole('button', { name: 'ES', exact: true }).click()

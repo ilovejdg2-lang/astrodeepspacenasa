@@ -25,7 +25,7 @@ export function Modal({
     <Dialog.Root open={open} onOpenChange={(next) => { if (!next) onClose() }}>
       <Dialog.Portal>
         <Dialog.Overlay className="overlay" />
-        <Dialog.Content onCloseAutoFocus={onCloseAutoFocus} className={className ? `modal ${className}` : 'modal'} aria-describedby={description ? 'dialog-description' : undefined}>
+        <Dialog.Content translate="no" onCloseAutoFocus={onCloseAutoFocus} className={className ? `modal ${className}` : 'modal'} aria-describedby={description ? 'dialog-description' : undefined}>
           <div className="spread">
             <Dialog.Title asChild><h2>{title}</h2></Dialog.Title>
             <Dialog.Close className="btn icon-btn" aria-label={lang === 'en' ? 'Close' : 'Cerrar'}>

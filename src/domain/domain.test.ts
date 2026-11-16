@@ -99,18 +99,21 @@ describe('reloj y escenarios', () => {
 })
 
 describe('misión HELIOS', () => {
-  it('cambiar a posmisión no cierra episodios abiertos', () => {
+  it('mantiene la etapa actual si quedan episodios abiertos', () => {
     let state = createInitialState('gradual-fatigue')
     expect(state.episodes.some((item) => item.status !== 'closed')).toBe(true)
     const openBefore = state.episodes.filter((item) => item.status !== 'closed').map((item) => item.id)
+    const stageChangedAt = state.mission.stageChangedAt
     state = reduce(state, { type: 'setMissionStage', stage: 'posmision' })
-    expect(state.mission.stage).toBe('posmision')
+    expect(state.mission.stage).toBe('a_bordo')
+    expect(state.mission.stageChangedAt).toBe(stageChangedAt)
     expect(state.episodes.filter((item) => item.status !== 'closed').map((item) => item.id)).toEqual(openBefore)
-    expect(state.notice?.text.toLowerCase()).toContain('no los cierra')
+    expect(state.notice?.tone).toBe('err')
+    expect(state.notice?.text.toLowerCase()).toContain('no se puede pasar a posmisión')
   })
 
   it('reiniciar conserva la etapa y la lista de preparación', () => {
-    let state = createInitialState('gradual-fatigue')
+    let state = createInitialState('baseline')
     // Partir de preembarque (el default demo puede estar a bordo y el checklist ya no se edita).
     state = {
       ...state,

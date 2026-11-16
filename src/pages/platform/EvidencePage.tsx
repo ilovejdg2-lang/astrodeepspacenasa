@@ -2,12 +2,71 @@ import { systemText } from '../../systemText'
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { HeliosLogo } from '../../components/HeliosLogo'
+import { LocaleThemeSwitch } from '../../components/LocaleThemeSwitch'
 import { useLocale } from '../../i18n'
 import { CSA_RESOURCES } from '../../domain/csaResources'
 import { DEMO_REVIEW_PROTOCOL } from '../../domain/demoReviewProtocol'
 import { NASA_PROOF } from '../../content/judgeDefense'
 import { platformApi, type Evidence } from '../../platform/api'
 import '../../platform/platform.css'
+
+const NASA_SOURCE_SUMMARIES = {
+  osdr: {
+    es: 'Estudios de ejemplo sobre salud y vuelos espaciales.',
+    en: 'Example studies about health and spaceflight.',
+  },
+  donki: {
+    es: 'Información sobre actividad solar y clima espacial.',
+    en: 'Information about solar activity and space weather.',
+  },
+  radlab: {
+    es: 'Estudios sobre radiación en el espacio.',
+    en: 'Studies about radiation in space.',
+  },
+} as const
+
+const NASA_SOURCE_NAMES = {
+  osdr: { es: 'Estudios sobre salud espacial', en: 'Space health studies' },
+  donki: { es: 'Actividad del Sol', en: 'Solar activity' },
+  radlab: { es: 'Radiación en el espacio', en: 'Radiation in space' },
+} as const
+
+const EVIDENCE_SOURCE_COPY: Record<string, {
+  title: { es: string; en: string }
+  institution: { es: string; en: string }
+  notes: { es: string; en: string }
+}> = {
+  'hrp-evidence': {
+    title: { es: 'Estudios sobre salud espacial', en: 'Space health research' },
+    institution: { es: 'NASA', en: 'NASA' },
+    notes: { es: 'Información de NASA sobre riesgos para la salud en el espacio. No ofrece diagnósticos.', en: 'NASA information about health risks in space. It does not provide diagnoses.' },
+  },
+  'med-ops': {
+    title: { es: 'Atención médica durante las misiones', en: 'Medical care during missions' },
+    institution: { es: 'NASA', en: 'NASA' },
+    notes: { es: 'Información general sobre la atención médica de las tripulaciones.', en: 'General information about medical care for crews.' },
+  },
+  'ochmo-briefs': {
+    title: { es: 'Guías de salud espacial', en: 'Space health guides' },
+    institution: { es: 'NASA', en: 'NASA' },
+    notes: { es: 'Documentos de NASA sobre salud y atención médica en el espacio.', en: 'NASA documents about health and medical care in space.' },
+  },
+  osdr: {
+    title: { es: 'Estudios de biología y salud en el espacio', en: 'Studies on life and health in space' },
+    institution: { es: 'NASA', en: 'NASA' },
+    notes: { es: 'Estudios sobre la vida y la salud en el espacio. Algunos no incluyen personas.', en: 'Studies about life and health in space. Some do not involve people.' },
+  },
+  'csa-radiation': {
+    title: { es: 'Radiación en el espacio', en: 'Radiation in space' },
+    institution: { es: 'Agencia Espacial Canadiense', en: 'Canadian Space Agency' },
+    notes: { es: 'Explica los tipos de radiación espacial y sus efectos. No indica la dosis de una persona.', en: 'Explains types of space radiation and their effects. It does not show a person’s dose.' },
+  },
+  'csa-sciences': {
+    title: { es: 'Investigación espacial', en: 'Space research' },
+    institution: { es: 'Agencia Espacial Canadiense', en: 'Canadian Space Agency' },
+    notes: { es: 'Información sobre investigaciones de salud y exploración espacial.', en: 'Information about research on health and space exploration.' },
+  },
+}
 
 export function EvidencePage() {
   const { lang } = useLocale()
@@ -16,7 +75,7 @@ export function EvidencePage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    document.title = en ? 'HELIOS · Evidence' : 'HELIOS · Evidencia'
+    document.title = en ? 'HELIOS · NASA sources' : 'HELIOS · Fuentes de NASA'
     let alive = true
     setLoading(true)
     platformApi.evidence()
@@ -43,33 +102,35 @@ export function EvidencePage() {
       <div className="plat-shell">
         <div className="plat-top">
           <HeliosLogo variant="wordmark" />
-          <div className="plat-actions">
-            <Link className="plat-btn ghost" to="/entrar">{en ? 'Roles' : 'Roles'}</Link>
-            <Link className="plat-btn ghost" to="/app">{en ? 'Open app' : 'Abrir app'}</Link>
-            <Link className="plat-btn ghost" to="/misiones">Hub</Link>
+          <div className="plat-top-tools">
+            <LocaleThemeSwitch />
+            <div className="plat-actions">
+              <Link className="plat-btn ghost" to="/entrar">{en ? 'Roles' : 'Roles'}</Link>
+              <Link className="plat-btn ghost" to="/app">{en ? 'Open app' : 'Abrir app'}</Link>
+              <Link className="plat-btn ghost" to="/misiones">Hub</Link>
+            </div>
           </div>
         </div>
         <p className="plat-kicker">{en ? 'Space Apps · Sources' : 'Space Apps · Fuentes'}</p>
-        <h1>{en ? 'Evidence & NASA sources' : 'Evidencia y fuentes NASA'}</h1>
+        <h1>{en ? 'NASA sources and studies' : 'Fuentes y estudios de NASA'}</h1>
         <p className="plat-lead">
           {en
-            ? 'Open NASA endpoints and curated sources used in HELIOS. Context only — not personal dose or diagnosis.'
-            : 'Endpoints NASA abiertos y fuentes usadas en HELIOS. Solo contexto: no es dosis personal ni diagnóstico.'}
+            ? 'NASA information and sources used in HELIOS. They offer general context, not a person’s health status or radiation dose.'
+            : 'Información y fuentes de NASA que usamos en HELIOS. Sirven como referencia general, no muestran la salud ni la dosis de radiación de una persona.'}
         </p>
 
         <article className="plat-panel">
-          <h2>{en ? 'Live NASA endpoints (Nest proxy)' : 'Endpoints NASA en vivo (proxy Nest)'}</h2>
+          <h2>{en ? 'NASA sources used in HELIOS' : 'Fuentes de NASA que usa HELIOS'}</h2>
           <p className="plat-muted">
             {en
-              ? 'Each UI surface labels fetch time / cache. NASA context is never personal astronaut dose or diagnosis.'
-              : 'Cada pantalla etiqueta fecha de consulta / caché. El contexto NASA nunca es dosis personal ni diagnóstico.'}
+              ? 'The app shows when this information was last checked. It is not a personal medical assessment.'
+              : 'La app indica cuándo se consultó esta información. No es una evaluación médica personal.'}
           </p>
           <ul className="plat-list" style={{ listStyle: 'none', padding: 0 }}>
             {NASA_PROOF.map((item) => (
               <li key={item.id} className="plat-panel" style={{ marginBottom: 10 }}>
-                <strong>{item.label}</strong>
-                <p><code>{item.nest}</code></p>
-                <p className="plat-muted">{item.ui}</p>
+                <strong>{NASA_SOURCE_NAMES[item.id][en ? 'en' : 'es']}</strong>
+                <p className="plat-muted">{NASA_SOURCE_SUMMARIES[item.id][en ? 'en' : 'es']}</p>
                 <div className="plat-actions">
                   <a className="plat-btn ghost" href={item.docs} target="_blank" rel="noreferrer">
                     {en ? 'Official docs' : 'Docs oficiales'}
@@ -84,17 +145,16 @@ export function EvidencePage() {
         </article>
 
         {!loading && items.length === 0 ? (
-          <p>{en ? 'No curated library items from API (offline OK — NASA links above still apply).' : 'Sin ítems de biblioteca vía API (offline OK — los enlaces NASA de arriba siguen valiendo).'}</p>
+          <p>{en ? 'There are no additional sources to show right now. The official NASA links above are still available.' : 'Por ahora no hay más fuentes para mostrar. Los enlaces oficiales de NASA siguen disponibles.'}</p>
         ) : null}
         <article className="plat-panel">
           <h2>{en ? DEMO_REVIEW_PROTOCOL.title.en : DEMO_REVIEW_PROTOCOL.title.es}</h2>
-          <p>{DEMO_REVIEW_PROTOCOL.id} · v{DEMO_REVIEW_PROTOCOL.version}</p>
           <p>{en ? DEMO_REVIEW_PROTOCOL.disclaimer.en : DEMO_REVIEW_PROTOCOL.disclaimer.es}</p>
         </article>
         {CSA_RESOURCES.map((item) => (
           <article className="plat-panel" key={item.id}>
             <h2>{en ? item.title.en : item.title.es}</h2>
-            <p>{item.institution} · CSA partner</p>
+            <p>{en ? 'Canadian Space Agency (CSA)' : 'Agencia Espacial Canadiense (CSA)'}</p>
             <p>{en ? item.useInHelios.en : item.useInHelios.es}</p>
             <p className="plat-muted">{en ? item.limitations.en : item.limitations.es}</p>
             <a className="plat-btn ghost" href={item.url} target="_blank" rel="noreferrer">
@@ -105,9 +165,9 @@ export function EvidencePage() {
         <div className="plat-list">
           {items.map((item) => (
             <article className="plat-panel" key={item.id}>
-              <h2>{systemText(item.title)}</h2>
-              <p>{item.institution} · {item.kind}</p>
-              <p>{systemText(item.notes)}</p>
+              <h2>{EVIDENCE_SOURCE_COPY[item.id]?.title[en ? 'en' : 'es'] ?? systemText(item.title)}</h2>
+              <p>{EVIDENCE_SOURCE_COPY[item.id]?.institution[en ? 'en' : 'es'] ?? item.institution}</p>
+              <p>{EVIDENCE_SOURCE_COPY[item.id]?.notes[en ? 'en' : 'es'] ?? systemText(item.notes)}</p>
               <a className="plat-btn ghost" href={item.url} target="_blank" rel="noreferrer">
                 {en ? 'Open source' : 'Abrir fuente'}
               </a>

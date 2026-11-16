@@ -2,6 +2,10 @@
 export type SpaceHazard = {
   id: string
   title: { es: string; en: string }
+  /** Una frase para la guía de tripulación. */
+  watch: { es: string; en: string }
+  signs: { es: string; en: string }[]
+  avoid: { es: string; en: string }[]
   summary: { es: string; en: string }
   relatedRisks: { es: string; en: string }
   heliosContext: { es: string; en: string }
@@ -14,6 +18,21 @@ export const SPACE_HAZARDS: SpaceHazard[] = [
   {
     id: 'radiation',
     title: { es: 'Radiación espacial', en: 'Space radiation' },
+    watch: {
+      es: 'Fuera de la Tierra llega más radiación, sobre todo si hay una tormenta solar.',
+      en: 'Outside Earth you get more radiation, especially during a solar storm.',
+    },
+    signs: [
+      { es: 'Náuseas', en: 'Nausea' },
+      { es: 'Dolor de cabeza', en: 'Headache' },
+      { es: 'Cansancio que no encaja con el día', en: 'Tiredness that does not match the day' },
+      { es: 'Piel que se siente quemada', en: 'Skin that feels burned' },
+    ],
+    avoid: [
+      { es: 'Si hay aviso solar, pasá a la zona más protegida del hábitat.', en: 'If there is a solar warning, move to the more shielded part of the habitat.' },
+      { es: 'Pasá menos tiempo afuera.', en: 'Spend less time outside.' },
+      { es: 'Contale a la tripulación cómo te sentís y anotalo.', en: 'Tell the crew how you feel and write it down.' },
+    ],
     summary: {
       es: 'La exposición a partículas energéticas y radiación galáctica aumenta fuera del campo magnético terrestre.',
       en: 'Exposure to energetic particles and galactic radiation rises beyond Earth’s magnetic field.',
@@ -47,6 +66,21 @@ export const SPACE_HAZARDS: SpaceHazard[] = [
   {
     id: 'isolation',
     title: { es: 'Aislamiento y confinamiento', en: 'Isolation and confinement' },
+    watch: {
+      es: 'Vivir encerrado y lejos de la gente de siempre pesa en el ánimo.',
+      en: 'Living closed-in and far from your usual people wears on mood.',
+    },
+    signs: [
+      { es: 'Ánimo bajo', en: 'Low mood' },
+      { es: 'Irritación fácil', en: 'Getting irritated easily' },
+      { es: 'Dormir mal', en: 'Poor sleep' },
+      { es: 'Alejarte de la tripulación', en: 'Pulling away from the crew' },
+    ],
+    avoid: [
+      { es: 'Mantené una rutina simple cada día.', en: 'Keep a simple routine each day.' },
+      { es: 'Hablá con alguien de la tripulación.', en: 'Talk with someone on the crew.' },
+      { es: 'Pedí un chequeo. Pedir ayuda es parte del plan.', en: 'Ask for a check-in. Asking for help is part of the plan.' },
+    ],
     summary: {
       es: 'Vivir en un volumen pequeño, lejos de redes sociales habituales, desafía el bienestar conductual.',
       en: 'Living in a small volume far from usual social networks challenges behavioral health.',
@@ -57,7 +91,7 @@ export const SPACE_HAZARDS: SpaceHazard[] = [
     },
     heliosContext: {
       es: 'Chequeo diario, autorreporte de ánimo, Quirón emocional y citas con psicología.',
-      en: 'Daily check-in, mood self-report, emotional Quirón and psychology appointments.',
+      en: 'Daily Check-in, mood self-report, emotional Quirón and psychology appointments.',
     },
     limits: {
       es: 'Un ánimo “3/5” no descarta riesgo psicosocial ni sustituye atención profesional.',
@@ -75,6 +109,19 @@ export const SPACE_HAZARDS: SpaceHazard[] = [
   {
     id: 'distance',
     title: { es: 'Distancia de la Tierra', en: 'Distance from Earth' },
+    watch: {
+      es: 'La respuesta de la Tierra tarda. Hay que poder actuar a bordo.',
+      en: 'Earth’s answer takes time. You need to be able to act on board.',
+    },
+    signs: [
+      { es: 'Inquietud mientras esperás una respuesta', en: 'Worry while you wait for an answer' },
+      { es: 'No saber el siguiente paso sin la Tierra', en: 'Not knowing the next step without Earth' },
+    ],
+    avoid: [
+      { es: 'Seguí los pasos que ya están a bordo.', en: 'Follow the steps already on board.' },
+      { es: 'Anotá lo que hiciste para sincronizarlo después.', en: 'Write down what you did so it can sync later.' },
+      { es: 'Hacé ahora lo que no necesita esperar a la Tierra.', en: 'Do now what does not need to wait for Earth.' },
+    ],
     summary: {
       es: 'La demora de comunicación y la autonomía operativa crecen con la distancia.',
       en: 'Communication delay and operational autonomy grow with distance.',
@@ -100,6 +147,20 @@ export const SPACE_HAZARDS: SpaceHazard[] = [
   {
     id: 'gravity',
     title: { es: 'Gravedad alterada', en: 'Altered gravity' },
+    watch: {
+      es: 'Con poca gravedad el cuerpo pierde fuerza, hueso y equilibrio.',
+      en: 'With little gravity the body loses strength, bone, and balance.',
+    },
+    signs: [
+      { es: 'Debilidad', en: 'Weakness' },
+      { es: 'Dolor de espalda o de articulaciones', en: 'Back or joint pain' },
+      { es: 'Mareo al moverte', en: 'Dizziness when you move' },
+    ],
+    avoid: [
+      { es: 'Hacé el ejercicio previsto.', en: 'Do the planned exercise.' },
+      { es: 'Marcá el dolor o el mareo en el mapa del cuerpo.', en: 'Mark pain or dizziness on the body map.' },
+      { es: 'Avisá si al incorporarte te mareás.', en: 'Tell someone if standing up makes you dizzy.' },
+    ],
     summary: {
       es: 'Microgravedad o gravedad parcial cambian carga ósea, muscular y cardiovascular.',
       en: 'Microgravity or partial gravity changes bone, muscle and cardiovascular loading.',
@@ -128,6 +189,21 @@ export const SPACE_HAZARDS: SpaceHazard[] = [
   {
     id: 'closed_hostile',
     title: { es: 'Entornos cerrados y hostiles', en: 'Closed and hostile environments' },
+    watch: {
+      es: 'El aire, el polvo y el ruido del hábitat también se sienten en el cuerpo.',
+      en: 'The habitat’s air, dust, and noise also show up in the body.',
+    },
+    signs: [
+      { es: 'Dolor de cabeza', en: 'Headache' },
+      { es: 'Ojos secos o irritados', en: 'Dry or irritated eyes' },
+      { es: 'Tos o nariz tapada', en: 'Cough or a stuffy nose' },
+      { es: 'Cansancio', en: 'Tiredness' },
+    ],
+    avoid: [
+      { es: 'Revisá aire, filtros y ruido.', en: 'Check air, filters, and noise.' },
+      { es: 'Reportá los síntomas apenas aparecen.', en: 'Report symptoms as soon as they appear.' },
+      { es: 'Mirá los suministros antes de que se acaben.', en: 'Check supplies before they run out.' },
+    ],
     summary: {
       es: 'Hábitats sellados enfrentan calidad del aire, polvo, ruido y sistemas de soporte vital.',
       en: 'Sealed habitats face air quality, dust, noise and life-support systems.',

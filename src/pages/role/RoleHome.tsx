@@ -2,7 +2,6 @@ import { Navigate } from 'react-router-dom'
 import { getStoredProfile } from '../../platform/session'
 import { resolveAuthorizedRole, useWorkspaceRole } from '../../platform/workspace'
 import { ChiefHome } from './ChiefHome'
-import { CrewHome } from './CrewHome'
 import { MedicHome } from './MedicHome'
 import { PsychHome } from './PsychHome'
 
@@ -14,7 +13,7 @@ export function RoleHome() {
   if (resolved === 'chief') return <ChiefHome />
   if (resolved === 'medic') return <MedicHome />
   if (resolved === 'psychologist') return <PsychHome />
-  if (resolved === 'crew') return <CrewHome />
+  if (resolved === 'crew') return <Navigate to="/app/mi-salud" replace />
 
   return <Navigate to="/entrar" replace />
 }

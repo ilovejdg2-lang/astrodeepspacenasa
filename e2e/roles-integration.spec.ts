@@ -58,6 +58,46 @@ test('roles branch: switch roles without losing mission or leaking a care thread
   }
 })
 
+test('app branding and header controls work on desktop and mobile', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await enterRole(page, 'comandante')
+
+  await expect(page.locator('.brand-mark')).toBeVisible()
+  await expect(page.locator('.brand-mark .brand-stack')).toContainText('Health evaluation')
+  await expect(page.locator('.sidebar-foot .helios-wordmark')).toBeVisible()
+  await expect(page.locator('.profile-pill')).toContainText('Elena Torres')
+  await expect(page.locator('.role-switch-trigger')).toBeVisible()
+  await expect(page.getByRole('group', { name: 'Idioma' })).toBeVisible()
+  await expect(page.locator('.topbar')).not.toHaveCSS('background-color', 'rgba(0, 0, 0, 0)')
+  await expect(page.locator('.topbar')).toHaveCSS('backdrop-filter', 'blur(10px)')
+  await expect(page.locator('.topbar')).toHaveCSS('border-bottom-width', '0px')
+
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto('/app/mi-salud')
+
+  await expect(page.locator('.topbar')).toBeVisible()
+  await expect(page.getByRole('link', { name: 'HELIOS, roles' })).toBeVisible()
+  await expect(page.locator('.topbar')).not.toHaveCSS('background-color', 'rgba(0, 0, 0, 0)')
+  await expect(page.locator('.topbar')).toHaveCSS('backdrop-filter', 'blur(10px)')
+  await expect(page.locator('.topbar')).toHaveCSS('border-bottom-width', '0px')
+  await expect(page.locator('.role-switch-trigger')).toBeVisible()
+  await expect(page.getByRole('group', { name: 'Idioma' })).toBeVisible()
+  await expect(page.getByTestId('theme-toggle')).toBeVisible()
+
+  await page.getByRole('button', { name: 'EN', exact: true }).click()
+  await expect(page.getByRole('group', { name: 'Language' })).toBeVisible()
+  await page.getByRole('button', { name: 'ES', exact: true }).click()
+  await page.locator('.workspace').evaluate((workspace) => {
+    workspace.scrollTop = workspace.scrollHeight
+  })
+  await expect.poll(() => page.locator('.workspace').evaluate((workspace) => workspace.scrollTop)).toBeGreaterThan(0)
+  await expect.poll(() => page.locator('.topbar').evaluate((topbar) => Math.round(topbar.getBoundingClientRect().top))).toBe(0)
+  await page.getByTestId('theme-toggle').click()
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'light')
+  await page.locator('.role-switch-trigger').click()
+  await expect(page.getByRole('dialog', { name: 'Elegí un rol' })).toBeVisible()
+})
+
 test('dashboard explains history consent and sends the full symptom conversation when enabled', async ({ page }) => {
   const requests: Array<{ question: string; history: Array<{ role: string; content: string }> }> = []
   await page.route('**/api/ai/dialogue', async (route) => {

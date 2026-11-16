@@ -13,4 +13,10 @@ describe('server notice display locale', () => {
   it('keeps unrecognized messages intact', () => {
     expect(noticeText('Nota personal, conservar exactamente.', 'en')).toBe('Nota personal, conservar exactamente.')
   })
+  it('localizes a blocked mission-stage transition', () => {
+    const spanish = 'No se puede pasar a posmisión mientras haya episodios abiertos. La etapa actual se conserva.'
+    const english = 'The mission cannot move to Completed while health episodes are open. The current stage is unchanged.'
+    expect(noticeText(spanish, 'en')).toBe(english)
+    expect(noticeText(english, 'es')).toBe(spanish)
+  })
 })

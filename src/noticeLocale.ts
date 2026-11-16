@@ -12,9 +12,12 @@ const NOTICES: readonly (readonly [string, string])[] = [
   ['Mensajes marcados como enviados. Enviado todavía no es recibido.', 'Messages marked as sent. Sent does not mean received.'],
   ['Recepción confirmada, sin duplicar mensajes.', 'Receipt confirmed, without duplicate messages.'],
   ['Síntomas registrados. Quedan pendientes de revisión humana.', 'Symptoms recorded. Pending human review.'],
+  ['No se puede pasar a posmisión mientras haya episodios abiertos. La etapa actual se conserva.', 'The mission cannot move to Completed while health episodes are open. The current stage is unchanged.'],
 ]
 
 export function noticeText(text: string, lang: Lang): string {
   const pair = NOTICES.find(([es, en]) => text === es || text === en)
-  return pair ? pair[lang === 'en' ? 1 : 0] : systemText(text, lang)
+  if (pair) return pair[lang === 'en' ? 1 : 0]
+
+  return systemText(text, lang)
 }

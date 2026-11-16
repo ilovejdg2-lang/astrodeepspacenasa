@@ -5,6 +5,7 @@ import { useLocale } from '../../i18n'
 import { profileDisplayName } from '../../platform/copy'
 import { grantToSubject } from '../../platform/grants'
 import { PsychArt } from '../../components/role/RoleArt'
+import { AppointmentDesk, type VisitRow } from '../../components/mission/AppointmentDesk'
 import { AboardCheckInBoard } from '../../components/role/AboardCheckInBoard'
 import { RoleContextBar } from './RoleContextBar'
 import { useMissionWorkspace } from './useMissionWorkspace'
@@ -13,7 +14,7 @@ import '../../platform/role-dash.css'
 export function PsychHome() {
   const { lang } = useLocale()
   const en = lang === 'en'
-  const { profile, detail, appointments, grants, loading, error, role, mode, missionId } = useMissionWorkspace()
+  const { profile, detail, appointments, grants, loading, error, role, mode, missionId, refresh } = useMissionWorkspace()
   const [selected, setSelected] = useState<string | null>(() => sessionStorage.getItem('helios-psych-case'))
 
   const people = useMemo(() => {
@@ -59,40 +60,23 @@ export function PsychHome() {
       {error ? <p className="plat-error">{error}</p> : null}
       {loading ? <p className="rd-muted">{en ? 'Loading…' : 'Cargando…'}</p> : null}
 
-      <section className="rd-card">
-        <h2>{en ? 'Agenda & upcoming sessions' : 'Agenda y próximas sesiones'}</h2>
-        {appointments.length === 0 ? (
-          <div className="rd-empty">
-            <strong>{en ? 'No sessions scheduled' : 'Sin sesiones agendadas'}</strong>
-            <span className="rd-muted">{en ? 'Confirm or reschedule when support requests arrive.' : 'Confirmá o reprogramá cuando lleguen pedidos de apoyo.'}</span>
-          </div>
-        ) : (
-          <ul className="rd-list">
-            {appointments.slice(0, 5).map((item, index) => (
-              <li className="rd-row" key={index}>
-                <div>
-                  <strong>{en ? 'Session' : 'Sesión'} #{index + 1}</strong>
-                  <span>{JSON.stringify(item).slice(0, 90)}</span>
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
-        <div className="rd-actions">
-          <Link className="rd-btn" to="/app/mi-salud">{en ? 'My health / schedule' : 'Mi salud / agenda'}</Link>
-          <Link className="rd-btn ghost" to="/app/mi-salud">{en ? 'My health' : 'Ver mi salud'}</Link>
-        </div>
-      </section>
+      {missionId ? (
+        <AppointmentDesk
+          missionId={missionId}
+          stage={detail?.mission.stage}
+          profileId={profile?.id}
+          scope="assigned"
+          specialty="psychological"
+          members={detail?.members || []}
+          appointments={appointments as VisitRow[]}
+          onChanged={() => refresh({ silent: true })}
+        />
+      ) : null}
+      <div className="rd-actions" style={{ marginBottom: 12 }}>
+        <Link className="rd-btn ghost" to="/app/mi-salud">{en ? 'My Health' : 'Mi salud'}</Link>
+      </div>
 
       <div className="rd-layout">
-        <section className="rd-card">
-          <h2>{en ? 'Support requests' : 'Solicitudes de apoyo'}</h2>
-          <div className="rd-empty">
-            <strong>{en ? 'No open support queue' : 'Sin cola de apoyo abierta'}</strong>
-            <span className="rd-muted">{en ? 'Next step: wait for a voluntary share or an appointment request.' : 'Siguiente paso: esperá un compartir voluntario o una solicitud de cita.'}</span>
-          </div>
-        </section>
-
         <section className="rd-card">
           <h2>{en ? 'Authorized follow-ups' : 'Seguimientos autorizados'}</h2>
           {people.length === 0 ? (

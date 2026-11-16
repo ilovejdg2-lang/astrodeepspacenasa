@@ -14,6 +14,7 @@ alwaysApply: false
 - Si no hay una medición confiable reciente, el estado no es estable.
 - Un paquete alterado, repetido o fuera de orden no crea otra medición confiable.
 - Resolver un sensor no cierra el episodio ni borra síntomas.
+- No se puede pasar la misión a posmisión mientras haya episodios de salud abiertos.
 - Un consumible no queda negativo. Un reutilizable no descuenta unidades.
 - La comunicación solo avanza un estado. Enviado no llena `receivedAt`.
 - Agregá o actualizá la prueba en `src/domain/domain.test.ts` cuando cambie una invariante.

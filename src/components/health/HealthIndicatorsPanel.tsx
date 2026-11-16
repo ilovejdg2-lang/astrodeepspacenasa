@@ -1,14 +1,6 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useState } from 'react'
 import { useLocale } from '../../i18n'
-import {
-  INDICATOR_CATALOG,
-  catalogEntry,
-  evaluateIndicatorState,
-  formatIndicatorValue,
-  stateLabel,
-  type IndicatorVisualState,
-} from '../../domain/healthIndicators'
-import { DEMO_REVIEW_PROTOCOL, protocolBadge } from '../../domain/demoReviewProtocol'
+import { INDICATOR_CATALOG, catalogEntry } from '../../domain/healthIndicators'
 import {
   platformApi,
   type HealthIndicatorReading,
@@ -16,30 +8,20 @@ import {
 } from '../../platform/api'
 import { enqueueOfflineOp, isBrowserOnline } from '../../platform/offlineQueue'
 
-const PERIODS = [
-  { id: '24h', ms: 24 * 60 * 60 * 1000, es: '24 h', en: '24 h' },
-  { id: '7d', ms: 7 * 24 * 60 * 60 * 1000, es: '7 días', en: '7 days' },
-  { id: '30d', ms: 30 * 24 * 60 * 60 * 1000, es: '30 días', en: '30 days' },
-] as const
-
-function stateClass(state: IndicatorVisualState) {
-  return `health-state health-state-${state}`
-}
-
 export function HealthIndicatorsPanel({
   missionId,
   onChanged,
+  writable = true,
 }: {
   missionId: string | null
   onChanged?: () => Promise<void> | void
+  writable?: boolean
 }) {
   const { lang } = useLocale()
   const en = lang === 'en'
-  const [items, setItems] = useState<HealthIndicatorReading[]>([])
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [ok, setOk] = useState('')
-  const [period, setPeriod] = useState<(typeof PERIODS)[number]['id']>('7d')
   const [explainKind, setExplainKind] = useState<IndicatorKind | null>(null)
   const [kind, setKind] = useState<IndicatorKind>('heart_rate')
   const [value, setValue] = useState('72')
@@ -49,29 +31,6 @@ export function HealthIndicatorsPanel({
   const [origin, setOrigin] = useState<HealthIndicatorReading['origin']>('manual')
   const [notes, setNotes] = useState('')
 
-  const load = useCallback(async () => {
-    if (!missionId) return
-    const data = await platformApi.listIndicators(missionId)
-    setItems(data.items)
-  }, [missionId])
-
-  useEffect(() => {
-    void load().catch((err) => setError(err instanceof Error ? err.message : 'Error'))
-  }, [load])
-
-  const byKind = useMemo(() => {
-    const map = new Map<IndicatorKind, HealthIndicatorReading[]>()
-    for (const entry of INDICATOR_CATALOG) map.set(entry.kind, [])
-    for (const item of items) {
-      const list = map.get(item.kind) || []
-      list.push(item)
-      map.set(item.kind, list)
-    }
-    for (const [, list] of map) list.sort((a, b) => b.measuredAt - a.measuredAt)
-    return map
-  }, [items])
-
-  const periodMs = PERIODS.find((p) => p.id === period)?.ms || PERIODS[1].ms
   const selectedMeta = catalogEntry(kind)
   const explain = explainKind ? catalogEntry(explainKind) : null
 
@@ -115,7 +74,6 @@ export function HealthIndicatorsPanel({
             : `Error de red — encolado local (${err instanceof Error ? err.message : 'error'}).`)
         }
       }
-      await load().catch(() => undefined)
       await onChanged?.()
       try {
         const raw = localStorage.getItem('helios.progress.optout')
@@ -138,15 +96,11 @@ export function HealthIndicatorsPanel({
       {ok ? <p className="rd-ok">{ok}</p> : null}
 
       <section className="rd-card">
-        <h2>{en ? 'Log health indicators' : 'Registrar indicadores'}</h2>
-        <p className="rd-muted">
-          {en
-            ? 'Manual entry works without physical sensors. Origins: manual, sensor, import or simulation — never unlabeled.'
-            : 'La entrada manual funciona sin sensores físicos. Orígenes: manual, sensor, importación o simulación — siempre etiquetados.'}
-        </p>
-        <p className="rd-muted">
-          {protocolBadge(en)}. {en ? DEMO_REVIEW_PROTOCOL.disclaimer.en : DEMO_REVIEW_PROTOCOL.disclaimer.es}
-        </p>
+        <h2>{writable
+          ? (en ? 'Log health indicators' : 'Registrar indicadores')
+          : (en ? 'Health indicators' : 'Indicadores de salud')}</h2>
+        {!writable ? <p className="rd-muted">{en ? 'New readings can be added only while the mission is in flight.' : 'Las lecturas nuevas solo se agregan con la misión a bordo.'}</p> : null}
+        {writable ? <>
         <div className="rd-form-grid">
           <div className="rd-field">
             <label htmlFor="ind-kind">{en ? 'Indicator' : 'Indicador'}</label>
@@ -221,6 +175,11 @@ export function HealthIndicatorsPanel({
             {en ? 'Understand this indicator' : 'Entender este indicador'}
           </button>
         </div>
+        </> : (
+          <button type="button" className="rd-btn ghost" onClick={() => setExplainKind(kind)}>
+            {en ? 'Understand this indicator' : 'Entender este indicador'}
+          </button>
+        )}
       </section>
 
       {explain ? (
@@ -249,98 +208,6 @@ export function HealthIndicatorsPanel({
         </section>
       ) : null}
 
-      <section className="rd-card">
-        <div className="rd-actions" style={{ justifyContent: 'space-between' }}>
-          <h2 style={{ margin: 0 }}>{en ? 'Status cards' : 'Tarjetas de estado'}</h2>
-          <label className="rd-field" style={{ margin: 0 }}>
-            <span className="sr-only">{en ? 'Period' : 'Periodo'}</span>
-            <select value={period} onChange={(e) => setPeriod(e.target.value as typeof period)}>
-              {PERIODS.map((p) => <option key={p.id} value={p.id}>{en ? p.en : p.es}</option>)}
-            </select>
-          </label>
-        </div>
-        <p className="rd-muted">
-          {en
-            ? 'Baseline pending until enough personal history exists — HELIOS does not invent clinical baselines.'
-            : 'Línea base pendiente hasta haber historial personal suficiente — HELIOS no inventa líneas base clínicas.'}
-        </p>
-        <div className="health-card-grid">
-          {INDICATOR_CATALOG.map((entry) => {
-            const series = (byKind.get(entry.kind) || []).filter((item) => Date.now() - item.measuredAt <= periodMs)
-            const latest = series[0]
-            const previous = series[1]
-            const evalState = evaluateIndicatorState(latest, previous)
-            return (
-              <article key={entry.kind} className="health-status-card">
-                <header>
-                  <strong>{en ? entry.name.en : entry.name.es}</strong>
-                  <span className={stateClass(evalState.state)}>{stateLabel(evalState.state, en)}</span>
-                </header>
-                <p className="health-value">
-                  {latest ? formatIndicatorValue(latest, en) : (en ? 'No data' : 'Sin datos')}
-                </p>
-                <p className="rd-muted">
-                  {latest
-                    ? `${new Date(latest.measuredAt).toLocaleString(en ? 'en-US' : 'es-CR')} · ${latest.origin} · ${latest.quality}`
-                    : (en ? 'Unit: ' : 'Unidad: ') + entry.unit}
-                </p>
-                <p className="rd-muted">{en ? evalState.reason.en : evalState.reason.es}</p>
-                <p className="rd-muted" style={{ fontSize: '0.78rem' }}>
-                  {evalState.protocolId}{evalState.ruleId ? `/${evalState.ruleId}` : ''}
-                </p>
-                <p><strong>{en ? 'Next step:' : 'Siguiente paso:'}</strong> {en ? evalState.nextStep.en : evalState.nextStep.es}</p>
-                <button type="button" className="rd-btn ghost" onClick={() => setExplainKind(entry.kind)}>
-                  {en ? 'Understand' : 'Entender'}
-                </button>
-                {series.length > 1 && entry.kind !== 'blood_pressure' && entry.kind !== 'mood' ? (
-                  <Spark values={series.slice(0, 12).map((s) => s.value).reverse()} label={entry.unit} />
-                ) : series.length > 1 && entry.kind === 'blood_pressure' ? (
-                  <p className="rd-muted">{en ? 'BP history listed below (dual values, not mixed on one axis).' : 'Historial de PA abajo (valores duales, sin mezclar ejes).'}</p>
-                ) : null}
-              </article>
-            )
-          })}
-        </div>
-      </section>
-
-      <section className="rd-card">
-        <h2>{en ? 'Recent readings' : 'Lecturas recientes'}</h2>
-        {items.length === 0 ? (
-          <p className="rd-muted">{en ? 'No indicators yet.' : 'Todavía no hay indicadores.'}</p>
-        ) : (
-          <ul className="health-mini-list">
-            {items.slice(0, 20).map((item) => (
-              <li key={item.id}>
-                <strong>{en ? catalogEntry(item.kind)?.name.en : catalogEntry(item.kind)?.name.es}</strong>
-                {' · '}
-                {formatIndicatorValue(item, en)}
-                {' · '}
-                {new Date(item.measuredAt).toLocaleString(en ? 'en-US' : 'es-CR')}
-                {' · '}
-                {item.origin}/{item.quality}
-                {item.notes ? ` · ${item.notes}` : ''}
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
     </div>
-  )
-}
-
-function Spark({ values, label }: { values: number[]; label: string }) {
-  if (values.length < 2) return null
-  const min = Math.min(...values)
-  const max = Math.max(...values)
-  const span = max - min || 1
-  const points = values.map((v, i) => {
-    const x = (i / (values.length - 1)) * 100
-    const y = 28 - ((v - min) / span) * 24
-    return `${x},${y}`
-  }).join(' ')
-  return (
-    <svg className="health-spark" viewBox="0 0 100 32" role="img" aria-label={`${label} trend`}>
-      <polyline fill="none" stroke="currentColor" strokeWidth="2" points={points} />
-    </svg>
   )
 }

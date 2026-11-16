@@ -39,7 +39,8 @@ test('alerts group people and keep each person history inside a modal', async ({
   await expect(person).toBeFocused()
   expect(donkiRequests).toEqual([])
   const missionDonki = page.waitForRequest('**/api/nasa/donki/events*')
-  await page.goto('/app/mision')
+  await page.goto('/app/riesgos')
+  await page.getByRole('tab', { name: 'Clima espacial', exact: true }).click()
   await missionDonki
   await expect(page.getByRole('region', { name: 'Clima espacial', exact: true })).toBeVisible()
   expect(donkiRequests.length).toBeGreaterThan(0)

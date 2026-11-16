@@ -1,11 +1,12 @@
 /* NASA Risks · emergency briefing layout */
 .risks-brief {
-  --rb-accent: #d4533a;
-  --rb-line: color-mix(in srgb, var(--rb-accent) 32%, transparent);
-  --rb-soft: color-mix(in srgb, var(--rb-accent) 10%, transparent);
+  --rb-accent: var(--accent);
+  --rb-line: color-mix(in srgb, var(--accent) 35%, var(--line));
+  --rb-soft: var(--accent-soft);
   display: grid;
-  gap: 14px;
-  max-width: 920px;
+  gap: 16px;
+  max-width: 960px;
+  min-width: 0;
 }
 .risks-brief-head {
   display: grid;
@@ -27,15 +28,15 @@
 }
 .risks-brief-head h1 {
   margin: 0;
-  font-size: clamp(1.15rem, 2.6vw, 1.45rem);
-  letter-spacing: -0.02em;
-  line-height: 1.2;
+  font-size: clamp(1.5rem, 2vw, 1.85rem);
+  letter-spacing: -0.03em;
+  line-height: 1.15;
 }
 .risks-brief-head p {
   margin: 0;
-  font-size: 0.88rem;
-  line-height: 1.4;
-  opacity: 0.88;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  max-width: 62ch;
 }
 .risks-brief-head a {
   color: var(--rb-accent);
@@ -48,15 +49,21 @@
   gap: 6px;
 }
 .risks-brief-tabs button {
-  min-height: 40px;
-  padding: 0 14px;
+  min-height: 44px;
+  padding: 0 16px;
   border-radius: 999px;
-  border: 1px solid color-mix(in srgb, currentColor 16%, transparent);
-  background: transparent;
+  border: 1px solid var(--line);
+  background: var(--surface);
   color: inherit;
   font-weight: 650;
-  font-size: 0.88rem;
+  font-size: 0.92rem;
   cursor: pointer;
+}
+.risks-brief-tabs button:focus-visible,
+.risks-brief-hazard:focus-visible,
+.risks-guide-actions .btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 .risks-brief-tabs button[aria-selected='true'] {
   border-color: var(--rb-line);
@@ -68,30 +75,123 @@
   gap: 8px;
   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
 }
-.risks-brief-hazard {
+.risks-guide {
   display: grid;
-  gap: 4px;
-  padding: 10px 12px;
+  gap: 16px;
+  min-width: 0;
+}
+.risks-guide-nav {
+  display: flex;
+  gap: 8px;
+  min-width: 0;
+  overflow-x: auto;
+  padding-bottom: 2px;
+  scrollbar-width: thin;
+}
+.risks-brief-hazard {
+  display: flex;
+  align-items: center;
+  flex: 0 0 auto;
+  width: auto;
+  min-height: 44px;
+  padding: 10px 14px;
+  white-space: nowrap;
   border-radius: 12px;
-  border: 1px solid color-mix(in srgb, currentColor 12%, transparent);
-  background: color-mix(in srgb, #fff 4%, transparent);
+  border: 1px solid var(--line);
+  background: var(--surface);
   text-align: left;
   color: inherit;
   cursor: pointer;
-  min-height: 44px;
+  font: inherit;
+  font-weight: 650;
+  font-size: 0.95rem;
+  line-height: 1.3;
 }
 .risks-brief-hazard.is-on {
-  border-color: var(--rb-line);
-  background: var(--rb-soft);
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--ink);
 }
-.risks-brief-hazard strong {
-  font-size: 0.9rem;
-  line-height: 1.25;
+.risks-guide-detail {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+  padding: 20px;
+  border-radius: 16px;
+  border: 1px solid var(--line);
+  background: var(--surface);
 }
-.risks-brief-hazard span {
+.risks-guide-detail h2 {
+  margin: 0;
+  font-size: clamp(1.2rem, 2vw, 1.45rem);
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+.risks-guide-watch {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.5;
+  max-width: 62ch;
+}
+.risks-guide-pair {
+  display: grid;
+  gap: 12px;
+}
+.risks-guide-pair article {
+  display: grid;
+  gap: 8px;
+  align-content: start;
+  padding: 16px;
+  border-radius: 16px;
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--accent-soft) 55%, var(--surface));
+  min-width: 0;
+}
+.risks-guide-pair h3 {
+  margin: 0;
   font-size: 0.78rem;
-  line-height: 1.35;
-  opacity: 0.85;
+  font-weight: 750;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.risks-guide-pair ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 8px;
+}
+.risks-guide-pair li {
+  font-size: 0.98rem;
+  line-height: 1.45;
+}
+.risks-guide-pair li::before {
+  content: '';
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-right: 8px;
+  border-radius: 999px;
+  background: var(--accent);
+  transform: translateY(-1px);
+}
+.risks-brief-meta a {
+  color: var(--accent);
+  font-weight: 650;
+  text-decoration: none;
+}
+.risks-brief-meta a svg {
+  vertical-align: -2px;
+  margin-right: 4px;
+}
+.risks-guide-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.risks-guide-actions .btn {
+  min-height: 44px;
 }
 .risks-brief-panel {
   padding: 12px 14px;
@@ -164,11 +264,195 @@
   border-color: var(--rb-line);
   background: var(--rb-soft);
 }
+.risks-brief .env-stack { display: grid; gap: 14px; min-width: 0; }
+.risks-brief .env-lead,
+.risks-brief .env-note {
+  margin: 0;
+  padding: 12px 16px;
+  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, var(--accent) 25%, var(--line));
+  background: color-mix(in srgb, var(--accent-soft) 42%, var(--surface));
+  color: var(--ink);
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+.risks-brief .env-note { color: var(--muted); font-size: 0.9rem; }
+.risks-brief .env-note strong { color: var(--ink); }
+.risks-brief .env-card {
+  display: grid;
+  gap: 14px;
+  margin: 0;
+  padding: 18px;
+  border-radius: 20px;
+  border: 1px solid color-mix(in srgb, var(--accent) 18%, var(--line));
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--accent-soft) 42%, transparent), transparent 42%),
+    var(--surface);
+  box-shadow: 0 12px 32px rgba(20, 24, 40, 0.06);
+  min-width: 0;
+}
+.risks-brief .env-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.risks-brief .env-kicker {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 750;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.risks-brief .env-card h2 {
+  margin: 2px 0 0;
+  font-size: 1.25rem;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+.risks-brief .env-purpose {
+  margin: 4px 0 0;
+  max-width: 62ch;
+  color: var(--muted);
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+.risks-brief .env-summary {
+  width: fit-content;
+  margin: 0;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent-soft) 68%, var(--surface));
+  font-size: 0.78rem;
+  font-weight: 650;
+}
+.risks-brief .env-list { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.risks-brief .env-event,
+.risks-brief .env-study {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid color-mix(in srgb, var(--accent) 14%, var(--line));
+  background: color-mix(in srgb, var(--accent-soft) 34%, var(--surface));
+}
+.risks-brief .env-event-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.risks-brief .env-kind {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-size: 0.75rem;
+  font-weight: 750;
+}
+.risks-brief .env-event time,
+.risks-brief .env-meta { color: var(--muted); font-size: 0.84rem; }
+.risks-brief .env-event p { margin: 0; font-size: 0.88rem; line-height: 1.45; }
+.risks-brief .env-event-description summary {
+  min-height: 32px;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+.risks-brief .env-event-description[open] {
+  padding-top: 4px;
+  border-top: 1px solid var(--line);
+}
+.risks-brief .env-event a,
+.risks-brief .env-study a {
+  color: var(--accent);
+  font-weight: 650;
+  font-size: 0.88rem;
+  line-height: 1.35;
+  text-decoration: none;
+}
+.risks-brief .env-event a { margin-left: auto; }
+.risks-brief .env-study a {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.risks-brief .env-tools { display: flex; flex-wrap: wrap; gap: 8px; }
+.risks-brief .env-card details { min-width: 0; }
+.risks-brief .env-card summary {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  width: fit-content;
+  cursor: pointer;
+  font-weight: 650;
+}
+.risks-brief .env-card summary:focus-visible,
+.risks-brief .env-tools .chip:focus-visible,
+.risks-brief .env-event a:focus-visible,
+.risks-brief .env-study a:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.risks-brief .env-chart { width: 100%; min-width: 0; }
+.risks-brief .env-chart h3 { margin: 0 0 8px; font-size: 0.92rem; }
+.risks-brief .env-reference {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--surface);
+}
+.risks-brief .env-reference-head h2 {
+  margin: 0;
+  font-size: 1rem;
+}
+.risks-brief .env-reference-head p {
+  margin: 3px 0 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+.risks-brief .env-bands {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+}
+.risks-brief .env-bands > div {
+  display: grid;
+  gap: 4px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--accent-soft) 48%, var(--surface));
+}
+.risks-brief .env-bands dt {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 650;
+}
+.risks-brief .env-bands dd {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 750;
+  letter-spacing: -0.02em;
+}
+.risks-brief .env-bands dd span {
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-weight: 550;
+  letter-spacing: 0;
+}
 .risks-brief .nasa-panel,
 .risks-brief .panel[data-testid='nasa-osdr-provenance'] {
   margin: 0;
-  padding: 12px 14px;
-  border-radius: 14px;
+  padding: 18px;
+  border-radius: 20px;
 }
 .risks-brief .nasa-filters {
   display: grid;
@@ -178,8 +462,8 @@
 }
 .risks-brief .nasa-panel h2,
 .risks-brief [data-testid='nasa-osdr-provenance'] h2 {
-  font-size: 1rem;
-  margin: 0 0 6px;
+  font-size: 1.15rem;
+  margin: 0 0 4px;
 }
 .risks-brief .nasa-event {
   padding: 8px 10px;
@@ -192,13 +476,37 @@
 .risks-brief .nasa-event .callout {
   display: none;
 }
-@media (max-width: 640px) {
-  .risks-brief-grid {
+@media (min-width: 860px) {
+  .risks-guide {
+    grid-template-columns: 240px minmax(0, 1fr);
+    align-items: start;
+  }
+  .risks-guide-nav {
+    display: grid;
+    overflow: visible;
+  }
+  .risks-brief-hazard {
+    width: 100%;
+    white-space: normal;
+  }
+  .risks-guide-pair {
     grid-template-columns: 1fr 1fr;
   }
 }
-@media (max-width: 420px) {
-  .risks-brief-grid {
-    grid-template-columns: 1fr;
+@media (max-width: 640px) {
+  .risks-brief .env-event a { margin-left: 0; }
+}
+@media (max-width: 520px) {
+  .risks-brief .env-bands { grid-template-columns: 1fr; }
+}
+@media (max-width: 520px) {
+  .risks-guide-detail {
+    padding: 16px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .risks-brief-hazard,
+  .risks-brief-tabs button {
+    transition: none;
   }
 }

@@ -5,10 +5,12 @@ export function MissionProcessStrip({
   stage,
   en,
   compact = false,
+  showStatus = false,
 }: {
   stage: string
   en: boolean
   compact?: boolean
+  showStatus?: boolean
 }) {
   const current = Math.max(0, MISSION_PROCESS_STEPS.indexOf(stage as (typeof MISSION_PROCESS_STEPS)[number]))
   const activeIdx = stage === 'cancelled' || stage === 'archived' ? -1 : current
@@ -23,9 +25,16 @@ export function MissionProcessStrip({
             : index === activeIdx
               ? 'is-current'
               : 'is-todo'
+        const status = activeIdx < 0
+          ? (en ? 'Not active' : 'No activa')
+          : index < activeIdx || (index === activeIdx && stage === 'postmission')
+            ? (en ? 'Complete' : 'Completa')
+            : index === activeIdx
+              ? (en ? 'In progress' : 'En curso')
+              : (en ? 'Upcoming' : 'Pendiente')
         const hint = stageHint(step, en)
         return (
-          <li key={step} className={state}>
+          <li key={step} className={state} aria-current={index === activeIdx ? 'step' : undefined}>
             <span className="mission-process-dot" aria-hidden="true" />
             <span className="mission-process-line">
               <span className="mission-process-label">{stageLabel(step, en)}</span>
@@ -35,6 +44,7 @@ export function MissionProcessStrip({
                   <span className="mission-process-hint">{hint}</span>
                 </>
               ) : null}
+              {showStatus ? <span className="mission-process-status">{status}</span> : null}
             </span>
           </li>
         )

@@ -16,266 +16,258 @@ const NAV_EN = ['Home', 'The project', 'How it works', 'About us', 'Video', 'Doc
 
 const STAGES_EN = [
   {
-    title: 'Pre-flight',
-    lead: 'Prepare the mission with organized information and resources.',
+    title: 'Before the trip',
+    lead: 'Organize the information and resources the crew will need.',
     items: [
-      'Record the mission characteristics.',
-      'Review authorized individual needs.',
-      'Identify proposed, approved, and missing resources.',
-      'Prepare reviews for the responsible team.',
+      'Add the trip details.',
+      'Review each person’s needs.',
+      'See which resources are ready and what is missing.',
+      'Leave important items for the team to review.',
     ],
   },
   {
-    title: 'On board',
-    lead: 'Support follow-up during the mission.',
+    title: 'In Flight',
+    lead: 'Keep track of how everyone is doing during the trip.',
     items: [
-      'Check indicators and changes.',
-      'Review how recent and reliable the measurements are.',
-      'Record symptoms and consult resources.',
-      'Enable specialized support when it applies.',
+      'Review measurements and changes.',
+      'See when measurements were taken and whether they seem reliable.',
+      'Record symptoms and find helpful information.',
+      'Ask for specialized help when needed.',
     ],
   },
   {
-    title: 'Post-mission',
-    lead: 'Keep continuity after return.',
+    title: 'After the trip',
+    lead: 'Follow up on anything that still needs attention.',
     items: [
-      'Review progress.',
-      'Keep episodes and pending reviews.',
-      'Review resources that were used.',
-      'Organize professional follow-up.',
+      'Review how things have changed.',
+      'Return to open topics and reviews.',
+      'Remember which resources were used.',
+      'Arrange any care that is needed.',
     ],
   },
 ] as const
 
 const DIFFERENTIATORS_EN = [
-  { title: 'Full mission cycle', text: 'Support from preparation through return, without treating each stage as a separate system.' },
-  { title: 'Preparation and inventory', text: 'Review of authorized individual needs and of proposed, approved, or missing resources.' },
-  { title: 'Indicators with context', text: 'Measurements are shown with age, quality, and integrity, not as a lone number.' },
-  { title: 'Wellbeing and consent', text: 'A private space for emotional wellbeing, with an editable summary before sharing.' },
-  { title: 'Continuity through interruptions', text: 'Essential functions can continue locally and sync when the link is available again.' },
-  { title: 'Post-mission follow-up', text: 'Keeps episodes, pending reviews, and used resources after return.' },
+  { title: 'Support throughout the mission', text: 'Brings together preparation, check-ins during the trip, and follow-up after returning.' },
+  { title: 'Getting ready', text: 'Helps check what the crew needs and which supplies are ready or still missing.' },
+  { title: 'Measurements made clearer', text: 'Each measurement shows when it was taken and whether it seems reliable.' },
+  { title: 'Wellbeing and choice', text: 'A private place to talk about how you feel and choose what to share.' },
+  { title: 'When there is no connection', text: 'Some features remain available offline and update when service returns.' },
+  { title: 'Follow-up after returning', text: 'Helps keep track of topics and check-ins that still need attention.' },
 ] as const
 
 const QUESTIONS_EN = [
-  'What should I review before boarding?',
-  'Which resources are still pending approval?',
-  'What changed compared with my earlier measurements?',
-  'What information still needs to be checked?',
-  'What follow-up is still open after return?',
+  'What should I prepare before the trip?',
+  'What supplies are still missing?',
+  'What has changed since my last measurements?',
+  'What information should I review?',
+  'What should I follow up on after returning?',
 ] as const
 
 const PRINCIPLES_EN = [
-  { title: 'Visible sources', text: 'Information is tied to evidence and context available in the prototype.' },
-  { title: 'Missing data', text: 'The assistant says what is not confirmed instead of inventing certainty.' },
-  { title: 'Human authorization', text: 'Private summaries need review and authorization before they are shared.' },
+  { title: 'Information you can check', text: 'You can see where HELIOS gets its information.' },
+  { title: 'When information is missing', text: 'The assistant lets you know when it does not have enough information to answer.' },
+  { title: 'You choose what to share', text: 'You can review information before sharing it with someone else.' },
 ] as const
 
 const CAPABILITIES_EN = [
-  { title: 'Quirón Bot', text: 'A query assistant aimed at the evidence available in the prototype. It answers with visible sources, recognizes missing data, and does not invent clinical certainty.' },
-  { title: 'Data quality', text: 'Demonstration measurements include age, integrity, and context so an isolated number is not read as absolute truth.' },
-  { title: 'Inventory and resources', text: 'Tracking of proposed, approved, or missing resources tied to mission preparation.' },
-  { title: 'Specialized support', text: 'Flows that make human review easier when the context suggests it, without replacing professional judgment.' },
-  { title: 'Privacy and consent', text: 'A private space for emotional wellbeing with an editable summary before any authorized sharing.' },
-  { title: 'Local continuity and sync', text: 'Essential functions can continue locally and sync when the link is available again.' },
+  { title: 'Quirón assistant', text: 'Ask questions and see the sources behind its answers. It will tell you when it does not have enough information.' },
+  { title: 'Clearer measurements', text: 'Example measurements show when they were taken and whether they seem reliable.' },
+  { title: 'Mission supplies', text: 'See what the crew needs and which supplies are ready or still missing.' },
+  { title: 'Extra support', text: 'Makes it easier to ask for help when something needs a closer look.' },
+  { title: 'Privacy and choice', text: 'A private place to talk about wellbeing and review a summary before sharing it.' },
+  { title: 'When there is no connection', text: 'Some features stay available offline and update when service returns.' },
 ] as const
 
 const DOCS_EN: Record<string, { title: string; description: string; language: string }> = {
   proposal: { title: 'Project proposal', description: 'Scope, problem, and vision of HELIOS as a support platform.', language: 'Spanish' },
   presentation: { title: 'Presentation', description: 'Support material for demos and talks about the prototype.', language: 'Spanish' },
   costs: { title: 'Costs', description: 'Quote and cost breakdown for the HELIOS project.', language: 'Spanish' },
-  technical: { title: 'Technical documentation', description: 'Contracts, commands, variables, and implementation decisions of the prototype.', language: 'Spanish' },
-  architecture: { title: 'System architecture', description: 'Boundaries of the frontend, NestJS backend, local persistence, and simulator.', language: 'Spanish' },
-  tests: { title: 'Prototype tests and validation', description: 'Plan and evidence for simulator tests and the demonstration experience.', language: 'Spanish' },
+  technical: { title: 'Technical documentation', description: 'Details for anyone who wants to know how HELIOS was built.', language: 'Spanish' },
+  architecture: { title: 'How the app is organized', description: 'An overview of how the different parts of the app fit together.', language: 'Spanish' },
+  tests: { title: 'Project tests', description: 'What was tested and how the demonstration works.', language: 'Spanish' },
   references: { title: 'References and sources', description: 'Scientific documents and official portals used as design context.', language: 'Spanish' },
 }
 
 const SOURCES_EN: Record<string, Pick<DataSource, 'name' | 'type' | 'description' | 'useInHelios' | 'versionNote' | 'terms' | 'limitations'>> = {
   'hrp-hazards': {
-    name: 'NASA HRP · Hazards',
-    type: 'Scientific documentation',
+    name: 'NASA · Spaceflight risks',
+    type: 'Research and information',
     description: 'The five hazards of human spaceflight: radiation, isolation, distance, gravity, and closed environment.',
-    useInHelios: 'Dashboard · Risks, body map, indicators, and Quirón context.',
+    useInHelios: 'Helps explain the spaceflight risks shown in HELIOS.',
     versionNote: 'Consulted · 15 Nov 2026',
     terms: 'Public NASA page.',
     limitations: 'Educational frame. Not personal dose or a diagnosis.',
   },
   'hrp-risks': {
-    name: 'NASA HRP · Risks',
-    type: 'Scientific documentation',
+    name: 'NASA · Space health risks',
+    type: 'Research and information',
     description: 'Human research risks tied to those hazards, including behavioral health.',
-    useInHelios: 'Dashboard · Risks, pulse, sleep and mood indicators, and Quirón.',
+    useInHelios: 'Helps explain health risks during spaceflight.',
     versionNote: 'Consulted · 15 Nov 2026',
     terms: 'Public NASA page.',
-    limitations: 'Does not calibrate clinical thresholds in the prototype.',
+    limitations: 'General information, not a personal medical assessment.',
   },
   'hrr-evidence': {
-    name: 'Human Research Roadmap · Evidence',
-    type: 'Scientific documentation',
+    name: 'NASA · Space health research',
+    type: 'Research and information',
     description: 'Evidence linked to human health risks in space.',
-    useInHelios: 'Dashboard · risk library and evidence screen.',
+    useInHelios: 'A reference for information about health risks.',
     versionNote: 'Consulted · 15 Nov 2026',
     terms: 'Public Human Research Roadmap content.',
     limitations: 'Explains risks; it does not diagnose a crew member.',
   },
   'hrr-sleep': {
-    name: 'Human Research Roadmap · Sleep Risk',
-    type: 'Scientific documentation',
+    name: 'NASA · Sleep during spaceflight',
+    type: 'Research and information',
     description: 'Risk of sleep loss, circadian desynchrony, and work overload.',
-    useInHelios: 'Dashboard · sleep card in the risk library.',
+    useInHelios: 'Helps explain why sleep matters during a mission.',
     versionNote: 'Consulted · 15 Nov 2026',
     terms: 'Public Human Research Roadmap content.',
-    limitations: 'Does not calibrate clinical thresholds or train models.',
+    limitations: 'It is general information, not a personal medical assessment.',
   },
   'med-ops': {
-    name: 'Medical Operations (6.0)',
-    type: 'Medical operations',
+    name: 'NASA · Medical care during missions',
+    type: 'Medical care',
     description: 'Reference for crew medical operations.',
-    useInHelios: 'Dashboard · operational risks, prep checklist, and Quirón.',
+    useInHelios: 'Provides information about medical care for crews.',
     versionNote: 'Consulted · 15 Nov 2026',
     terms: 'Public NASA page.',
-    limitations: 'Operational context. Check the cited version; it is not a HELIOS clinical protocol.',
+    limitations: 'General information; it does not replace care from health professionals.',
   },
   ochmo: {
-    name: 'OCHMO Technical Briefs',
-    type: 'Technical documentation',
+    name: 'NASA · Space health guides',
+    type: 'Guides and information',
     description: 'Technical briefs on space health and medical care.',
-    useInHelios: 'Dashboard · risk library and evidence.',
+    useInHelios: 'Offers more information about health and medical care in space.',
     versionNote: 'Consulted · 15 Nov 2026',
     terms: 'Public NASA OCHMO catalog.',
-    limitations: 'The catalog does not replace a specific brief.',
+    limitations: 'For details, open the individual documents in the catalog.',
   },
   osdr: {
-    name: 'Biological & Physical Sciences / OSDR',
-    type: 'Open data',
+    name: 'NASA · Space biology studies (OSDR)',
+    type: 'Public studies',
     description: 'Portal for spaceflight biological and physical data, including OSDR.',
-    useInHelios: 'Dashboard · Risks (gravity) and study lookup. No bulk ingestion.',
+    useInHelios: 'Lets you explore studies about living things and spaceflight.',
     versionNote: 'Consulted · 15 Nov 2026',
     terms: 'Public NASA Science portal.',
-    limitations: 'Not every study is human or clinical. Not simulator biometrics.',
+    limitations: 'Some studies are not about people or health. They are not measurements from the HELIOS crew.',
   },
   'osdr-api': {
-    name: 'OSDR BioData API',
-    type: 'Live API',
-    description: 'Public OSDR study API queried by the backend.',
-    useInHelios: 'Dashboard · Risks, demo studies via Nest /api/nasa/osdr.',
+    name: 'NASA · Health and spaceflight studies (OSDR)',
+    type: 'Public NASA data',
+    description: 'NASA website with studies about health and spaceflight.',
+    useInHelios: 'Shows a few example studies related to spaceflight.',
     versionNote: 'Consulted · 15 Nov 2026',
-    terms: 'Public NASA OSDR API.',
-    limitations: 'A sample study is not an astronaut record.',
+    terms: 'Public NASA information.',
+    limitations: 'An example study is not a real astronaut’s medical record.',
   },
   donki: {
-    name: 'DONKI',
-    type: 'Live API',
-    description: 'Space-weather event database (flares and related events).',
-    useInHelios: 'Mission · space-weather context. Nest /api/nasa/donki/events.',
+    name: 'NASA · Solar activity (DONKI)',
+    type: 'Public NASA data',
+    description: 'Information about solar activity and other space-weather events.',
+    useInHelios: 'Helps explain space conditions during a mission.',
     versionNote: 'Consulted · 15 Nov 2026',
     terms: 'Public NASA CCMC data.',
-    limitations: 'Space weather, not a crew member’s personal dose.',
+    limitations: 'Shows solar activity, not how much radiation a person receives.',
   },
   radlab: {
-    name: 'RadLab',
-    type: 'Live API',
-    description: 'Radiation research measurements for environmental context.',
-    useInHelios: 'Dashboard · Risks, radiation analysis. Nest /api/nasa/radlab.',
+    name: 'NASA · Radiation studies (RadLab)',
+    type: 'Public NASA data',
+    description: 'Measurements from studies about radiation in space.',
+    useInHelios: 'Provides general information about space radiation.',
     versionNote: 'Consulted · 15 Nov 2026',
-    terms: 'Public NASA RadLab API.',
-    limitations: 'Does not compute a person’s dose on the demo mission.',
+    terms: 'Public NASA information.',
+    limitations: 'Does not show a person’s radiation dose in this demonstration.',
   },
   'ntrs-eva': {
-    name: 'NTRS 20220009964 · EVA',
-    type: 'Technical report',
-    description: 'Context for metabolic monitoring during extravehicular activity.',
-    useInHelios: 'Dashboard · EVA risk in the risk library.',
+    name: 'NASA · Physical effort during spacewalks',
+    type: 'NASA report',
+    description: 'Information about the physical effort involved in spacewalks.',
+    useInHelios: 'Helps explain the physical effort involved in spacewalks.',
     versionNote: 'Consulted · 15 Nov 2026',
     terms: 'Public NTRS report.',
-    limitations: 'Reference bands for the simulation; no live EMU telemetry.',
+    limitations: 'General information, not live data from a spacesuit.',
   },
   'csa-radiation': {
     name: 'How radiation affects the human body in space',
-    type: 'Partner resource',
-    description: 'Space radiation types, effects, and the ALARA approach.',
-    useInHelios: 'Dashboard · radiation hazard on Risks and evidence.',
+    type: 'Canadian Space Agency resource',
+    description: 'Types of space radiation, their effects, and ways to reduce exposure.',
+    useInHelios: 'Explains types of space radiation and how they affect the body.',
     versionNote: 'Consulted · 15 Nov 2026',
     terms: 'Public CSA education page. Images are not copied.',
-    limitations: 'Tabular limits are not applied as the demo crew member’s dose.',
+    limitations: 'The source’s limits do not represent a person’s dose in this demonstration.',
   },
   'csa-sciences': {
     name: 'Space science research',
-    type: 'Partner resource',
+    type: 'Canadian Space Agency resource',
     description: 'CSA science research portal.',
-    useInHelios: 'Dashboard · closed-environment hazard on Risks.',
+    useInHelios: 'Offers information about scientific research in space.',
     versionNote: 'Consulted · 15 Nov 2026',
     terms: 'Public CSA portal.',
-    limitations: 'Context link only. No datasets are imported.',
+    limitations: 'For reference only; HELIOS does not use this information directly.',
   },
 }
 
 const TEAM_EN: Record<string, Pick<TeamMember, 'title' | 'summary' | 'bio' | 'tags'> & { highlights?: string[] }> = {
   maria: {
-    title: 'Systems Engineering student | Full-stack development | Leadership and academic tutoring',
-    summary: 'Academic leadership, full-stack development, and an interest in technology with purpose in space exploration.',
-    tags: ['Full stack', 'Leadership', 'Scrum', 'AI', 'Academic tutoring'],
+    title: 'Systems Engineering student | Leadership and tutoring',
+    summary: 'She enjoys creating apps, teaching, and working with a team.',
+    tags: ['App development', 'Leadership', 'Tutoring', 'Space exploration'],
     highlights: [
       'Highest program GPA in 2024 and 2025',
       'Student Role Model 2025',
       'Participation in international projects',
       'Team leadership and organization',
-      'Full-stack development',
+      'App development',
       'Academic tutoring',
       'Interest in NASA and space since childhood',
     ],
-    bio: `Third-year Systems Engineering student at the Universidad Nacional de Costa Rica, Chorotega Regional Campus, with a diploma in programming. Her path combines academic excellence, leadership, and participation in international projects.
+    bio: `María is a third-year Systems Engineering student at the Universidad Nacional de Costa Rica, Chorotega Regional Campus, and has a diploma in programming. She received the program’s highest GPA award in 2024 and 2025 and was named Student Role Model in 2025. She has also taken part in international projects.
 
-She received the highest program GPA award in 2024 and 2025 and was recognized as a Student Role Model in 2025. She has also taken part in international projects that earned awards and recognition.
+She enjoys creating apps, organizing teams, and helping others learn. She also tutors Calculus, Algebra, and programming courses.
 
-She works across frontend and backend development, databases, and collaboration tools, including JavaScript, TypeScript, C#, C++, HTML, CSS, Node.js, .NET, React, Next.js, and NestJS, plus SQL, MySQL, and PostgreSQL. She uses Git, GitHub, Docker, and JWT authentication, and holds certifications in Scrum and full-stack development.
-
-She stands out for leading and organizing teams, solving problems, and bringing artificial-intelligence tools into her work. She also tutors Calculus, Algebra, Programming I, and Programming Fundamentals.
-
-Her interest in NASA comes from a curiosity about the universe and space exploration that she has had since childhood. In HELIOS, that motivation connects with her interest in building technology with purpose.`,
+She has been curious about the universe and space exploration since childhood. HELIOS brings that interest together with her wish to create useful technology.`,
   },
   david: {
-    title: 'Art director | Visual strategist | Senior graphic designer',
-    summary: 'More than 15 years turning business goals into coherent, high-impact visual identities.',
+    title: 'Graphic design and art direction',
+    summary: 'More than 15 years creating clear, consistent images and brands.',
     tags: ['Art direction', 'Visual identity', 'Brand strategy', 'Graphic design'],
-    bio: `With more than 15 years in the creative industry, David turns complex business goals into high-impact visual narratives. His approach combines art direction, strategic thinking, and technical execution to build identities that communicate an organization’s values and answer its communication challenges.
+    bio: `David has more than 15 years of experience in design. He helps turn complex ideas into images and messages that are easy to understand.
 
-He specializes in visual identity systems where every color, typeface, and composition has a role in the brand ecosystem. He treats design as a strategic tool for strengthening an organization’s presence through coherent, innovative, results-oriented work.`,
+He specializes in creating visual identities for brands and organizations, making sure colors, type, and images work well together.`,
   },
   daniel: {
-    title: 'Junior full-stack developer | Software engineering',
-    summary: 'Solid foundations in frontend, backend, REST APIs, and maintainable architecture.',
-    tags: ['Full stack', 'Backend', 'REST APIs', 'Docker', 'Architecture'],
-    bio: `Junior full-stack developer with foundations in frontend and backend development, database management, and software architecture. He works with JavaScript, TypeScript, Node.js, NestJS, .NET, HTML, CSS, SQL, and PostgreSQL, and has experience building REST APIs and maintainable applications.
+    title: 'Software developer',
+    summary: 'He builds apps and wants them to be safe and easy to use.',
+    tags: ['App development', 'Digital safety', 'Problem solving'],
+    bio: `Daniel is a software developer with experience creating apps and organizing the information they use. He wants to build tools that are safe, reliable, and easy to update.
 
-He uses Git, GitHub, Docker, and Scrum, and has foundational knowledge of DevOps, continuous integration and delivery, cybersecurity, and ethical hacking.
-
-His motivation combines problem solving, continuous learning, and building efficient, secure, reliable solutions. He is especially interested in backend engineering, distributed systems, and modern software architecture.`,
+He enjoys solving problems and learning new things. He is also interested in digital safety.`,
   },
   nohelia: {
-    title: 'Floorplan services specialist | Networking technician | Cybersecurity student',
-    summary: 'Organization, networks, and ongoing training toward information security.',
-    tags: ['Networks', 'Cybersecurity', 'Organization', 'Attention to detail'],
-    bio: `With training in executive secretarial work and technical preparation in computer networks, Nohelia combines organizational skills, technical knowledge, and a growing interest in technology.
+    title: 'Floorplan specialist | Cybersecurity student',
+    summary: 'She combines organization and attention to detail with an interest in digital safety.',
+    tags: ['Organization', 'Attention to detail', 'Digital safety'],
+    bio: `Nohelia has a background in executive assistance and computer networks. She works organizing floorplans for a software company, where she has developed strong attention to detail and problem-solving skills.
 
-She currently works as a Floorplan Services Specialist in the software industry, where she strengthens her attention to detail, adaptability, and problem solving.
-
-Driven by curiosity and continuous learning, she is continuing her studies in cybersecurity in order to deepen her knowledge of information security and explore new opportunities in technology.`,
+She is also studying cybersecurity and wants to learn more about protecting information.`,
   },
   elian: {
-    title: 'Systems Engineering student | Full-stack developer in training',
-    summary: 'Web applications with React, NestJS, and PostgreSQL, plus academic tutoring and Scrum training.',
-    tags: ['React', 'TypeScript', 'NestJS', 'PostgreSQL', 'Academic tutoring'],
-    bio: `Systems Engineering student and full-stack developer in training, with practical experience building web applications that connect frontend, backend, and relational databases through REST APIs. He is currently developing a management platform for Parroquia San Blas de Nicoya as a university graduation project.
+    title: 'Systems Engineering student | App developer',
+    summary: 'He builds websites, tutors students, and helps with campus activities.',
+    tags: ['Web apps', 'Tutoring', 'Student activities', 'Digital safety'],
+    bio: `Elián studies Systems Engineering and builds web apps. For his graduation project, he is creating a platform to help organize Parroquia San Blas de Nicoya.
 
-He works with JavaScript, TypeScript, React, Vite, Node.js, NestJS, SQL, and PostgreSQL, and uses Git, GitHub, and agile practices. He holds a Scrum Fundamentals certification and a diploma in computer-application programming from the Universidad Nacional de Costa Rica.
+He also tutors Calculus and Algebra and helps organize student activities. In 2026, he received university recognition for his participation and academic performance.
 
-He also tutors Calculus and Algebra and assists Student Life, supporting event organization and administrative process improvement. In 2026 he received a university recognition for his participation and academic excellence.
+He earned a scholarship to study English and, in 2024, placed fourth nationally among Bridge for English students on the TOEIC.
 
-He earned a scholarship to study English at the Centro Cultural Costarricense Norteamericano for his academic performance and, in 2024, placed fourth nationally among Bridge for English students on the TOEIC.
-
-He is interested in software engineering, data, and cybersecurity, and is looking for a professional internship in information technology or software development.`,
+He is interested in technology, data, and digital safety.`,
   },
 }
+
+const NAV_ES = ['Inicio', 'El proyecto', 'Cómo funciona', 'Acerca de nosotros', 'Video', 'Documentos', 'Datos'] as const
 
 export function publicNav(lang: Lang) {
   return [
@@ -288,75 +280,122 @@ export function publicNav(lang: Lang) {
     { to: '/datos', end: false },
   ].map((item, index) => ({
     ...item,
-    label: lang === 'en' ? NAV_EN[index] : ['Inicio', 'El proyecto', 'Cómo funciona', 'Acerca de nosotros', 'Video', 'Documentos', 'Datos'][index],
+    label: lang === 'es' ? NAV_ES[index] : NAV_EN[index],
   }))
 }
 
 export function publicStages(lang: Lang) {
   return STAGES.map((stage, index) => {
-    const extra = STAGES_EN[index]
-    return lang === 'en' && extra ? { ...stage, ...extra } : stage
+    const english = STAGES_EN[index]
+    if (!english) {
+      return {
+        id: stage.id,
+        title: stage.title,
+        lead: stage.lead,
+        items: [...stage.items],
+      }
+    }
+    const enStage = {
+      id: stage.id,
+      title: english.title,
+      lead: english.lead,
+      items: [...english.items],
+    }
+    if (lang !== 'es') return enStage
+    return {
+      id: stage.id,
+      title: stage.title || english.title,
+      lead: stage.lead || english.lead,
+      items: stage.items.length ? [...stage.items] : [...english.items],
+    }
   })
 }
 
 export function publicDifferentiators(lang: Lang) {
-  return lang === 'en' ? DIFFERENTIATORS_EN : DIFFERENTIATORS
+  if (lang !== 'es') return DIFFERENTIATORS_EN
+  return DIFFERENTIATORS_EN.map((item, index) => ({
+    title: DIFFERENTIATORS[index]?.title || item.title,
+    text: DIFFERENTIATORS[index]?.text || item.text,
+  }))
 }
 
+const CAPABILITIES_ES = [
+  { title: 'Asistente Quirón', text: 'Puedes hacer preguntas y consultar de dónde vienen sus respuestas. Si le falta información, te lo dirá.' },
+  { title: 'Mediciones más claras', text: 'Las mediciones de ejemplo indican cuándo se tomaron y si parecen confiables.' },
+  { title: 'Recursos para la misión', text: 'Consulta qué necesita la tripulación y qué recursos están listos o todavía faltan.' },
+  { title: 'Apoyo adicional', text: 'Facilita pedir ayuda cuando algo necesita revisarse con más atención.' },
+  { title: 'Privacidad y decisión', text: 'Un espacio privado para hablar sobre bienestar y revisar un resumen antes de compartirlo.' },
+  { title: 'Cuando no hay conexión', text: 'Algunas funciones siguen disponibles y se actualizan cuando vuelve el servicio.' },
+] as const
+
 export function publicQuestions(lang: Lang) {
-  return lang === 'en' ? QUESTIONS_EN : QUIRON_QUESTIONS
+  if (lang !== 'es') return QUESTIONS_EN
+  return QUESTIONS_EN.map((item, index) => QUIRON_QUESTIONS[index] || item)
 }
 
 export function publicPrinciples(lang: Lang) {
-  return lang === 'en' ? PRINCIPLES_EN : QUIRON_PRINCIPLES
+  if (lang !== 'es') return PRINCIPLES_EN
+  return PRINCIPLES_EN.map((item, index) => QUIRON_PRINCIPLES[index] ?? item)
 }
 
 export function publicCapabilities(lang: Lang) {
   const tones = ['lilac', 'mint', 'rose', 'warm', 'lilac', 'mint'] as const
-  if (lang !== 'en') {
-    return [
-      { title: 'Quirón Bot', text: 'Asistente de consulta orientado a evidencias disponibles en el prototipo. Responde con fuentes visibles, reconoce datos faltantes y no inventa certeza clínica.', tone: tones[0] },
-      { title: 'Calidad de datos', text: 'Las mediciones de demostración se acompañan de antigüedad, integridad y contexto para evitar leer un número aislado como verdad absoluta.', tone: tones[1] },
-      { title: 'Inventario y recursos', text: 'Seguimiento de recursos propuestos, aprobados o faltantes vinculados a la preparación de la misión.', tone: tones[2] },
-      { title: 'Apoyo especializado', text: 'Flujos para facilitar revisión humana cuando el contexto lo sugiere, sin sustituir criterio profesional.', tone: tones[3] },
-      { title: 'Privacidad y consentimiento', text: 'Espacio privado para bienestar emocional con resumen editable antes de cualquier compartición autorizada.', tone: tones[4] },
-      { title: 'Continuidad local y sincronización', text: 'Funciones esenciales pueden continuar en local y sincronizar cuando el enlace vuelve a estar disponible.', tone: tones[5] },
-    ]
-  }
-  return CAPABILITIES_EN.map((item, index) => ({ ...item, tone: tones[index] ?? 'mint' }))
-}
-
-export function publicTeam(lang: Lang): TeamMember[] {
-  if (lang !== 'en') return TEAM
-  return TEAM.map((member) => {
-    const extra = TEAM_EN[member.id]
-    return extra ? { ...member, ...extra } : member
+  return CAPABILITIES_EN.map((item, index) => {
+    const spanish = CAPABILITIES_ES[index]
+    const copy = lang === 'es' && spanish ? spanish : item
+    return { title: copy.title, text: copy.text, tone: tones[index] ?? 'mint' }
   })
 }
 
+export function publicTeam(lang: Lang): TeamMember[] {
+  return TEAM.map((member) => publicMember(lang, member))
+}
+
 export function publicMember(lang: Lang, member: TeamMember): TeamMember {
-  if (lang !== 'en') return member
-  const extra = TEAM_EN[member.id]
-  return extra ? { ...member, ...extra } : member
+  const english = TEAM_EN[member.id]
+  const enMember: TeamMember = english
+    ? {
+        ...member,
+        title: english.title,
+        summary: english.summary,
+        bio: english.bio,
+        tags: [...english.tags],
+        highlights: english.highlights ? [...english.highlights] : member.highlights,
+      }
+    : member
+  if (lang !== 'es') return enMember
+  return {
+    ...enMember,
+    title: member.title || enMember.title,
+    summary: member.summary || enMember.summary,
+    bio: member.bio || enMember.bio,
+    tags: member.tags.length ? [...member.tags] : enMember.tags,
+    highlights: member.highlights?.length ? [...member.highlights] : enMember.highlights,
+  }
 }
 
 export function publicDocs(lang: Lang): DocCard[] {
-  if (lang !== 'en') return DOCUMENTS
   return DOCUMENTS.map((doc) => {
-    const extra = DOCS_EN[doc.id]
-    return extra ? { ...doc, ...extra } : doc
+    const english = DOCS_EN[doc.id]
+    const enDoc: DocCard = english
+      ? { ...doc, title: english.title, description: english.description, language: english.language }
+      : doc
+    if (lang !== 'es') return enDoc
+    return { ...enDoc, title: doc.title || enDoc.title, description: doc.description || enDoc.description, language: doc.language || enDoc.language }
   })
 }
 
 export function publicSources(lang: Lang): DataSource[] {
-  if (lang !== 'en') return DATA_SOURCES
   return DATA_SOURCES.map((source) => {
-    const extra = SOURCES_EN[source.id]
-    return extra ? { ...source, ...extra } : source
+    const english = SOURCES_EN[source.id]
+    const enSource: DataSource = english ? { ...source, ...english } : source
+    if (lang !== 'es') return enSource
+    return { ...enSource, ...source, id: source.id, href: source.href, status: source.status, institution: source.institution, citation: source.citation }
   })
 }
 
 export function sourceStatus(lang: Lang, status: DataSource['status']) {
-  if (lang !== 'en') return { utilizado: 'Utilizado', consultado: 'Consultado', propuesto: 'Propuesto' }[status]
-  return { utilizado: 'Used', consultado: 'Consulted', propuesto: 'Proposed' }[status]
+  const english = { utilizado: 'Used', consultado: 'Consulted', propuesto: 'Proposed' }[status]
+  if (lang !== 'es') return english
+  return { utilizado: 'Utilizado', consultado: 'Consultado', propuesto: 'Propuesto' }[status] || english
 }

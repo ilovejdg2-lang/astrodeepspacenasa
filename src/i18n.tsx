@@ -1,18 +1,18 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
-import { readStored, writeStored, type Lang } from './locale'
+import { applyDocumentLocale, readStored, writeStored, type Lang } from './locale'
 
 export type { Lang } from './locale'
 export { uiLang } from './locale'
 
 const COPY = {
   es: {
-    demoTitle: 'Start Mission Demo',
+    demoTitle: 'Iniciar la demo de la misión',
     demoLead: 'Guía corta para quien evalúa. No cambia los permisos ni los datos.',
     demoSteps: [
       'Abrí el monitor. El escenario inicial es fatiga gradual: Elena Torres muestra una frecuencia por encima de su línea base. Es simulación.',
       'En Tripulación compará el estado observado con la calidad de la evidencia. No son la misma cosa.',
       'En Alertas abrí el aviso activo. Ahí se ve qué medición lo provocó, qué tan reciente es y qué documento público de NASA lo contextualiza.',
-      'En Análisis pedile a Quirón Bot un resumen. La respuesta cita esas fuentes. No es un diagnóstico.',
+      'En Análisis, pedile a Quirón un resumen. La respuesta muestra sus fuentes. No sustituye una consulta médica.',
       'Cambiá el idioma con EN/ES y, si hace falta, el rol simulado. El rol no salta la autorización del servidor.',
     ],
     close: 'Cerrar',
@@ -55,7 +55,7 @@ const COPY = {
       'Open Monitor. The default scenario is gradual fatigue: Elena Torres shows a heart rate above her baseline. It is simulated.',
       'On Crew, compare the observed state with evidence quality. They are separate.',
       'On Alerts, open the active notice. It shows which reading triggered it, how recent it is, and which public NASA document frames the problem.',
-      'On Analysis, ask Quirón Bot for a summary. The answer cites those sources. It is not a diagnosis.',
+      'In Analysis, ask Quirón for a summary. The answer shows its sources. It does not replace medical care.',
       'Switch language with EN/ES and, if needed, the simulated role. The role does not bypass server authorization.',
     ],
     close: 'Close',
@@ -138,18 +138,18 @@ const LocaleContext = createContext<{ lang: Lang; setLang: (lang: Lang) => void;
 export function LocaleProvider({ children }: { children: ReactNode }) {
   const [lang, setLangState] = useState<Lang>(() => {
     const initial = readStored()
-    if (typeof document !== 'undefined') document.documentElement.lang = initial
+    if (typeof document !== 'undefined') applyDocumentLocale(initial)
     return initial
   })
 
   const setLang = useCallback((next: Lang) => {
-    document.documentElement.lang = next
+    applyDocumentLocale(next)
     writeStored(next)
     setLangState(next)
   }, [])
 
   useEffect(() => {
-    document.documentElement.lang = lang
+    applyDocumentLocale(lang)
   }, [lang])
 
   const value = useMemo(() => ({

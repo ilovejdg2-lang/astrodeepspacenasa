@@ -7,12 +7,12 @@ export const DEMO_REVIEW_PROTOCOL = {
   version: '1.0.0',
   updatedAt: '2026-11-15',
   title: {
-    es: 'Protocolo de revisión de demostración HELIOS',
-    en: 'HELIOS demonstration review protocol',
+    es: 'Guía de ejemplo: cambios de salud',
+    en: 'Example guide: health changes',
   },
   disclaimer: {
-    es: 'Estas reglas son del prototipo HELIOS para demostrar “cambio observado → siguiente paso”. No son umbrales clínicos, no diagnostican y no están aprobadas por NASA.',
-    en: 'These rules belong to the HELIOS prototype to demonstrate “change observed → next step”. They are not clinical thresholds, do not diagnose, and are not NASA-approved.',
+    es: 'Esta guía muestra qué revisar cuando cambia una medición. No diagnostica, no sustituye al personal médico y no está aprobada por NASA.',
+    en: 'This guide shows what to review when a measurement changes. It does not diagnose, replace medical care, or have NASA approval.',
   },
   rules: [
     {

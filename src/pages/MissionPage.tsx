@@ -1,43 +1,43 @@
-import { systemText } from '../systemText'
-import { SpaceWeatherPanel } from '../components/NasaEnvironment'
-import { CheckCircle2, CircleHelp, Rocket } from 'lucide-react'
-import { useState } from 'react'
+import { Rocket } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { MISSION_STAGE_LABEL } from '../../shared/mission'
 import type { MissionStage, PrepStatus } from '../../shared/types'
-import { QUIRON_LOCALE } from '../ai/locale'
-import { answerMissionLocal } from '../domain/analysis'
 import { formatMission } from '../domain/format'
 import { useLocale } from '../i18n'
 import { useApp } from '../state/store'
+import { systemText } from '../systemText'
 import { Badge } from '../components/ui'
+import './mission.css'
 
 const STAGES: MissionStage[] = ['preembarque', 'a_bordo', 'posmision']
 
-const STAGE_HELP: Record<MissionStage, string> = {
-  preembarque: 'Preparar necesidades de salud, recursos y revisiones antes de abordar.',
-  a_bordo: 'Monitorear cambios, ofrecer apoyo inicial y coordinar seguimiento.',
-  posmision: 'Organizar la evolución, las evaluaciones y los pendientes posteriores.',
-}
-
-const STAGE_HELP_EN: Record<MissionStage, string> = {
-  preembarque: 'Prepare health needs, resources, and reviews before boarding.',
-  a_bordo: 'Watch for changes, offer initial support, and coordinate follow-up.',
-  posmision: 'Organize progress, evaluations, and later open items.',
+const STAGE_HELP: Record<MissionStage, { es: string; en: string }> = {
+  preembarque: {
+    es: 'Prepará salud, recursos y revisiones antes de abordar.',
+    en: 'Prepare health, resources, and reviews before boarding.',
+  },
+  a_bordo: {
+    es: 'Seguí los cambios y el apoyo mientras están a bordo.',
+    en: 'Watch changes and support while the crew is aboard.',
+  },
+  posmision: {
+    es: 'Revisá lo que quedó abierto después del regreso.',
+    en: 'Review what is still open after the return.',
+  },
 }
 
 const STAGE_EN: Record<MissionStage, string> = {
-  preembarque: 'Pre-flight',
-  a_bordo: 'On board',
-  posmision: 'Post-mission',
+  preembarque: 'Preflight',
+  a_bordo: 'In Flight',
+  posmision: 'Completed',
 }
 
 export function MissionPage() {
   const { lang } = useLocale()
   const en = lang === 'en'
   const { state, dispatch } = useApp()
-  const [answer, setAnswer] = useState('')
   const openEpisodes = state.episodes.filter((item) => item.status !== 'closed')
+  const hasOpenEpisodes = openEpisodes.length > 0
   const canEdit = state.role === 'medical' || state.role === 'ops'
   const counts = Object.fromEntries(
     (['propuesto', 'pendiente_revision', 'aprobado', 'disponible', 'faltante', 'cargado_verificado'] as PrepStatus[]).map((status) => [
@@ -45,125 +45,127 @@ export function MissionPage() {
       state.prepItems.filter((item) => item.status === status).length,
     ]),
   ) as Record<PrepStatus, number>
+  const stage = state.mission.stage
+  const stageName = en ? STAGE_EN[stage] : MISSION_STAGE_LABEL[stage]
 
   return (
-    <div className="page">
+    <div className="page mission-page">
       <header className="page-head">
         <div>
           <p className="kicker"><Rocket aria-hidden="true" size={16} strokeWidth={1.75} /> {en ? 'Mission' : 'Misión'}</p>
           <h1>{systemText(state.mission.name)}</h1>
-          <p className="lede">
-            {en ? 'HELIOS adapts support to the stage. Changing stage keeps the history and does not close open health episodes.' : 'HELIOS adapta el acompañamiento a la etapa. Cambiar de etapa conserva el historial y no cierra episodios de salud pendientes.'}
-          </p>
+          <p className="lede">{en ? STAGE_HELP[stage].en : STAGE_HELP[stage].es}</p>
         </div>
-        <Badge tone="ok">{en ? STAGE_EN[state.mission.stage] : MISSION_STAGE_LABEL[state.mission.stage]}</Badge>
+        <Badge tone="ok">{stageName}</Badge>
       </header>
 
-      <SpaceWeatherPanel />
-
-      <section className="panel">
-        <h2>{en ? 'Mission data' : 'Datos de la misión'}</h2>
-        <dl className="quiet-metrics">
-          <div className="metric"><dt>{en ? 'Destination' : 'Destino'}</dt><dd>{systemText(state.mission.destination)}</dd></div>
-          <div className="metric"><dt>{en ? 'Duration' : 'Duración'}</dt><dd>{state.mission.durationDays} {en ? 'days' : 'días'}</dd></div>
-          <div className="metric"><dt>{en ? 'Crew' : 'Tripulación'}</dt><dd>{state.mission.crewCount}</dd></div>
+      <section className="mission-data" aria-labelledby="mission-data-title">
+        <h2 id="mission-data-title">{en ? 'Mission data' : 'Datos de la misión'}</h2>
+        <dl className="mission-facts">
+          <div>
+            <dt>{en ? 'Destination' : 'Destino'}</dt>
+            <dd>{systemText(state.mission.destination)}</dd>
+          </div>
+          <div>
+            <dt>{en ? 'Duration' : 'Duración'}</dt>
+            <dd>{state.mission.durationDays} {en ? 'days' : 'días'}</dd>
+          </div>
+          <div>
+            <dt>{en ? 'Crew' : 'Tripulación'}</dt>
+            <dd>{state.mission.crewCount}</dd>
+          </div>
         </dl>
-        <p className="muted">{en ? 'Planned activities' : 'Actividades previstas'}: {state.mission.activities.map((activity) => systemText(activity)).join(' · ')}</p>
-        <p className="muted">{en ? 'Stage updated' : 'Etapa actualizada'} {formatMission(state.mission.stageChangedAt)} UTC · {en ? 'open episodes' : 'episodios abiertos'}: {openEpisodes.length}</p>
+        <ul className="mission-activities">
+          {state.mission.activities.map((activity) => (
+            <li key={activity}>{systemText(activity)}</li>
+          ))}
+        </ul>
       </section>
 
-      <section className="panel">
+      <section className="mission-stage-block">
         <h2>{en ? 'Mission stage' : 'Etapa de la misión'}</h2>
-        <div className="chips" role="group" aria-label={en ? 'Mission stage' : 'Etapa de la misión'}>
-          {STAGES.map((stage) => {
-            const currentIdx = STAGES.indexOf(state.mission.stage)
-            const targetIdx = STAGES.indexOf(stage)
+        <div className="mission-stages" role="group" aria-label={en ? 'Mission stage' : 'Etapa de la misión'}>
+          {STAGES.map((item) => {
+            const currentIdx = STAGES.indexOf(stage)
+            const targetIdx = STAGES.indexOf(item)
             const goingBack = targetIdx < currentIdx
+            const blockedByEpisodes = item === 'posmision' && hasOpenEpisodes
             return (
               <button
-                key={stage}
+                key={item}
                 type="button"
-                className="chip"
-                data-testid={`stage-${stage}`}
-                aria-pressed={state.mission.stage === stage}
-                disabled={!canEdit || goingBack}
+                className="mission-stage"
+                data-testid={`stage-${item}`}
+                aria-pressed={stage === item}
+                disabled={!canEdit || goingBack || blockedByEpisodes}
                 title={goingBack
-                  ? (en
-                    ? 'Cannot go back to an earlier stage'
-                    : 'No se puede volver a una etapa anterior')
-                  : undefined}
-                onClick={() => dispatch({ type: 'setMissionStage', stage })}
+                  ? (en ? 'Cannot go back to an earlier stage' : 'No se puede volver a una etapa anterior')
+                  : blockedByEpisodes
+                    ? (en ? 'Close all open health episodes before completing the mission' : 'Cerrá los episodios de salud abiertos antes de finalizar la misión')
+                    : undefined}
+                onClick={() => dispatch({ type: 'setMissionStage', stage: item })}
               >
-                {en ? STAGE_EN[stage] : MISSION_STAGE_LABEL[stage]}
+                <strong>{en ? STAGE_EN[item] : MISSION_STAGE_LABEL[item]}</strong>
+                <span>{en ? STAGE_HELP[item].en : STAGE_HELP[item].es}</span>
               </button>
             )
           })}
         </div>
-        <p className="lede">{(en ? STAGE_HELP_EN : STAGE_HELP)[state.mission.stage]}</p>
-        {canEdit ? (
-          <p className="muted">
-            {en
-              ? 'Stages only move forward. After takeoff you cannot return to the prep checklist step.'
-              : 'Las etapas solo avanzan. Después del despegue no se vuelve al paso del checklist.'}
-          </p>
-        ) : null}
-        {!canEdit ? <p className="callout callout-amber">{en ? 'The astronaut role can view the stage, but cannot change it.' : 'El rol astronauta puede consultar la etapa, pero no cambiarla.'}</p> : null}
+        <p className="mission-note">
+          {hasOpenEpisodes
+            ? (en
+              ? `Mission Review is blocked while ${openEpisodes.length} health episode(s) remain open.`
+              : `La Revisión de misión está bloqueada mientras haya ${openEpisodes.length} episodio(s) de salud abiertos.`)
+            : (canEdit
+              ? (en
+                ? 'Stages only move forward. History stays.'
+                : 'Las etapas solo avanzan. El historial se conserva.')
+              : (en
+                ? 'You can see the stage. Only the chief or the medic can change it.'
+                : 'Podés ver la etapa. Solo la jefa o la médica pueden cambiarla.'))}
+        </p>
+        <p className="mission-note">
+          {en ? 'Updated' : 'Actualizada'} {formatMission(state.mission.stageChangedAt)} UTC
+          {' · '}
+          {en ? 'Open episodes' : 'Episodios abiertos'}: {openEpisodes.length}
+        </p>
       </section>
 
-      <section className="panel">
-        <div className="spread">
+      <section className="mission-prep">
+        <div>
           <h2>{en ? 'Mission preparation' : 'Preparación de la misión'}</h2>
-          <Link className="btn btn-primary" to="/app/recursos?tab=checklist">{en ? 'Open checklist in Resources' : 'Abrir checklist en Recursos'}</Link>
+          <p>{en ? 'The checklist is what to have ready before boarding.' : 'El checklist es lo que hay que tener listo antes de abordar.'}</p>
         </div>
+        <Link className="btn btn-primary" to="/app/recursos?tab=checklist">
+          {en ? 'Open checklist in Resources' : 'Abrir checklist en Recursos'}
+        </Link>
       </section>
 
-      {state.mission.stage === 'posmision' ? (
-        <section className="panel" data-testid="postmission-summary">
-          <h2>{en ? 'Post-mission follow-up' : 'Seguimiento de posmisión'}</h2>
-          <p className="lede">
-            {en ? 'Summary for authorized staff. Responsible professionals make recovery decisions.' : 'Resumen organizado para el personal autorizado. Las decisiones de recuperación corresponden a profesionales responsables.'}
+      {stage === 'posmision' ? (
+        <section className="mission-review" data-testid="postmission-summary">
+          <h2>{en ? 'After the mission' : 'Después de la misión'}</h2>
+          <p className="mission-note">
+            {en
+              ? 'What is still open. Recovery decisions stay with the responsible clinician.'
+              : 'Lo que sigue abierto. Las decisiones de recuperación las toma quien atiende.'}
           </p>
           <dl className="quiet-metrics">
             <div className="metric"><dt>{en ? 'Open episodes' : 'Episodios abiertos'}</dt><dd>{openEpisodes.length}</dd></div>
             <div className="metric"><dt>{en ? 'Active alerts' : 'Alertas activas'}</dt><dd>{state.alerts.filter((item) => item.status !== 'closed').length}</dd></div>
             <div className="metric"><dt>{en ? 'Recorded symptoms' : 'Síntomas registrados'}</dt><dd>{state.symptoms.length}</dd></div>
-            <div className="metric"><dt>{en ? 'Inventory movements' : 'Movimientos de inventario'}</dt><dd>{state.movements.length}</dd></div>
-            <div className="metric"><dt>{en ? 'Communications' : 'Comunicaciones'}</dt><dd>{state.communications.length}</dd></div>
-            <div className="metric"><dt>{en ? 'Pending preparation reviews' : 'Revisiones prep. pendientes'}</dt><dd>{counts.propuesto + counts.pendiente_revision + counts.faltante}</dd></div>
+            <div className="metric"><dt>{en ? 'Pending preparation' : 'Preparación pendiente'}</dt><dd>{counts.propuesto + counts.pendiente_revision + counts.faltante}</dd></div>
           </dl>
           {openEpisodes.length > 0 ? (
             <ul>
               {openEpisodes.map((item) => (
-                <li key={item.id}>{systemText(item.title)} · {item.status}</li>
+                <li key={item.id}>{systemText(item.title)}</li>
               ))}
             </ul>
           ) : (
-            <p className="muted">{en ? 'No open episodes. The mission history is preserved.' : 'No hay episodios abiertos. El historial de la misión se conserva.'}</p>
+            <p className="mission-note">{en ? 'No open episodes. The history stays.' : 'No hay episodios abiertos. El historial se conserva.'}</p>
           )}
         </section>
       ) : null}
-
-      <section className="panel">
-        <h2>{en ? 'Quirón Bot · stage questions' : 'Quirón Bot · preguntas de etapa'}</h2>
-        <div className="questions">
-          {[
-            'What should I review before boarding?',
-            'Which proposed resources are still pending approval?',
-            'What follow-up is still open after I return?',
-            'Which NASA risks apply to this mission?',
-            'What does the literature say about metabolic effort in EVA?',
-          ].map((question) => (
-            <button key={question} type="button" className="btn btn-ghost" onClick={() => setAnswer(answerMissionLocal(state, question, QUIRON_LOCALE))}>
-              <CircleHelp aria-hidden="true" size={16} strokeWidth={1.75} /> {question}
-            </button>
-          ))}
-        </div>
-        {answer ? (
-          <p className="callout callout-ok" data-testid="mission-answer">
-            <CheckCircle2 aria-hidden="true" size={16} strokeWidth={1.75} /> {systemText(answer, QUIRON_LOCALE)}
-          </p>
-        ) : null}
-      </section>
     </div>
   )
 }

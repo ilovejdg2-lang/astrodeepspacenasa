@@ -7,12 +7,14 @@ export type PlatformGrant = {
   scopeNote?: string
   revokedAt?: number | null
   expiresAt?: number | null
+  acceptedAt?: number | null
 }
 
 export function isActiveGrant(row: PlatformGrant | unknown): boolean {
   const g = row as PlatformGrant
   if (!g || typeof g !== 'object') return false
   if (g.revokedAt != null) return false
+  if (g.acceptedAt === null) return false
   if (g.expiresAt != null && g.expiresAt < Date.now()) return false
   return true
 }

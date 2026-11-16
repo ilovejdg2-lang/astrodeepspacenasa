@@ -1,5 +1,5 @@
 import { z } from 'zod'
-export const careStartSchema = z.object({ mode: z.enum(['physical', 'emotional']).default('physical'), locale: z.enum(['es', 'en']).default('es') }).strict()
+export const careStartSchema = z.object({ mode: z.enum(['physical', 'emotional']).default('physical'), locale: z.enum(['es', 'en']).default('en') }).strict()
 
 export const careAiOptionsSchema = z.object({
   modelConsent: z.boolean().default(false),
@@ -9,7 +9,7 @@ export const careAiOptionsSchema = z.object({
 }).strict().refine(q => !q.monitoring || (q.modelConsent && q.dataConsent), 'Monitoring requires model and data consent')
 export const careMessageSchema = z.object({
   text: z.string().trim().min(1).max(2000),
-  locale: z.enum(['es', 'en']).default('es'),
+  locale: z.enum(['es', 'en']).default('en'),
   ai: careAiOptionsSchema.default({ modelConsent: false, historyConsent: false, dataConsent: false }),
 }).strict()
 export const careDraftRequestSchema = careMessageSchema.omit({ text: true })

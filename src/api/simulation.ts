@@ -37,7 +37,7 @@ export class SimulationClient {
   revision = 0
   constructor(public sessionId: string) {}
 
-  private async request(path: string, body?: unknown): Promise<unknown> {
+  private async request(path: string, body?: unknown, signal?: AbortSignal): Promise<unknown> {
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
       'X-Simulation-Id': this.sessionId,
@@ -48,7 +48,7 @@ export class SimulationClient {
       method: body === undefined ? 'GET' : 'POST',
       headers,
       body: body === undefined ? undefined : JSON.stringify(body),
-      signal: AbortSignal.timeout(8000),
+      signal: signal ?? AbortSignal.timeout(8000),
     })
     if (!response.ok) {
       const error = (await response.json().catch(() => null)) as { message?: string | string[] } | null
@@ -67,17 +67,18 @@ export class SimulationClient {
     return { ...snapshot, state: state.data } as Snapshot
   }
   async connect(state: AppState): Promise<Snapshot> {
-    try { return await this.refresh() }
+    const signal = AbortSignal.timeout(8000)
+    try { return await this.refresh(signal) }
     catch (error) {
       if (!(error instanceof ApiError) || error.status !== 404) throw error
-      return this.initialize(state)
+      return this.initialize(state, signal)
     }
   }
-  async initialize(state: AppState): Promise<Snapshot> {
-    return this.accept(await this.request('/api/simulation', { initialState: state }))
+  async initialize(state: AppState, signal?: AbortSignal): Promise<Snapshot> {
+    return this.accept(await this.request('/api/simulation', { initialState: state }, signal))
   }
-  async refresh(): Promise<Snapshot> {
-    return this.accept(await this.request('/api/simulation'))
+  async refresh(signal?: AbortSignal): Promise<Snapshot> {
+    return this.accept(await this.request('/api/simulation', undefined, signal))
   }
   async dispatch(action: Action): Promise<Snapshot> {
     return this.accept(

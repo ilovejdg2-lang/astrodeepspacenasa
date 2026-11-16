@@ -91,6 +91,20 @@ function Source({
     </p>
   )
 }
+function shortUtc(value: string, en: boolean) {
+  const parsed = Date.parse(value)
+  if (Number.isNaN(parsed)) return value.replace(/\.\d+Z$/, 'Z')
+  const label = new Intl.DateTimeFormat(en ? 'en-GB' : 'es-CR', {
+    day: 'numeric',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZone: 'UTC',
+    hourCycle: 'h23',
+  }).format(parsed)
+  return `${label} UTC`
+}
+
 function utcDateOffset(days: number) {
   const d = new Date()
   d.setUTCDate(d.getUTCDate() + days)
@@ -114,7 +128,6 @@ export function SpaceWeatherPanel({ notices = false }: { notices?: boolean }) {
   const [data, setData] = useState<WeatherResponse | null>(null)
   const [status, setStatus] = useState('loading')
   const [open, setOpen] = useState(true)
-  const [filtersOpen, setFiltersOpen] = useState(false)
   const [showAll, setShowAll] = useState(false)
 
   useEffect(() => {
@@ -155,179 +168,118 @@ export function SpaceWeatherPanel({ notices = false }: { notices?: boolean }) {
       ? 'Space weather'
       : 'Clima espacial'
 
+  const countLabel = status === 'ready'
+    ? (en
+      ? `${sortedEvents.length} event${sortedEvents.length === 1 ? '' : 's'}`
+      : `${sortedEvents.length} evento${sortedEvents.length === 1 ? '' : 's'}`)
+    : ''
+
   return (
-    <section
-      className={`panel nasa-panel space-weather-brief${open ? ' is-open' : ''}`}
-      aria-label={title}
-    >
-      <header className="space-weather-brief-head">
+    <section className="panel nasa-panel env-card" aria-label={title}>
+      <header className="env-head">
         <div>
-          <p className="badge">NASA · DONKI</p>
+          <p className="env-kicker">NASA DONKI</p>
           <h2>{title}</h2>
-          <p className="muted space-weather-brief-meta">
-            {en ? 'Today + yesterday (default)' : 'Hoy + ayer (por defecto)'}
-            {' · '}
-            {status === 'loading'
-              ? (en ? 'Loading…' : 'Cargando…')
-              : status === 'error'
-                ? (en ? 'Unavailable' : 'No disponible')
-                : (en
-                  ? `${sortedEvents.length} event${sortedEvents.length === 1 ? '' : 's'}`
-                  : `${sortedEvents.length} evento${sortedEvents.length === 1 ? '' : 's'}`)}
-            {' · '}
-            {rangeLabel}
+          <p className="env-purpose">
+            {en
+              ? 'NASA reports of solar activity. They do not measure your personal exposure.'
+              : 'Reportes de actividad solar de NASA. No miden tu exposición personal.'}
           </p>
         </div>
-        <button
-          type="button"
-          className="chip"
-          aria-expanded={open}
-          onClick={() => setOpen((v) => !v)}
-        >
-          {open ? (en ? 'Collapse' : 'Plegar') : (en ? 'Expand' : 'Desplegar')}
+        <button type="button" className="chip" aria-expanded={open} onClick={() => setOpen((value) => !value)}>
+          {open ? (en ? 'Hide' : 'Ocultar') : (en ? 'Show' : 'Mostrar')}
         </button>
       </header>
 
       {open ? (
-        <div className="space-weather-brief-body">
-          <p className="muted space-weather-brief-note">
-            {en
-              ? 'DONKI context only — not personal exposure or medical alerts.'
-              : 'Solo contexto DONKI — no exposición personal ni alertas médicas.'}
-          </p>
-
-          <button
-            type="button"
-            className="chip"
-            aria-expanded={filtersOpen}
-            onClick={() => setFiltersOpen((v) => !v)}
-          >
-            {filtersOpen
-              ? (en ? 'Hide range filters' : 'Ocultar filtros')
-              : (en ? 'Change range / type' : 'Cambiar rango / tipo')}
-          </button>
-
-          {filtersOpen ? (
-            <form
-              className="nasa-filters"
-              onSubmit={(e) => {
-                e.preventDefault()
-                setQuery({
-                  startDate: start,
-                  endDate: end,
-                  ...(type ? { type } : {}),
-                })
-              }}
-            >
-              <Dates
-                start={start}
-                end={end}
-                setStart={setStart}
-                setEnd={setEnd}
-                en={en}
-              />
-              <label className="field">
-                {en ? 'Event' : 'Evento'}
-                <select value={type} onChange={(e) => setType(e.target.value)}>
-                  <option value="">{en ? 'All' : 'Todos'}</option>
-                  {['SEP', 'FLR', 'CME'].map((v) => (
-                    <option key={v}>{v}</option>
-                  ))}
-                </select>
-              </label>
-              <button className="chip" type="submit">
-                {en ? 'Query' : 'Consultar'}
-              </button>
-              <button
-                className="chip"
-                type="button"
-                onClick={() => {
-                  const s = utcDateOffset(-1)
-                  const e = utcDateOffset(0)
-                  setStart(s)
-                  setEnd(e)
-                  setType('')
-                  setQuery({ startDate: s, endDate: e })
-                }}
-              >
-                {en ? 'Reset to today+yesterday' : 'Volver a hoy+ayer'}
-              </button>
-            </form>
-          ) : null}
-
+        <>
           <div aria-live="polite" aria-busy={status === 'loading'}>
-            {status === 'loading' && (
-              <p>{en ? 'Loading NASA events…' : 'Consultando eventos NASA…'}</p>
-            )}
-            {status === 'error' && (
+            {status === 'loading' ? <p>{en ? 'Loading NASA events…' : 'Consultando eventos NASA…'}</p> : null}
+            {status === 'ready' ? (
+              <p className="env-meta env-summary">{countLabel} · {rangeLabel}</p>
+            ) : null}
+            {status === 'error' ? (
               <p role="alert">
                 {en
                   ? 'NASA unavailable or invalid query. Retry. No events generated.'
                   : 'NASA no disponible o consulta inválida. Reintentá. No se generaron eventos.'}
               </p>
-            )}
-            {data && (
-              <>
-                {data.sources.slice(0, 1).map((s) => (
-                  <Source key={s.sourceUrl} {...s} en={en} />
-                ))}
-                {!sortedEvents.length && (
-                  <p>
-                    {en
-                      ? 'No events in this interval.'
-                      : 'Sin eventos en este intervalo.'}
-                  </p>
-                )}
-                <div className="nasa-events space-weather-brief-list">
-                  {visibleEvents.map((event) => {
-                    const desc =
-                      event.description ||
-                      (en
-                        ? 'No description supplied by NASA.'
-                        : 'NASA no proporcionó descripción.')
-                    const short =
-                      desc.length > 140 ? `${desc.slice(0, 137).trim()}…` : desc
-                    return (
-                      <article
-                        key={`${event.type}-${event.id}`}
-                        className="nasa-event"
-                      >
-                        <div className="spread" style={{ alignItems: 'baseline', gap: 8 }}>
-                          <h3>
-                            {event.type}
-                            {event.classification ? ` · ${event.classification}` : ''}
-                          </h3>
-                          <time dateTime={event.timestamp} className="muted">
-                            {event.timestamp.replace(/\.\d+Z$/, 'Z')}
-                          </time>
-                        </div>
-                        <p>{short}</p>
-                        {event.sourceUrl && (
-                          <a href={event.sourceUrl} target="_blank" rel="noreferrer">
-                            {en ? 'NASA record' : 'Registro NASA'}
-                          </a>
-                        )}
-                      </article>
-                    )
-                  })}
-                </div>
-                {hiddenCount > 0 ? (
-                  <button
-                    type="button"
-                    className="chip"
-                    onClick={() => setShowAll((v) => !v)}
-                  >
-                    {showAll
-                      ? (en ? 'Show recent only' : 'Ver solo recientes')
-                      : (en
-                        ? `Show ${hiddenCount} more`
-                        : `Ver ${hiddenCount} más`)}
-                  </button>
-                ) : null}
-              </>
-            )}
+            ) : null}
+            {data && !sortedEvents.length ? (
+              <p>{en ? 'No events in this interval.' : 'Sin eventos en este intervalo.'}</p>
+            ) : null}
+            {data && sortedEvents.length ? (
+              <div className="env-list">
+                {visibleEvents.map((event) => {
+                  const desc = event.description || (en ? 'No description supplied by NASA.' : 'NASA no proporcionó descripción.')
+                  return (
+                    <article key={`${event.type}-${event.id}`} className="env-event">
+                      <div className="env-event-top">
+                        <span className="env-kind">{event.type}{event.classification ? ` ${event.classification}` : ''}</span>
+                        <time dateTime={event.timestamp}>{shortUtc(event.timestamp, en)}</time>
+                        {event.sourceUrl ? (
+                          <a href={event.sourceUrl} target="_blank" rel="noreferrer">{en ? 'NASA record' : 'Registro NASA'}</a>
+                        ) : null}
+                      </div>
+                      <details className="env-event-description">
+                        <summary>{en ? 'Event details' : 'Detalles del evento'}</summary>
+                        <p>{desc}</p>
+                      </details>
+                    </article>
+                  )
+                })}
+              </div>
+            ) : null}
           </div>
-        </div>
+          {hiddenCount > 0 ? (
+            <button type="button" className="chip" onClick={() => setShowAll((value) => !value)}>
+              {showAll
+                ? (en ? 'Show recent only' : 'Ver solo recientes')
+                : (en ? `Show ${hiddenCount} more` : `Ver ${hiddenCount} más`)}
+            </button>
+          ) : null}
+          <details>
+            <summary>{en ? 'Change range or type' : 'Cambiar rango o tipo'}</summary>
+            <form
+              className="nasa-filters"
+              onSubmit={(event) => {
+                event.preventDefault()
+                setQuery({ startDate: start, endDate: end, ...(type ? { type } : {}) })
+              }}
+            >
+              <Dates start={start} end={end} setStart={setStart} setEnd={setEnd} en={en} />
+              <label className="field">
+                {en ? 'Event' : 'Evento'}
+                <select value={type} onChange={(event) => setType(event.target.value)}>
+                  <option value="">{en ? 'All' : 'Todos'}</option>
+                  {['SEP', 'FLR', 'CME'].map((value) => <option key={value}>{value}</option>)}
+                </select>
+              </label>
+              <button className="chip" type="submit">{en ? 'Query' : 'Consultar'}</button>
+              <button
+                className="chip"
+                type="button"
+                onClick={() => {
+                  const nextStart = utcDateOffset(-1)
+                  const nextEnd = utcDateOffset(0)
+                  setStart(nextStart)
+                  setEnd(nextEnd)
+                  setType('')
+                  setQuery({ startDate: nextStart, endDate: nextEnd })
+                }}
+              >
+                {en ? 'Last two days' : 'Últimos dos días'}
+              </button>
+            </form>
+            <p className="env-meta">{rangeLabel}</p>
+          </details>
+          {data?.sources[0] ? (
+            <details>
+              <summary>{en ? 'Source and time' : 'Fuente y hora'}</summary>
+              <Source {...data.sources[0]} en={en} />
+            </details>
+          ) : null}
+        </>
       ) : null}
     </section>
   )
@@ -366,59 +318,53 @@ export function RadiationPanel({ compact = false }: { compact?: boolean }) {
       })
     return () => controller.abort()
   }, [query])
-  const chartKeys = (compact
-    ? (['doseEquivalentRate'] as const)
-    : (['absorbedDoseRate', 'doseEquivalentRate'] as const))
+  const chartKeys = (['absorbedDoseRate', 'doseEquivalentRate'] as const)
+  const detectors = data
+    ? [...new Set(data.measurements.map((row) => `${row.instrument} · ${row.spacecraft ?? '—'}`))].join('; ')
+    : ''
   return (
-    <section className={`panel nasa-panel${compact ? ' is-compact' : ''}`}>
-      <h2>{en ? 'RadLab · radiation' : 'RadLab · radiación'}</h2>
-      <p className={compact ? 'muted' : 'callout callout-amber'}>
-        {compact
-          ? (en
-            ? 'Historical environment · not personal dose · µGy/h ≠ µSv/h'
-            : 'Ambiente histórico · no dosis personal · µGy/h ≠ µSv/h')
-          : (en
-            ? 'Historical environmental measurements, not current personal astronaut doses. Absorbed dose rate (µGy/h) and dose equivalent rate (µSv/h) are separate quantities. No accumulated doses or medical safety limits are calculated.'
-            : 'Mediciones ambientales históricas, no dosis personales actuales. La tasa absorbida (µGy/h) y la tasa equivalente (µSv/h) son magnitudes distintas. No se calculan dosis acumuladas ni límites médicos.')}
-      </p>
-      <form
-        className="nasa-filters"
-        onSubmit={(e) => {
-          e.preventDefault()
-          setQuery({ startDate: start, endDate: end, instrument })
-        }}
-      >
-        <Dates
-          start={start}
-          end={end}
-          setStart={setStart}
-          setEnd={setEnd}
-          en={en}
-        />
-        <label className="field">
-          {en ? 'Instrument' : 'Instrumento'}
-          <select
-            value={instrument}
-            onChange={(e) => setInstrument(e.target.value)}
-          >
-            {['REM-Lid', 'DosTel1', 'DosTel2'].map((v) => (
-              <option key={v}>{v}</option>
-            ))}
-          </select>
-        </label>
-        <button className="chip" type="submit">
-          {en ? (compact ? 'Query' : 'Query (max. 2 calendar days)') : (compact ? 'Consultar' : 'Consultar (máx. 2 días calendario)')}
+    <section className={`panel nasa-panel env-card${compact ? ' is-compact' : ''}`}>
+      <div>
+        <p className="env-kicker">NASA RadLab</p>
+        <h2>{en ? 'Radiation readings' : 'Lecturas de radiación'}</h2>
+        <p className={compact ? 'env-purpose' : 'callout callout-amber'}>
+          {compact
+            ? (en
+              ? 'Historical station readings, not your personal dose. µGy/h and µSv/h are different units.'
+              : 'Lecturas históricas de la estación, no tu dosis personal. µGy/h y µSv/h son unidades distintas.')
+            : (en
+              ? 'Historical environmental measurements, not current personal astronaut doses. Absorbed dose rate (µGy/h) and dose equivalent rate (µSv/h) are separate quantities. No accumulated doses or medical safety limits are calculated.'
+              : 'Mediciones ambientales históricas, no dosis personales actuales. La tasa absorbida (µGy/h) y la tasa equivalente (µSv/h) son magnitudes distintas. No se calculan dosis acumuladas ni límites médicos.')}
+        </p>
+      </div>
+      <div className="env-tools">
+        <button type="button" className="chip" onClick={() => setQuery({ example: 'true' })}>
+          {en ? 'Verified example' : 'Ejemplo verificado'}
         </button>
-      </form>
-      <button
-        type="button"
-        className="chip"
-        onClick={() => setQuery({ example: 'true' })}
-      >
-        {en
-          ? (compact ? 'Verified example' : 'Load verified local example: REM-Lid · 2023-05-16 00:00–01:00 UTC')
-          : (compact ? 'Ejemplo verificado' : 'Cargar ejemplo local verificado: REM-Lid · 2023-05-16 00:00–01:00 UTC')}
-      </button>
+      </div>
+      <details>
+        <summary>{en ? 'Change dates' : 'Cambiar fechas'}</summary>
+        <form
+          className="nasa-filters"
+          onSubmit={(event) => {
+            event.preventDefault()
+            setQuery({ startDate: start, endDate: end, instrument })
+          }}
+        >
+          <Dates start={start} end={end} setStart={setStart} setEnd={setEnd} en={en} />
+          <label className="field">
+            {en ? 'Instrument' : 'Instrumento'}
+            <select value={instrument} onChange={(event) => setInstrument(event.target.value)}>
+              {['REM-Lid', 'DosTel1', 'DosTel2'].map((value) => (
+                <option key={value}>{value}</option>
+              ))}
+            </select>
+          </label>
+          <button className="chip" type="submit">
+            {en ? 'Query (max. 2 days)' : 'Consultar (máx. 2 días)'}
+          </button>
+        </form>
+      </details>
       <div aria-live="polite" aria-busy={status === 'loading'}>
         {status === 'loading' && (
           <p>{en ? 'Loading RadLab…' : 'Consultando RadLab…'}</p>
@@ -433,87 +379,57 @@ export function RadiationPanel({ compact = false }: { compact?: boolean }) {
       </div>
       {data && (
         <>
-          <p className="badge" data-testid="radlab-provenance">
-            RadLab
-            {data.cached ? (en ? ' · cached' : ' · caché') : (en ? ' · live' : ' · vivo')}
-            {data.fetchedAt ? ` · ${data.fetchedAt}` : ''}
-          </p>
-          {!compact ? (
-            <p>{en ? 'Environmental historical measurements; they do not establish individual astronaut exposure or diagnoses. Units are supplied by NASA (µGy/h and µSv/h); values are not relabeled as daily rates. All record times are UTC.' : 'Mediciones ambientales históricas; no establecen exposición individual ni diagnósticos. Las unidades son las suministradas por NASA (µGy/h y µSv/h); no se presentan como tasas diarias. Todas las fechas del registro son UTC.'}</p>
-          ) : null}
-          <Source {...data} en={en} />
-          <a href={data.sourceUrl} target="_blank" rel="noreferrer">
-            {en ? 'NASA source' : 'Fuente NASA'}
-          </a>
-          {!compact ? (
-            <p>
-              {en ? 'Detector / spacecraft: ' : 'Detector / nave: '}
-              {[
-                ...new Set(
-                  data.measurements.map(
-                    (m) => `${m.instrument} · ${m.spacecraft ?? '—'}`,
-                  ),
-                ),
-              ].join('; ')}
+          {detectors ? <p className="env-meta">{detectors}</p> : null}
+          <details>
+            <summary>{en ? 'Source and time' : 'Fuente y hora'}</summary>
+            <p className="badge" data-testid="radlab-provenance">
+              RadLab
+              {data.cached ? (en ? ' · cached' : ' · caché') : (en ? ' · live' : ' · vivo')}
+              {data.fetchedAt ? ` · ${data.fetchedAt}` : ''}
             </p>
-          ) : null}
+            <Source {...data} en={en} />
+            <a href={data.sourceUrl} target="_blank" rel="noreferrer">{en ? 'NASA source' : 'Fuente NASA'}</a>
+          </details>
           {!data.measurements.length ? (
-            <p>
-              {en
-                ? 'No measurements in this interval.'
-                : 'Sin mediciones en este intervalo.'}
-            </p>
+            <p>{en ? 'No measurements in this interval.' : 'Sin mediciones en este intervalo.'}</p>
           ) : (
-            <>
-              {chartKeys.map((key) => (
-                <div key={key}>
-                  <h3>
-                    {key === 'absorbedDoseRate'
-                      ? en
-                        ? 'Absorbed dose rate'
-                        : 'Tasa de dosis absorbida'
-                      : en
-                        ? 'Dose equivalent rate'
-                        : 'Tasa de dosis equivalente'}{' '}
-                    ({data.units[key]})
-                  </h3>
-                  {data.measurements.some((row) => row[key] !== null) ? (
-                    <div style={{ width: '100%', height: compact ? 180 : 260 }}>
-                      <ResponsiveContainer>
-                        <LineChart data={data.measurements}>
-                          <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis
-                            dataKey="timestamp"
-                            tickFormatter={(v) => String(v).slice(11, 16)}
-                          />
-                          <YAxis width={65} />
-                          <Tooltip />
-                          {!compact ? <Legend /> : null}
-                          <Line
-                            dataKey={key}
-                            name={data.units[key]}
-                            stroke={
-                              key === 'absorbedDoseRate'
-                                ? '#e4a44c'
-                                : '#56acbc'
-                            }
-                            dot={false}
-                            connectNulls={false}
-                            isAnimationActive={false}
-                          />
-                        </LineChart>
-                      </ResponsiveContainer>
-                    </div>
-                  ) : (
-                    <p>
-                      {en
-                        ? 'NASA did not supply this quantity.'
-                        : 'NASA no suministró esta magnitud.'}
-                    </p>
-                  )}
+            chartKeys.map((key) => {
+              const label = key === 'absorbedDoseRate'
+                ? (en ? 'Absorbed dose rate' : 'Tasa de dosis absorbida')
+                : (en ? 'Dose equivalent rate' : 'Tasa de dosis equivalente')
+              const hasValues = data.measurements.some((row) => row[key] !== null)
+              if (!hasValues) {
+                return (
+                  <p key={key}>
+                    {label} ({data.units[key]}): {en ? 'NASA did not supply this quantity.' : 'NASA no suministró esta magnitud.'}
+                  </p>
+                )
+              }
+              return (
+                <div key={key} className="env-chart">
+                  <h3>{label} ({data.units[key]})</h3>
+                  <div style={{ width: '100%', height: compact ? 160 : 240 }}>
+                  <ResponsiveContainer>
+                    <LineChart data={data.measurements}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="timestamp" tickFormatter={(value) => String(value).slice(11, 16)} />
+                      <YAxis width={56} />
+                      <Tooltip />
+                      {!compact ? <Legend /> : null}
+                      <Line
+                        dataKey={key}
+                        name={data.units[key]}
+                        stroke={key === 'absorbedDoseRate' ? '#e60049' : '#8a5a00'}
+                        dot={false}
+                        connectNulls={false}
+                        isAnimationActive={false}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                  </div>
                 </div>
-              ))}
-            </>
+              )
+            })
           )}
         </>
       )}

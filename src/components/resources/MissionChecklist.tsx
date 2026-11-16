@@ -16,7 +16,6 @@ export function MissionChecklist() {
   </section>
 
   const stage = detail.mission.stage
-  const locked = ['aboard', 'postmission', 'archived', 'cancelled'].includes(stage)
   const canManage = role === 'chief'
   const teamSize = detail.members.filter((member) => member.status === 'active' && member.role !== 'ops').length
   return (
@@ -37,12 +36,19 @@ export function MissionChecklist() {
         analysisStale={detail.mission.analysisStale}
         onChanged={() => refresh({ silent: true })}
       /> : <p className="callout">{en ? 'Read-only checklist. The mission chief manages preparation.' : 'Checklist de solo lectura. El jefe de misión gestiona la preparación.'} {percent}%</p>}
-      {!canManage || locked ? <ul className="resources-checklist-snapshot">
-        {prep.map((item) => <li key={item.id}>
-          <strong>{systemText(item.title)}</strong>
-          <span>{systemText(item.status)}</span>
-          {item.qtyRequired != null ? <span>{en ? 'Available / required' : 'Disponible / requerido'}: {item.qtyAvailable ?? 0} / {item.qtyRequired}</span> : null}
-        </li>)}
+      {!canManage ? <ul className="chief-launch-done">
+        {prep.map((item) => {
+          const done = item.status === 'cargado_verificado'
+          return (
+            <li key={item.id} className={done ? 'is-done' : 'is-open'}>
+              <span className="chief-launch-pill">{done ? (en ? 'Complete' : 'Completo') : (en ? 'Open' : 'Pendiente')}</span>
+              <div>
+                <strong>{systemText(item.title)}</strong>
+                {item.qtyRequired != null ? <span>{(item.qtyAvailable ?? 0)} {en ? 'of' : 'de'} {item.qtyRequired}</span> : null}
+              </div>
+            </li>
+          )
+        })}
         {!prep.length ? <li>{en ? 'No checklist items yet.' : 'Todavía no hay elementos en el checklist.'}</li> : null}
       </ul> : null}
     </section>

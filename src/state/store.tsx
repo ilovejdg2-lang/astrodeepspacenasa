@@ -153,6 +153,33 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (!stateRef.current) throw new Error('Simulation unavailable')
     return stateRef.current
   }, [dispatch])
+  const reconnectBackend = useCallback((): Promise<void> => {
+    const attempt = queue.current.then(async () => {
+      if (connected.current) return
+      const current = stateRef.current
+      if (!current) return
+      try {
+        let sessionId: string = crypto.randomUUID()
+        try {
+          sessionId = sessionStorage.getItem('vitalink-simulation-id') ?? sessionId
+          sessionStorage.setItem('vitalink-simulation-id', sessionId)
+        } catch {
+          /* A session in memory is still usable when storage is disabled. */
+        }
+        const api = new SimulationClient(sessionId)
+        const snapshot = await api.connect(current)
+        client.current = api
+        connected.current = true
+        setBackendMode('connected')
+        setBackendError(null)
+        apply(snapshot.state)
+      } catch {
+        // The local simulator remains available when the backend is offline.
+      }
+    })
+    queue.current = attempt.then(() => undefined, () => undefined)
+    return attempt
+  }, [apply])
   const signature = useRef('')
   const saveGeneration = useRef(0)
 
@@ -171,6 +198,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
         initial = fallback()
         /* Sin banner visual: se continúa con demo sin interrumpir la maqueta HELIOS. */
         if (active) setPersistenceError(null)
+      }
+      if (
+        initial.mission.stage === 'posmision' &&
+        initial.episodes.some((episode) => episode.status !== 'closed')
+      ) {
+        initial = {
+          ...initial,
+          mission: {
+            ...initial.mission,
+            stage: 'a_bordo',
+            stageChangedAt: initial.clock.simulatedAt,
+          },
+        }
       }
       // Sesiones antiguas quedaban en pausa: las métricas no avanzaban. Arrancar vivo.
       if (!initial.clock.running || initial.clock.speed < 2) {
@@ -202,9 +242,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
       } catch (error) {
         if (!active) return
         detach()
-        setBackendError(error instanceof ApiError && error.status === 429
-          ? `NestJS: HTTP 429. Retry after ${error.retryAfterSeconds ?? 60}s. / Reintenta en ${error.retryAfterSeconds ?? 60}s.`
-          : null)
         apply(initial)
       }
       ready.current = true
@@ -214,6 +251,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
       active = false
     }
   }, [apply, detach])
+
+  useEffect(() => {
+    const retryWhenOnline = () => {
+      if (!connected.current) void reconnectBackend()
+    }
+    window.addEventListener('online', retryWhenOnline)
+    return () => window.removeEventListener('online', retryWhenOnline)
+  }, [reconnectBackend])
 
   useEffect(() => {
     if (!state || !ready.current || persistenceError) return
@@ -311,7 +356,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         await queue.current
       },
     }
-  }, [state, persistenceError, saving, authenticatedCrewId, backendMode, backendError, dispatch, analyzeEpisode, monitoringLatest, listHistoryEvents, runActions])
+  }, [state, persistenceError, saving, authenticatedCrewId, backendMode, backendError, dispatch, analyzeEpisode, monitoringLatest, listHistoryEvents, runActions, reconnectBackend])
 
   if (!value) {
     return (

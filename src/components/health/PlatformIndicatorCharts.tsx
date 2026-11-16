@@ -10,19 +10,30 @@ export function PlatformIndicatorCharts({ missionId }: { missionId: string | nul
   const { lang } = useLocale()
   const en = lang === 'en'
   const [items, setItems] = useState<HealthIndicatorReading[]>([])
-  const [error, setError] = useState('')
+  const [loadState, setLoadState] = useState<'loading' | 'loaded' | 'error'>('loading')
+  const [retryCount, setRetryCount] = useState(0)
   const [kind, setKind] = useState<IndicatorKind>('heart_rate')
 
   useEffect(() => {
     if (!missionId) return
+    let active = true
+    setItems([])
+    setLoadState('loading')
     void platformApi.listIndicators(missionId)
       .then((data) => {
+        if (!active) return
         setItems(data.items)
         const kinds = chartablePlatformKinds(data.items)
         setKind((current) => kinds.includes(current) ? current : (kinds[0] ?? current))
+        setLoadState('loaded')
       })
-      .catch((err) => setError(err instanceof Error ? err.message : 'Error'))
-  }, [missionId])
+      .catch(() => {
+        if (active) setLoadState('error')
+      })
+    return () => {
+      active = false
+    }
+  }, [missionId, retryCount])
 
   const kinds = useMemo(() => chartablePlatformKinds(items), [items])
   const series = useMemo(() => platformDailySeries(items, kind), [items, kind])
@@ -37,13 +48,18 @@ export function PlatformIndicatorCharts({ missionId }: { missionId: string | nul
   return (
     <section className="rd-card" data-testid="platform-indicator-charts">
       <h2>{en ? 'Platform indicator history' : 'Historial de indicadores (platform)'}</h2>
-      <p className="rd-muted">
-        {en
-          ? 'Care-layer readings from My health. Each chart uses a single unit — incompatible units are never mixed on one axis.'
-          : 'Lecturas de la capa de cuidado (Mi salud). Cada gráfico usa una sola unidad — nunca se mezclan unidades incompatibles en el mismo eje.'}
-      </p>
-      {error ? <p className="rd-error" role="alert">{error}</p> : null}
-      {kinds.length === 0 ? (
+      {loadState === 'error' ? (
+        <div className="rd-error" role="alert">
+          <p>{en
+            ? 'Platform indicators could not be loaded. Check your connection and try again.'
+            : 'No se pudieron cargar los indicadores de plataforma. Revisá tu conexión e intentá de nuevo.'}</p>
+          <button type="button" className="rd-btn ghost" onClick={() => setRetryCount((count) => count + 1)}>
+            {en ? 'Try again' : 'Intentar de nuevo'}
+          </button>
+        </div>
+      ) : loadState === 'loading' ? (
+        <p className="rd-muted">{en ? 'Loading platform indicators…' : 'Cargando indicadores de plataforma…'}</p>
+      ) : kinds.length === 0 ? (
         <p className="rd-muted">{en ? 'No platform indicators to chart yet.' : 'Todavía no hay indicadores platform para graficar.'}</p>
       ) : (
         <>
