@@ -1,848 +1,267 @@
-import { QUIRON_LOCALE } from '../ai/locale'
-import * as Switch from '@radix-ui/react-switch'
-import { useEffect, useRef, useState } from 'react'
-import type { AppState, CrewId } from '../../shared/types'
-import { recentSpaceMessages } from '../ai/spaceMemory'
-import {
-  askSpaceModel,
-  authorizeSpaceModel,
-  revokeSpaceModel,
-} from '../ai/client'
-import { buildSpaceContext } from '../ai/spaceContext'
-import { canReadMySpace } from '../domain/access'
-import { CREW, crewById } from '../domain/crew'
-import { SIMULATED_PINS, simulatedPinMatches } from '../domain/spaceAccess'
-import {
-  answerSpace,
-  applySpaceProposal,
-  openSpace,
-} from '../domain/spaceEngine'
-import { spacePreview } from '../domain/spacePreview'
-import {
-  readSpace,
-  writeSpace,
-  type SpaceDataUse,
-  type SpaceRecord,
-  type SpaceShareLevel,
-} from '../persistence/space'
+import { Brain, CalendarDays, Clock3, Stethoscope } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
+import type { VisitRow } from '../components/mission/AppointmentDesk'
 import { useLocale } from '../i18n'
-import { useApp } from '../state/store'
-import { Field } from '../components/ui'
+import { profileDisplayName } from '../platform/copy'
+import { useMissionWorkspace } from './role/useMissionWorkspace'
+import '../platform/role-dash.css'
 
+type SpecialtyFilter = 'all' | 'medical' | 'psychological'
+type StatusFilter = 'all' | 'requested' | 'confirmed' | 'rescheduled' | 'completed' | 'cancelled'
+type PeriodFilter = 'all' | 'upcoming' | 'past'
 
-const LEVELS: { id: SpaceShareLevel; label: string }[] = [
-  { id: 'solo_yo', label: 'Solo yo' },
-  { id: 'generica', label: 'Genérica' },
-  { id: 'medico', label: 'Médico de vuelo' },
-  { id: 'equipo', label: 'Equipo' },
-]
+const STATUSES = new Set<StatusFilter>([
+  'requested',
+  'confirmed',
+  'rescheduled',
+  'completed',
+  'cancelled',
+])
 
-const SWITCHES: { id: keyof SpaceDataUse; label: string }[] = [
-  { id: 'sleep', label: 'Sueño' },
-  { id: 'pulse', label: 'Pulso' },
-  { id: 'symptoms', label: 'Síntomas' },
-]
+function isVisitRow(value: unknown): value is VisitRow {
+  if (!value || typeof value !== 'object') return false
+  const row = value as Record<string, unknown>
+  return typeof row.id === 'string' && typeof row.requesterId === 'string'
+}
+
+function visitStatus(status: string | undefined, en: boolean) {
+  const labels: Record<string, [string, string]> = {
+    requested: ['Solicitada', 'Requested'],
+    pending_confirm: ['Pendiente de confirmación', 'Awaiting confirmation'],
+    confirmed: ['Confirmada', 'Confirmed'],
+    rescheduled: ['Reprogramada', 'Rescheduled'],
+    completed: ['Realizada', 'Completed'],
+    cancelled: ['Cancelada', 'Cancelled'],
+  }
+  const pair = labels[status || '']
+  if (!pair) return status || (en ? 'Unknown status' : 'Estado sin especificar')
+  return pair[en ? 1 : 0]
+}
+
+function visitDate(timestamp: number | null | undefined, en: boolean) {
+  if (timestamp == null) return en ? 'Time not set' : 'Horario pendiente'
+  return new Intl.DateTimeFormat(en ? 'en-US' : 'es-CR', {
+    timeZone: 'UTC',
+    dateStyle: 'long',
+    timeStyle: 'short',
+    hourCycle: 'h23',
+  }).format(timestamp) + ' UTC'
+}
+
+function isOpen(status: string | undefined) {
+  return status !== 'cancelled' && status !== 'completed'
+}
+
+function matchesStatus(visitStatusValue: string | undefined, filter: StatusFilter) {
+  if (filter === 'all') return true
+  if (filter === 'requested') {
+    return visitStatusValue === 'requested' || visitStatusValue === 'pending_confirm'
+  }
+  return visitStatusValue === filter
+}
 
 export function MySpacePage() {
   const { lang } = useLocale()
   const en = lang === 'en'
-  const { state, dispatch, authenticatedCrewId, unlockSpace } = useApp()
-  const allowed = canReadMySpace(
-    state.role,
-    authenticatedCrewId,
-    state.sessionCrewId,
+  const {
+    profile,
+    appointments,
+    appointmentsLoading,
+    appointmentsError,
+    error,
+    refresh,
+  } = useMissionWorkspace()
+  const [specialty, setSpecialty] = useState<SpecialtyFilter>('all')
+  const [status, setStatus] = useState<StatusFilter>('all')
+  const [period, setPeriod] = useState<PeriodFilter>('upcoming')
+  const now = Date.now()
+
+  const mine = useMemo(
+    () => appointments.filter(isVisitRow).filter((visit) => visit.requesterId === profile?.id),
+    [appointments, profile?.id],
   )
-  const [record, setRecord] = useState<SpaceRecord | null>(null)
-  const [draft, setDraft] = useState('')
-  const [level, setLevel] = useState<SpaceShareLevel>('generica')
-  const [note, setNote] = useState('')
-  const [pin, setPin] = useState('')
-  const [pinError, setPinError] = useState('')
-  const [modelConsent, setModelConsent] = useState(false)
-  const [historyConsent, setHistoryConsent] = useState(false)
-  const [missionConsent, setMissionConsent] = useState(false)
-  const [responding, setResponding] = useState(false)
-  const [modelStatus, setModelStatus] = useState('')
-  const activeRequest = useRef<AbortController | null>(null)
-  const generation = useRef(0)
-  const grant = useRef<{
-    sessionId: string
-    token: string
-    expiresAt: number
-  } | null>(null)
-  const historyStart = useRef(0)
-  const stateRef = useRef(state)
-  stateRef.current = state
-  function cancelResponse() {
-    generation.current += 1
-    activeRequest.current?.abort()
-    activeRequest.current = null
-    setResponding(false)
-  }
-  function revokeConsent() {
-    cancelResponse()
-    const access = grant.current
-    grant.current = null
-    if (access) void revokeSpaceModel(access)
-    historyStart.current = recordRef.current?.messages.length ?? 0
-    setModelStatus('')
-  }
-  const ownerKey = `${state.role}:${state.sessionCrewId}:${authenticatedCrewId}`
-  const owner = useRef(ownerKey)
-  owner.current = ownerKey
-  const draftRef = useRef<HTMLTextAreaElement>(null)
-  const recordRef = useRef<SpaceRecord | null>(null)
-  recordRef.current = record
 
-  useEffect(() => {
-    if (!allowed) {
-      setRecord(null)
-      return
-    }
-    let active = true
-    readSpace(state.role, authenticatedCrewId, state.sessionCrewId)
-      .then(async (result) => {
-        if (!active || !result.ok) return
-        if (result.record.messages.some((item) => item.role === 'assistant')) {
-          historyStart.current = result.record.messages.length
-          recordRef.current = result.record
-          setRecord(result.record)
-          return
-        }
-        const opening = openSpace(
-          stateRef.current,
-          state.sessionCrewId,
-          result.record.dataUse,
-          QUIRON_LOCALE,
-        )
-        const next = {
-          ...result.record,
-          messages: [
-            ...result.record.messages,
-            {
-              id: `space-open-${stateRef.current.clock.simulatedAt}`,
-              role: 'assistant' as const,
-              text: opening,
-              at: stateRef.current.clock.simulatedAt,
-            },
-          ],
-        }
-        const saved = await writeSpace(
-          state.role,
-          authenticatedCrewId,
-          state.sessionCrewId,
-          next,
-        )
-        if (!active) return
-        historyStart.current = (saved.ok ? next : result.record).messages.length
-        recordRef.current = saved.ok ? next : result.record
-        setRecord(saved.ok ? next : result.record)
-      })
-      .catch(() => {
-        if (active) setNote(en ? 'Could not open your space in this browser.' : 'No se pudo abrir tu espacio en este navegador.')
-      })
-    return () => {
-      active = false
-    }
-  }, [allowed, authenticatedCrewId, state.role, state.sessionCrewId, lang, en])
+  const upcomingCount = mine.filter(
+    (visit) => visit.scheduledAt != null && visit.scheduledAt >= now && isOpen(visit.status),
+  ).length
+  const pendingCount = mine.filter(
+    (visit) => visit.status === 'requested' || visit.status === 'pending_confirm',
+  ).length
+  const completedCount = mine.filter((visit) => visit.status === 'completed').length
 
-  useEffect(() => {
-    setModelConsent(false)
-    setHistoryConsent(false)
-    setMissionConsent(false)
-    setResponding(false)
-    activeRequest.current = null
-    return () => {
-      generation.current += 1
-      activeRequest.current?.abort()
-      const access = grant.current
-      grant.current = null
-      if (access) void revokeSpaceModel(access)
-    }
-  }, [ownerKey])
+  const visible = mine
+    .filter((visit) => specialty === 'all' || visit.specialty === specialty)
+    .filter((visit) => matchesStatus(visit.status, status))
+    .filter((visit) => {
+      if (period === 'all') return true
+      if (visit.scheduledAt == null) return false
+      return period === 'upcoming'
+        ? visit.scheduledAt >= now && isOpen(visit.status)
+        : visit.scheduledAt < now || visit.status === 'completed'
+    })
+    .sort((left, right) => (left.scheduledAt ?? Infinity) - (right.scheduledAt ?? Infinity))
 
-  const sessionCrew = crewById(state.sessionCrewId)
-  const firstName = sessionCrew.name.split(' ')[0] ?? sessionCrew.name
-  const preview = spacePreview(firstName, level, draft)
-  const received = sharedSymptoms(state, state.sessionCrewId)
-
-  async function commit(next: SpaceRecord) {
-    const scope = owner.current
-    recordRef.current = next
-    setRecord(next)
-    const saved = await writeSpace(
-      state.role,
-      authenticatedCrewId,
-      state.sessionCrewId,
-      next,
-    )
-    if (!saved.ok && owner.current === scope)
-      setNote(
-        en
-          ? 'This simulated role cannot save this space.'
-          : 'Este rol simulado no puede guardar en este espacio.',
-      )
-  }
-
-  async function appendMessage(text: string) {
-    const current = recordRef.current
-    if (!current || !allowed || responding || activeRequest.current) return
-    const trimmed = text.trim().slice(0, 2000)
-    if (!trimmed) return
-    const localHistory = current.messages.slice(historyStart.current).slice(-12)
-    const turn = answerSpace(
-      state,
-      state.sessionCrewId,
-      current.dataUse,
-      trimmed,
-      localHistory,
-      QUIRON_LOCALE,
-    )
-    const at = state.clock.simulatedAt
-    const id = crypto.randomUUID()
-    const assistantId = `space-assistant-${id}`
-    const next: SpaceRecord = {
-      ...current,
-      messages: [
-        ...current.messages,
-        { id: `space-user-${id}`, role: 'user', text: trimmed, at },
-        {
-          id: assistantId,
-          role: 'assistant',
-          text: turn.assistantText,
-          at,
-          source: 'local_engine' as const,
-        },
-      ].slice(-200) as SpaceRecord['messages'],
-    }
-    historyStart.current = Math.max(
-      0,
-      historyStart.current - Math.max(0, current.messages.length + 2 - 200),
-    )
-    setDraft(trimmed)
-    // Keep the person's sharing level unchanged; suggestions are not consent.
-    if (turn.requiereHumanoAhora) {
-      dispatch({
-        type: 'raiseSpaceAlert',
-        crewId: state.sessionCrewId,
-        categories: turn.categories,
-        idempotencyKey: `space-escalate-${id}`,
-      })
-    }
-    void commit(next)
-    if (turn.requiereHumanoAhora || !modelConsent) return
-    const controller = new AbortController()
-    activeRequest.current = controller
-    const version = ++generation.current
-    const scope = owner.current
-    setResponding(true)
-    setModelStatus('')
-    try {
-      const sessionId = sessionStorage.getItem('vitalink-simulation-id') ?? ''
-      if (
-        !grant.current ||
-        grant.current.expiresAt <= Date.now() ||
-        grant.current.sessionId !== sessionId
-      ) {
-        const access = await authorizeSpaceModel(
-          sessionId,
-          state.sessionCrewId,
-          pin,
-          { ...current.dataUse, mission: missionConsent },
-          historyConsent,
-          AbortSignal.any([controller.signal, AbortSignal.timeout(10000)]),
-        )
-        if (
-          controller.signal.aborted ||
-          version !== generation.current ||
-          owner.current !== scope
-        ) {
-          void revokeSpaceModel({ sessionId, ...access })
-          return
-        }
-        grant.current = { sessionId, ...access }
-      }
-      const context = buildSpaceContext(
-        state,
-        state.sessionCrewId,
-        current.dataUse,
-        trimmed,
-      )
-      context.locale = QUIRON_LOCALE
-      context.selectedLevel = level
-      context.history = historyConsent
-        ? recentSpaceMessages(localHistory, trimmed)
-        : []
-      // Authoritative simulation data is selected by Nest, never sent as client claims.
-      context.datosPersona = { measurements: [], symptoms: [] }
-      const response = await askSpaceModel(
-        context,
-        controller.signal,
-        grant.current,
-      )
-      if (
-        controller.signal.aborted ||
-        version !== generation.current ||
-        owner.current !== scope
-      )
-        return
-      if (!response.ok) {
-        setModelStatus(
-          en
-            ? 'The model is unavailable. The local response remains available.'
-            : 'El modelo no está disponible. Se conserva la respuesta local.',
-        )
-        return
-      }
-      const applied = applySpaceProposal(turn, response.proposal, level)
-      const latest = recordRef.current
-      if (!latest || !latest.messages.some((m) => m.id === assistantId)) return
-      void commit({
-        ...latest,
-        messages: latest.messages.map((m) =>
-          m.id === assistantId
-            ? { ...m, text: applied.text, source: applied.source, model: response.model, toolsUsed: response.toolsUsed }
-            : m,
-        ),
-      })
-      const names =
-        response.toolsUsed
-          ?.filter((t) => t.status === 'ok')
-          .map((t) => t.name) ?? []
-      setModelStatus(
-        names.length
-          ? `${en ? 'Simulation data consulted' : 'Datos de simulación consultados'}: ${names.join(', ')}`
-          : en
-            ? 'Model response; no simulation tools consulted.'
-            : 'Respuesta del modelo; sin consultas a herramientas.',
-      )
-    } catch {
-      if (
-        !controller.signal.aborted &&
-        version === generation.current &&
-        owner.current === scope
-      )
-        setModelStatus(
-          en
-            ? 'The mission assistant could not be opened. Check the demo PIN or your connection. You can still use the basic conversation here.'
-            : 'No se pudo abrir la ayuda de la misión. Revisa el PIN de demostración o la conexión. Puedes seguir usando la conversación básica aquí.',
-        )
-    } finally {
-      if (version === generation.current && owner.current === scope) {
-        activeRequest.current = null
-        setResponding(false)
-      }
-    }
-  }
-
-  function saveRequest(status: 'mine' | 'sent') {
-    const current = recordRef.current
-    const trimmed = draft.trim()
-    if (!current || !trimmed) return
-    if (status === 'sent') {
-      if (level === 'solo_yo') return
-      dispatch({
-        type: 'sendSpaceRequest',
-        crewId: state.sessionCrewId,
-        level,
-        text: trimmed,
-        idempotencyKey: `space-send-${state.sessionCrewId}-${state.clock.simulatedAt}-${current.requests.length}`,
-      })
-    }
-    const shown = spacePreview(firstName, level, trimmed)
-    const withMessage: SpaceRecord = current.messages.some(
-      (item) => item.role === 'user' && item.text === trimmed,
-    )
-      ? current
-      : {
-          ...current,
-          messages: [
-            ...current.messages,
-            {
-              id: `space-msg-${state.clock.simulatedAt}-${current.messages.length}`,
-              role: 'user',
-              text: trimmed,
-              at: state.clock.simulatedAt,
-            },
-          ],
-        }
-    const next: SpaceRecord = {
-      ...withMessage,
-      requests: [
-        ...withMessage.requests,
-        {
-          id: `space-req-${state.clock.simulatedAt}-${withMessage.requests.length}`,
-          preview: shown.teamLine ?? trimmed,
-          shareLevel: level,
-          status,
-          at: state.clock.simulatedAt,
-        },
-      ],
-    }
-    setNote(
-      status === 'sent'
-        ? (en ? 'Your request is in the team panel at your chosen sharing level. The conversation stays in this space.' : 'La solicitud quedó en el panel del equipo, con el nivel que elegiste. La conversación sigue en este espacio.')
-        : (en ? 'Saved only for you.' : 'Guardada solo para ti.'),
-    )
-    void commit(next)
-  }
+  const requestError = appointmentsError || error
 
   return (
-    <div className="page">
-      <header className="page-head">
+    <div className="rd rd-crew">
+      <header className="rd-head">
+        <p className="rd-kicker">{en ? 'Private health space' : 'Espacio privado de salud'}</p>
+        <h1>{en ? 'My appointments' : 'Mis citas'}</h1>
+        <p className="rd-muted">
+          {en
+            ? 'See your medical and psychology appointments in one place. This list uses your mission records and only shows information shared for each visit.'
+            : 'Consultá tus citas médicas y psicológicas en un solo lugar. La lista usa los registros de tu misión y solo muestra la información compartida para cada cita.'}
+        </p>
+      </header>
+
+      <section className="rd-schedule-summary" aria-label={en ? 'Appointment summary' : 'Resumen de citas'}>
         <div>
-          <p className="kicker">
-            {en ? 'Emotional wellbeing' : 'Bienestar emocional'}
-          </p>
-          <h1>{en ? 'My space · Private' : 'Mi espacio · Privado'}</h1>
-          <p className="lede">
+          <span>{en ? 'Upcoming' : 'Próximas'}</span>
+          <strong>{upcomingCount} {en ? 'appointments' : 'citas'}</strong>
+        </div>
+        <div>
+          <span>{en ? 'Awaiting confirmation' : 'Por confirmar'}</span>
+          <strong>{pendingCount} {en ? 'requests' : 'solicitudes'}</strong>
+        </div>
+        <div>
+          <span>{en ? 'Completed' : 'Realizadas'}</span>
+          <strong>{completedCount} {en ? 'visits' : 'consultas'}</strong>
+        </div>
+      </section>
+
+      <section className="rd-card" aria-labelledby="my-appointments-title">
+        <div>
+          <h2 id="my-appointments-title">{en ? 'Your appointments' : 'Tus citas'}</h2>
+          <p className="rd-muted">
             {en
-              ? 'A private conversation with Quirón. Review a summary and decide whether to share it. The full conversation does not appear on the general panel.'
-              : 'Conversación privada con Quirón. Revisá el resumen y decidí si querés compartirlo. La conversación completa no aparece en el panel general.'}
+              ? 'Demo records come from the mission backend. They are not a diagnosis or a substitute for professional care.'
+              : 'Los registros de demostración vienen del backend de la misión. No son un diagnóstico ni sustituyen la atención profesional.'}
           </p>
         </div>
-      </header>
-      {state.role !== 'astronaut' ? (
-        <p className="callout">{en ? 'This simulated role does not open this module. Hiding the card would not be enough, so the read is not even requested.' : 'Con el rol simulado actual este módulo no se consulta. Ocultar la tarjeta no sería suficiente, así que la lectura ni siquiera se pide.'}</p>
-      ) : null}
-      {state.role === 'astronaut' && !allowed ? (
-        <PinGate
-          name={sessionCrew.name}
-          pin={pin}
-          pinError={pinError}
-          onPin={setPin}
-          onClearError={() => setPinError('')}
-          onSubmit={() => {
-            if (!simulatedPinMatches(state.sessionCrewId, pin)) {
-              setPinError(en ? 'That simulated PIN does not match this person.' : 'Ese PIN simulado no corresponde a esta persona.')
-              return
-            }
-            setPinError('')
-            unlockSpace(state.sessionCrewId)
-          }}
-        />
-      ) : null}
-      {allowed && !record && (
-        <p role="status">
-          {note ||
-            (en ? 'Opening your local space…' : 'Abriendo tu espacio local…')}
-        </p>
-      )}
-      {allowed && record ? (
-        <div className="stack">
-          <details className="fold">
-            <summary>{en ? 'What cannot stay only here' : 'Qué no puede quedarse solo aquí'}</summary>
-            <p>{en ? 'Send publishes the preview for the level you choose. Generic does not include the reason or the data. Flight surgeon and Team include the text. The conversation stays here. If you write a protocol emergency, the local engine creates an alert: chest pain, fainting, trouble breathing, confusion, thoughts of harming yourself or others, and a risk to the ship.' : 'Enviar publica la vista previa del nivel que elijas. Genérica no incluye el motivo ni los datos. Médico de vuelo y Equipo incluyen el texto. La conversación se queda aquí. Si escribes una urgencia del protocolo, el motor local crea una alerta en el Centro de alertas: dolor en el pecho, desmayo, dificultad para respirar, confusión, pensamientos de hacerse daño o de dañar a otros, y un riesgo para la nave.'}</p>
-          </details>
-          <section className="panel">
-            <h2>{en ? 'Model consent' : 'Consentimiento para el modelo'}</h2>
-            <p>
-              {en
-                ? 'Optional. The current message and authorized recent conversation are sent to the configured AI provider. This does not share anything with the team. These choices last only while this page is open.'
-                : 'Opcional. El mensaje actual y la conversación reciente autorizada se envían al proveedor de IA configurado. Esto no comparte nada con el equipo. Estas opciones duran solo mientras esta página está abierta.'}
-            </p>
-            <label>
-              <input
-                type="checkbox"
-                data-testid="space-model-consent"
-                checked={modelConsent}
-                onChange={(e) => {
-                  revokeConsent()
-                  setModelConsent(e.target.checked)
-                }}
-              />{' '}
-              {en
-                ? 'Allow the model to respond'
-                : 'Permitir respuestas del modelo'}
-            </label>
-            <label>
-              <input
-                type="checkbox"
-                data-testid="space-history-consent"
-                checked={historyConsent}
-                onChange={(e) => {
-                  revokeConsent()
-                  setHistoryConsent(e.target.checked)
-                }}
-              />{' '}
-              {en
-                ? 'Include recent conversation (up to 12 messages)'
-                : 'Incluir conversación reciente (hasta 12 mensajes)'}
-            </label>
-            <label>
-              <input
-                type="checkbox"
-                checked={missionConsent}
-                onChange={(e) => {
-                  revokeConsent()
-                  setMissionConsent(e.target.checked)
-                }}
-              />{' '}
-              {en
-                ? 'Allow read-only mission context'
-                : 'Permitir consulta del contexto de misión'}
-            </label>
-            {modelConsent && (
-              <label className="field">
-                {en
-                  ? 'Demo PIN to authorize the model'
-                  : 'PIN simulado para autorizar el modelo'}
-                <input
-                  value={pin}
-                  onChange={(e) => {
-                    revokeConsent()
-                    setPin(e.target.value)
-                  }}
-                  inputMode="numeric"
-                  maxLength={4}
-                  autoComplete="off"
-                />
-              </label>
-            )}
-            <p className="muted">
-              {en
-                ? 'This demo PIN does not protect your information. Do not enter real or private health details. Some mission features need a connection; the basic conversation is still available.'
-                : 'Este PIN de demostración no protege tu información. No escribas datos médicos reales o privados. Algunas funciones de la misión necesitan conexión; la conversación básica sigue disponible.'}
-            </p>
-          </section>
-          <section className="panel">
-            <h2>{en ? 'Data I use' : 'Datos que uso'}</h2>
-            <div className="stack">
-              {(en ? [
-                { id: 'sleep' as const, label: 'Sleep' },
-                { id: 'pulse' as const, label: 'Pulse' },
-                { id: 'symptoms' as const, label: 'Symptoms' },
-              ] : SWITCHES).map((item) => (
-                <div key={item.id} className="switch-row">
-                  <label htmlFor={`space-use-${item.id}`}>{item.label}</label>
-                  <Switch.Root
-                    id={`space-use-${item.id}`}
-                    className="switch"
-                    checked={record.dataUse[item.id]}
-                    onCheckedChange={(checked) => {
-                      const current = recordRef.current
-                      if (!current) return
-                      revokeConsent()
-                      void commit({
-                        ...current,
-                        dataUse: { ...current.dataUse, [item.id]: checked },
-                      })
-                    }}
-                  >
-                    <Switch.Thumb className="switch-thumb" />
-                  </Switch.Root>
-                </div>
-              ))}
-            </div>
-          </section>
-          <p className="callout" data-testid="space-received">
-            {received.length > 0
-              ? `Esto ya lo recibió el equipo: ${received.join(', ')}.`
-              : 'El equipo no tiene un autorreporte tuyo en este escenario.'}{' '}
-            Lo que escribas aquí es privado hasta que tú lo envíes.
-          </p>
-          <section className="panel">
-            <h2>{en ? 'How you feel' : 'Cómo te sientes'}</h2>
-            <button type="button" className="chip" data-testid="space-new-conversation" onClick={() => {
-              revokeConsent()
-              historyStart.current = 0
-              setDraft('')
-              const current = recordRef.current
-              if (current) void commit({ ...current, messages: [] })
-            }}>{en ? 'New conversation (clears this chat)' : 'Nueva conversación (borra este chat)'}</button>
-            <div className="chat-log" aria-live="polite">
-              {record.messages.length === 0 ? <p className="muted">{en ? 'There are no messages in your space yet.' : 'Todavía no hay mensajes en tu espacio.'}</p> : null}
-              {record.messages.map((message) => (
-                <article key={message.id} className={message.role === 'user' ? 'bubble user' : 'bubble'}>
-                  {message.role === 'assistant' ? <span className="muted">{message.source === 'model' ? (en ? 'Model' : 'Modelo') : (en ? 'Local engine' : 'Motor local')}</span> : null}
-                  <p>{message.text}</p>
-                  {message.source === 'model' && message.model && <p className="muted">{message.model.startsWith('gemini-') ? 'Gemini' : (en ? 'Model' : 'Modelo')} · {message.model}</p>}
-                  {message.source === 'model' && message.toolsUsed?.some((t) => t.status === 'ok') && <details>
-                    <summary>{en ? 'Evidence consulted' : 'Evidencia consultada'}</summary>
-                    <ul>{message.toolsUsed.filter((t) => t.status === 'ok').map((t, i) => <li key={`${t.name}-${i}`}>{t.name}</li>)}</ul>
-                    <p className="muted">{en ? 'Authorized simulation data. No notification was sent.' : 'Datos de simulación autorizados. No se envió ninguna notificación.'}</p>
-                  </details>}
-                </article>
-              ))}
-            </div>
-            {record.messages
-              .at(-1)
-              ?.text.includes('no debe quedarse solo entre tú y yo') ||
-            record.messages
-              .at(-1)
-              ?.text.includes('should not stay only between you and me') ? (
-              <div className="row" data-testid="space-escalation">
-                <button
-                  className="btn btn-primary"
-                  type="button"
-                  onClick={() => {
-                    setLevel('medico')
-                    setDraft('Necesito al médico de vuelo ahora')
-                  }}
-                >
-                  Médico de vuelo
-                </button>
-                <button
-                  className="btn"
-                  type="button"
-                  onClick={() => {
-                    setLevel('equipo')
-                    setDraft('Necesito a un compañero ahora')
-                  }}
-                >
-                  Compañero
-                </button>
-              </div>
-            ) : null}
-            <div className="chips" role="group" aria-label={en ? 'Quick replies' : 'Respuestas rápidas'}>
-              {[
-                'I am tired',
-                'I need to rest',
-                'I want to talk to someone',
-                'I feel unwell now',
-              ].map((text) => (
-                <button
-                  key={text}
-                  type="button"
-                  className="chip"
-                  disabled={responding}
-                  onClick={() => {
-                    void appendMessage(text)
-                  }}
-                >
-                  {text}
-                </button>
-              ))}
-            </div>
-            <form
-              onSubmit={(event) => {
-                event.preventDefault()
-                void appendMessage(draft)
+
+        <div className="rd-form-grid">
+          <div className="rd-field">
+            <label htmlFor="appointment-specialty">{en ? 'Specialty' : 'Especialidad'}</label>
+            <select
+              id="appointment-specialty"
+              value={specialty}
+              onChange={(event) => setSpecialty(event.target.value as SpecialtyFilter)}
+            >
+              <option value="all">{en ? 'All specialties' : 'Todas las especialidades'}</option>
+              <option value="medical">{en ? 'Medical' : 'Medicina'}</option>
+              <option value="psychological">{en ? 'Psychology' : 'Psicología'}</option>
+            </select>
+          </div>
+          <div className="rd-field">
+            <label htmlFor="appointment-status">{en ? 'Status' : 'Estado'}</label>
+            <select
+              id="appointment-status"
+              value={status}
+              onChange={(event) => {
+                const next = event.target.value
+                setStatus(next === 'all' || STATUSES.has(next as StatusFilter) ? next as StatusFilter : 'all')
               }}
             >
-              <Field id="space-draft" label={en ? 'Request text' : 'Texto de la solicitud'}>
-                <textarea
-                  id="space-draft"
-                  ref={draftRef}
-                  data-testid="space-draft"
-                  maxLength={2000}
-                  value={draft}
-                  onChange={(event) => setDraft(event.target.value)}
-                />
-              </Field>
-              <button
-                className="btn"
-                type="submit"
-                disabled={responding || !draft.trim()}
-              >
-                {en ? 'Talk' : 'Conversar'}
-              </button>
-              {responding && (
-                <button
-                  className="btn"
-                  type="button"
-                  onClick={() => {
-                    cancelResponse()
-                    setModelStatus(
-                      en
-                        ? 'Canceled. The local response remains available.'
-                        : 'Cancelado. Se conserva la respuesta local.',
-                    )
-                  }}
-                >
-                  {en ? 'Cancel response' : 'Cancelar respuesta'}
-                </button>
-              )}
-              <p role="status" aria-live="polite">
-                {responding
-                  ? en
-                    ? 'Quiron is responding…'
-                    : 'Quirón está respondiendo…'
-                  : modelStatus}
-              </p>
-              <button
-                className="btn"
-                type="button"
-                onClick={() => {
-                  cancelResponse()
-                  dispatch({
-                    type: 'raiseSpaceAlert',
-                    crewId: state.sessionCrewId,
-                    categories: ['explicit human support request'],
-                    idempotencyKey: crypto.randomUUID(),
-                  })
-                  setNote(
-                    en
-                      ? 'A simulated alert was requested. Contact a crew member directly; no real person has been notified.'
-                      : 'Se solicitó una alerta simulada. Contactá directamente a un compañero; no se notificó a ninguna persona real.',
-                  )
-                }}
-              >
-                {en
-                  ? 'I need human support now'
-                  : 'Necesito ayuda humana ahora'}
-              </button>
-            </form>
-          </section>
-          <section className="panel">
-            <h2>{en ? 'Request' : 'Solicitud'}</h2>
-            <p className="muted">{en ? 'Preview of what the team would see.' : 'Vista previa de lo que vería el equipo.'}</p>
-            <p data-testid="space-preview">
-              {draft.trim()
-                ? preview.cardText
-                : (en ? 'Write something to prepare the request.' : 'Escribe algo para armar la solicitud.')}
-            </p>
-            <div className="chips" role="group" aria-label={en ? 'Sharing level' : 'Nivel de compartir'}>
-              {(en ? [
-                { id: 'solo_yo' as const, label: 'Only me' },
-                { id: 'generica' as const, label: 'Generic' },
-                { id: 'medico' as const, label: 'Flight surgeon' },
-                { id: 'equipo' as const, label: 'Team' },
-              ] : LEVELS).map((item) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  className="chip"
-                  aria-pressed={level === item.id}
-                  onClick={() => {
-                    cancelResponse()
-                    setLevel(item.id)
-                  }}
-                >
-                  {item.label}
-                </button>
-              ))}
-            </div>
-            <div className="row">
-              <button
-                className="btn btn-primary"
-                type="button"
-                data-testid="space-send"
-                disabled={!draft.trim() || level === 'solo_yo'}
-                onClick={() => saveRequest('sent')}
-              >
-                {en ? 'Send' : 'Enviar'}
-              </button>
-              <button
-                className="btn"
-                type="button"
-                onClick={() => draftRef.current?.focus()}
-              >
-                {en ? 'Edit' : 'Editar'}
-              </button>
-              <button
-                className="btn"
-                type="button"
-                data-testid="space-keep"
-                disabled={!draft.trim()}
-                onClick={() => saveRequest('mine')}
-              >
-                {en ? 'Save only for me' : 'Guardar solo para mí'}
-              </button>
-            </div>
-            {level === 'solo_yo' ? (
-              <p className="muted">
-                {en ? 'With Only me selected, Send is disabled. Use Save only for me.' : 'Con Solo yo, Enviar queda deshabilitado. Usa Guardar solo para mí.'}
-              </p>
-            ) : null}
-            {note ? (
-              <p className="callout" data-testid="space-note">
-                {note}
-              </p>
-            ) : null}
-            {record.requests.length > 0 ? (
-              <ul className="timeline">
-                {record.requests
-                  .slice()
-                  .reverse()
-                  .map((item) => (
-                    <li key={item.id}>
-                      <span className="dot" aria-hidden="true" />
-                      <span>
-                        {item.status === 'sent' ? (en ? 'Sent' : 'Enviado') : (en ? 'Only for me' : 'Solo para mí')} ·{' '}
-                        {item.preview}
-                      </span>
-                    </li>
-                  ))}
-              </ul>
-            ) : null}
-          </section>
+              <option value="all">{en ? 'All statuses' : 'Todos los estados'}</option>
+              <option value="requested">{en ? 'Requested' : 'Solicitada'}</option>
+              <option value="confirmed">{en ? 'Confirmed' : 'Confirmada'}</option>
+              <option value="rescheduled">{en ? 'Rescheduled' : 'Reprogramada'}</option>
+              <option value="completed">{en ? 'Completed' : 'Realizada'}</option>
+              <option value="cancelled">{en ? 'Cancelled' : 'Cancelada'}</option>
+            </select>
+          </div>
+          <div className="rd-field">
+            <label htmlFor="appointment-period">{en ? 'Date' : 'Fecha'}</label>
+            <select
+              id="appointment-period"
+              value={period}
+              onChange={(event) => setPeriod(event.target.value as PeriodFilter)}
+            >
+              <option value="upcoming">{en ? 'Upcoming' : 'Próximas'}</option>
+              <option value="past">{en ? 'Past' : 'Anteriores'}</option>
+              <option value="all">{en ? 'Any date' : 'Cualquier fecha'}</option>
+            </select>
+          </div>
         </div>
-      ) : null}
+
+        {requestError ? (
+          <div className="rd-empty" role="alert">
+            <p className="rd-error">
+              {en ? 'Your appointments could not be loaded.' : 'No se pudieron cargar tus citas.'}
+            </p>
+            <button
+              className="rd-btn ghost"
+              type="button"
+              style={{ minHeight: 44 }}
+              onClick={() => void refresh()}
+            >
+              {en ? 'Retry' : 'Reintentar'}
+            </button>
+          </div>
+        ) : appointmentsLoading ? (
+          <p className="rd-muted" role="status">{en ? 'Loading appointments…' : 'Cargando citas…'}</p>
+        ) : visible.length === 0 ? (
+          <div className="rd-empty">
+            <strong>{en ? 'No appointments match these filters' : 'No hay citas con estos filtros'}</strong>
+            <span className="rd-muted">
+              {en ? 'Try another specialty, status, or date range.' : 'Probá otra especialidad, estado o período.'}
+            </span>
+          </div>
+        ) : (
+          <ul className="rd-list">
+            {visible.map((visit) => {
+              const isPsychology = visit.specialty === 'psychological'
+              const Icon = isPsychology ? Brain : Stethoscope
+              return (
+                <li className="rd-row" key={visit.id} style={{ alignItems: 'flex-start' }}>
+                  <div>
+                    <div className="rd-actions">
+                      <Icon size={18} strokeWidth={1.75} aria-hidden="true" />
+                      <strong>
+                        {isPsychology
+                          ? (en ? 'Psychology appointment' : 'Cita de psicología')
+                          : (en ? 'Medical appointment' : 'Cita médica')}
+                      </strong>
+                      <span>{visitStatus(visit.status, en)}</span>
+                    </div>
+                    <span>
+                      {en ? 'With ' : 'Con '}
+                      {visit.professionalId
+                        ? profileDisplayName(visit.professionalId)
+                        : (en ? 'Professional pending' : 'Profesional pendiente')}
+                    </span>
+                    <span><CalendarDays size={14} aria-hidden="true" /> {visitDate(visit.scheduledAt, en)}</span>
+                    {visit.durationMin ? (
+                      <span><Clock3 size={14} aria-hidden="true" /> {visit.durationMin} {en ? 'minutes' : 'minutos'}</span>
+                    ) : null}
+                    {visit.reason ? <p>{visit.reason}</p> : null}
+                    {visit.summary ? (
+                      <p><strong>{en ? 'Shared summary: ' : 'Resumen compartido: '}</strong>{visit.summary}</p>
+                    ) : null}
+                    {visit.outcome ? (
+                      <p><strong>{en ? 'Visit outcome: ' : 'Resultado de la cita: '}</strong>{visit.outcome}</p>
+                    ) : null}
+                    {visit.shareCategories?.length ? (
+                      <span>
+                        {en ? 'Shared for this visit: ' : 'Compartido para esta cita: '}
+                        {visit.shareCategories.join(', ')}
+                      </span>
+                    ) : null}
+                  </div>
+                </li>
+              )
+            })}
+          </ul>
+        )}
+
+        <div className="rd-actions">
+          <Link className="rd-btn" style={{ minHeight: 44 }} to="/app/mi-salud">
+            {en ? 'Request an appointment' : 'Solicitar una cita'}
+          </Link>
+        </div>
+      </section>
     </div>
-  )
-}
-
-function sharedSymptoms(state: AppState, crewId: CrewId): string[] {
-  const seen = new Set<string>()
-  const labels: string[] = []
-  for (const report of state.symptoms) {
-    if (report.crewId !== crewId) continue
-    for (const symptom of report.symptoms) {
-      if (seen.has(symptom)) continue
-      seen.add(symptom)
-      labels.push(symptom)
-    }
-  }
-  return labels
-}
-
-function PinGate({
-  name,
-  pin,
-  pinError,
-  onPin,
-  onClearError,
-  onSubmit,
-}: {
-  name: string
-  pin: string
-  pinError: string
-  onPin: (value: string) => void
-  onClearError: () => void
-  onSubmit: () => void
-}) {
-  const { lang } = useLocale()
-  const en = lang === 'en'
-  const pinHint = CREW.map(
-    (crew) => `${crew.name.split(' ')[0]} ${SIMULATED_PINS[crew.id]}`,
-  ).join(' · ')
-  return (
-    <section className="callout">
-      <strong>{en ? 'Simulated access to My space' : 'Acceso simulado a Mi espacio'}</strong>
-      <form
-        onSubmit={(event) => {
-          event.preventDefault()
-          onSubmit()
-        }}
-      >
-        <p>
-          {en ? 'This PIN is only for the demo and does not keep your information secure. Do not enter real or private health information.' : 'Este PIN solo sirve para la demostración y no protege tu información. No escribas datos médicos reales o privados.'}
-        </p>
-        <p className="muted">{en ? 'Demonstration codes' : 'Códigos de demostración'}: {pinHint}.</p>
-        <Field
-          id="space-page-pin"
-          label={en ? `Simulated PIN for ${name}` : `PIN simulado de ${name}`}
-          error={pinError}
-        >
-          <input
-            id="space-page-pin"
-            data-testid="space-page-pin"
-            inputMode="numeric"
-            autoComplete="off"
-            value={pin}
-            aria-invalid={Boolean(pinError)}
-            aria-describedby={pinError ? 'space-page-pin-error' : undefined}
-            onChange={(event) => {
-              onPin(event.target.value)
-              if (pinError) onClearError()
-            }}
-          />
-        </Field>
-        <button className="btn btn-primary" type="submit">
-          {en ? 'Open simulated session' : 'Abrir sesión simulada'}
-        </button>
-      </form>
-    </section>
   )
 }
