@@ -163,7 +163,7 @@ export function CrewPage() {
                   unlockSpace(state.sessionCrewId)
                 }}
               >
-                <p>{en ? 'This PIN is simulated. It is only for the demonstration and does not protect the data. Whoever controls the browser can read IndexedDB.' : 'Este PIN es simulado. Sirve solo para la demostración y no protege los datos. Quien controla el navegador puede leer IndexedDB.'}</p>
+                <p>{en ? 'This PIN is only for the demo and does not keep your information secure. Do not enter real or private health information.' : 'Este PIN solo sirve para la demostración y no protege tu información. No escribas datos médicos reales o privados.'}</p>
                 <p className="muted">{en ? 'Demonstration codes' : 'Códigos de demostración'}: {pinHint}.</p>
                 <Field id="space-pin" label={`${en ? 'Simulated PIN for' : 'PIN simulado de'} ${sessionCrew.name}`} error={pinError}>
                   <input
@@ -202,7 +202,7 @@ export function CrewPage() {
                     <textarea id="private-note" value={note} maxLength={2000} onChange={(event) => setNote(event.target.value)} />
                   </Field>
                   <button className="btn" type="submit">{en ? 'Save private note' : 'Guardar nota privada'}</button>
-                  <p className="muted">{en ? 'The medical team does not load this store. Whoever controls the browser can read IndexedDB: it is not a security boundary.' : 'El equipo médico no carga este almacén. Quien controla el navegador puede leer IndexedDB: no es una frontera de seguridad.'}</p>
+                  <p className="muted">{en ? 'This note stays on this device and is not shared with the medical team. Anyone who can use this browser may be able to see it, so avoid sensitive details.' : 'Esta nota queda en este dispositivo y no se comparte con el equipo médico. Otras personas que usen este navegador podrían verla, así que evita incluir información delicada.'}</p>
                 </form>
               ) : (
                 <p>{en ? 'This simulated role does not open this module. Hiding the card would not be enough, so the read is not even requested.' : 'Con el rol simulado actual este módulo no se consulta. Ocultar la tarjeta no sería suficiente, así que la lectura ni siquiera se pide.'}</p>

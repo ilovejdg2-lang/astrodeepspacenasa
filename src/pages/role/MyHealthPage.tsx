@@ -1,19 +1,16 @@
 import { systemText } from '../../systemText'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
 import { HealthIndicatorsPanel } from '../../components/health/HealthIndicatorsPanel'
 import { OfflineSyncBar } from '../../components/health/OfflineSyncBar'
-import { PlatformIndicatorCharts } from '../../components/health/PlatformIndicatorCharts'
 import { AppointmentDesk, type VisitRow } from '../../components/mission/AppointmentDesk'
 import { PainMapSection } from '../../components/health/pain/PainMapSection'
 import { DailyCarePanel } from '../../components/role/DailyCarePanel'
 import { CrewArt } from '../../components/role/RoleArt'
 import { useLocale } from '../../i18n'
 import { platformApi, type HealthIndicatorReading } from '../../platform/api'
-import { profileDisplayName, roleLabel } from '../../platform/copy'
+import { profileDisplayName } from '../../platform/copy'
 import { isActiveGrant, type PlatformGrant } from '../../platform/grants'
 import '../../platform/role-dash.css'
-import { RoleContextBar } from './RoleContextBar'
 import { useMissionWorkspace } from './useMissionWorkspace'
 
 type GrantRow = PlatformGrant & { id: string; granteeProfileId: string; categories: string[] }
@@ -28,12 +25,13 @@ export function MyHealthPage() {
   const {
     missionId,
     detail,
-    role,
-    mode,
     profile,
     wakeNote,
     symptoms,
     appointments,
+    appointmentsLoading,
+    appointmentsError,
+    error,
     grants,
     loading,
     refresh,
@@ -42,18 +40,11 @@ export function MyHealthPage() {
   const [indicators, setIndicators] = useState<HealthIndicatorReading[]>([])
   const [urgentNote, setUrgentNote] = useState('')
   const [grantBusy, setGrantBusy] = useState(false)
-  const [progressOptOut, setProgressOptOut] = useState(() => {
-    try { return localStorage.getItem('helios.progress.optout') === '1' } catch { return false }
-  })
-  const [recordCount, setRecordCount] = useState(() => {
-    try { return Number(localStorage.getItem('helios.progress.records') || '0') } catch { return 0 }
-  })
 
   const reloadIndicators = useCallback(async () => {
     if (!missionId) return
     const data = await platformApi.listIndicators(missionId)
     setIndicators(data.items)
-    try { setRecordCount(Number(localStorage.getItem('helios.progress.records') || '0')) } catch { /* ignore */ }
   }, [missionId])
 
   useEffect(() => {
@@ -89,7 +80,6 @@ export function MyHealthPage() {
 
   const medicId = detail?.members.find((m) => m.role === 'medic' && m.status === 'active')?.profileId
   const psychId = detail?.members.find((m) => m.role === 'psychologist' && m.status === 'active')?.profileId
-  const env = detail?.mission.environment || 'space_station'
   const activeGrants = (grants as GrantRow[]).filter(isActiveGrant)
 
   return (
@@ -98,23 +88,6 @@ export function MyHealthPage() {
       <header className="rd-head">
         <p className="rd-kicker">{en ? 'Personal space' : 'Espacio personal'}</p>
         <h1>{en ? 'My Health' : 'Mi salud'}</h1>
-        <RoleContextBar
-          missionName={detail?.mission.name}
-          stage={detail?.mission.stage}
-          role={role}
-          mode={mode}
-          subject={profile?.displayName}
-        />
-        <p className="rd-muted">
-          {en
-            ? `Mission environment: ${env.replace('_', ' ')} · Professional workspace (${role ? roleLabel(role, true) : '—'}) stays separate from these personal records.`
-            : `Entorno de misión: ${env.replace('_', ' ')} · El espacio profesional (${role ? roleLabel(role, false) : '—'}) permanece separado de estos registros personales.`}
-        </p>
-        <div className="rd-actions">
-          <Link className="rd-btn ghost" to="/app">{en ? 'Back to workspace' : 'Volver al espacio'}</Link>
-          <Link className="rd-btn ghost" to="/app/riesgos">{en ? '5 hazards & risks' : '5 peligros y riesgos'}</Link>
-          <Link className="rd-btn ghost" to="/misiones/evidencia">{en ? 'Evidence' : 'Evidencia'}</Link>
-        </div>
       </header>
 
       {loading ? <p className="rd-muted">{en ? 'Loading…' : 'Cargando…'}</p> : null}
@@ -150,7 +123,6 @@ export function MyHealthPage() {
         missionId={missionId}
         wakeNote={wakeNote}
         symptomCount={symptoms.length}
-        appointmentCount={appointments.length}
         stage={detail?.mission.stage}
         onChanged={() => refresh({ silent: true })}
       />
@@ -164,8 +136,6 @@ export function MyHealthPage() {
         }}
       />
 
-      <PlatformIndicatorCharts missionId={missionId} />
-
       {missionId ? (
         <AppointmentDesk
           missionId={missionId}
@@ -174,6 +144,8 @@ export function MyHealthPage() {
           scope="mine"
           members={detail?.members || []}
           appointments={appointments as VisitRow[]}
+          appointmentsLoading={appointmentsLoading}
+          loadError={appointmentsError || error}
           onChanged={() => refresh({ silent: true })}
         />
       ) : null}
@@ -279,24 +251,6 @@ export function MyHealthPage() {
         </ul>
       </section>
 
-      <section className="rd-card">
-        <h2>{en ? 'Responsible progress (optional)' : 'Progreso responsable (opcional)'}</h2>
-        <label className="rd-field" style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          <input
-            type="checkbox"
-            checked={progressOptOut}
-            onChange={(e) => {
-              const next = e.target.checked
-              setProgressOptOut(next)
-              try { localStorage.setItem('helios.progress.optout', next ? '1' : '0') } catch { /* ignore */ }
-            }}
-          />
-          {en ? 'Disable progress cues' : 'Desactivar señales de progreso'}
-        </label>
-        {!progressOptOut ? (
-          <p>{en ? `Indicators logged (local cue): ${recordCount}` : `Indicadores registrados (señal local): ${recordCount}`}</p>
-        ) : null}
-      </section>
     </div>
   )
 }

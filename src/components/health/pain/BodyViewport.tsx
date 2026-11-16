@@ -65,6 +65,7 @@ export const BodyViewport = forwardRef<BodyViewportHandle, Props>(function BodyV
   const rootRef = useRef<HTMLDivElement>(null)
   const [loaded, setLoaded] = useState(false)
   const [orientation, setOrientation] = useState({ direction: 'front' as ViewDirection, heading: 0, tilt: 0 })
+  const initialFocusDone = useRef(false)
   const live = useRef({ marks, selectedId, placeEnabled, onPlace, onSelect })
   live.current = { marks, selectedId, placeEnabled, onPlace, onSelect }
   const unavailableRef = useRef(onUnavailable)
@@ -78,6 +79,12 @@ export const BodyViewport = forwardRef<BodyViewportHandle, Props>(function BodyV
   useImperativeHandle(ref, () => api.current, [])
 
   useEffect(() => { syncRef.current() }, [marks, placeEnabled, selectedId])
+  useEffect(() => {
+    if (!loaded || initialFocusDone.current) return
+    initialFocusDone.current = true
+    const initialMark = marks.find((mark) => mark.id === selectedId)
+    if (initialMark) api.current.focusMark(initialMark.localPosition, initialMark.normal)
+  }, [loaded, marks, selectedId])
 
   useEffect(() => {
     const root = rootRef.current

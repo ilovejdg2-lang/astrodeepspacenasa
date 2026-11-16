@@ -2,7 +2,6 @@ import * as Tooltip from '@radix-ui/react-tooltip'
 import { Activity, AlertTriangle, Box, Brain, BookOpen, Heart, History, Lock, Menu, Moon, Rocket, Stethoscope, Sun, X } from 'lucide-react'
 import { lazy, Suspense, useEffect, useRef, useState, type ReactNode, type SVGProps } from 'react'
 import { Link, NavLink, useLocation } from 'react-router-dom'
-import { profileTitle, roleLabel } from '../platform/copy'
 import { getActiveMissionId, getStoredProfile } from '../platform/session'
 import { useWorkspaceRole } from '../platform/workspace'
 import { RoleSwitcher } from './role/RoleSwitcher'
@@ -57,11 +56,6 @@ function HelmetIcon({ size = 20, strokeWidth = 2, ...props }: SVGProps<SVGSVGEle
 const NAV_ICON = 20
 const NAV_STROKE = 2
 
-function moreIsCurrent(pathname: string, primary: { to: string }[], narrow: boolean, astronaut: boolean): boolean {
-  const overflow = primary.slice(narrow ? 4 : 5).some((link) => pathname === link.to || pathname.startsWith(`${link.to}/`))
-  return overflow || pathname.startsWith('/app/mision') || pathname.startsWith('/app/riesgos') || (astronaut && pathname.startsWith('/app/mi-espacio'))
-}
-
 export function Shell({ children }: { children: ReactNode }) {
   const { state, persistenceError, backendError } = useApp()
   const { resolved, setChoice, toggle } = useTheme()
@@ -99,7 +93,7 @@ export function Shell({ children }: { children: ReactNode }) {
         ? (en ? 'Care' : 'Atención')
         : workspaceRole === 'psychologist'
           ? (en ? 'Wellbeing' : 'Bienestar')
-          : (en ? 'My day' : 'Mi día')
+          : (en ? 'Home' : 'Inicio')
   const homeLink = { to: '/app/centro', label: homeLabel, icon: Activity, end: false }
   const healthLink = { to: '/app/mi-salud', label: en ? 'My Health' : 'Mi salud', icon: Heart, end: false }
   const monitorLink = { to: '/app/monitor', label: shell.monitor, icon: Activity, end: false }
@@ -113,7 +107,7 @@ export function Shell({ children }: { children: ReactNode }) {
   const risksLink = { to: '/app/riesgos', label: shell.risks, icon: BookOpen, end: false }
   // Crew members do not get the shared monitor, the crew roster, or other people's alerts.
   const primaryLinks = workspaceRole === 'crew'
-    ? [homeLink, healthLink]
+    ? [healthLink]
     : workspaceRole === 'chief'
       ? [homeLink, monitorLink, alertsLink, crewLink]
       : [alertsLink, monitorLink, crewLink]
@@ -131,10 +125,6 @@ export function Shell({ children }: { children: ReactNode }) {
       ]
   const spaceLink = { to: '/app/mi-espacio', label: shell.space, icon: Lock, end: false }
   const [open, setOpen] = useState(false)
-  const [more, setMore] = useState(false)
-  const [narrowPhone, setNarrowPhone] = useState(() => window.matchMedia('(max-width: 359px)').matches)
-  const moreButton = useRef<HTMLButtonElement>(null)
-  const morePanel = useRef<HTMLDivElement>(null)
   const location = useLocation()
   useEffect(() => {
     const path = location.pathname
@@ -158,6 +148,7 @@ export function Shell({ children }: { children: ReactNode }) {
   const primary = state.role === 'astronaut' || workspaceRole === 'crew'
     ? [...primaryLinks.slice(0, Math.min(4, primaryLinks.length)), spaceLink, ...primaryLinks.slice(Math.min(4, primaryLinks.length))]
     : primaryLinks
+  const mobileLinks = [...primary, ...extraLinks]
   const ai = state.notice
   const heard = useRef<Set<string> | null>(null)
   const [badgePop, setBadgePop] = useState(false)
@@ -194,27 +185,6 @@ export function Shell({ children }: { children: ReactNode }) {
                       : 'is-space'
 
   useEffect(() => {
-    const query = window.matchMedia('(max-width: 359px)')
-    const sync = () => setNarrowPhone(query.matches)
-    sync()
-    query.addEventListener('change', sync)
-    return () => query.removeEventListener('change', sync)
-  }, [])
-  useEffect(() => {
-    setMore(false)
-  }, [location.pathname])
-  useEffect(() => {
-    if (!more) return
-    morePanel.current?.querySelector<HTMLElement>('a, button')?.focus()
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape') return
-      setMore(false)
-      moreButton.current?.focus()
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [more])
-  useEffect(() => {
     const sync = () => document.documentElement.classList.toggle('tab-hidden', document.hidden)
     sync()
     document.addEventListener('visibilitychange', sync)
@@ -249,21 +219,6 @@ export function Shell({ children }: { children: ReactNode }) {
       {open ? <button className="scrim" aria-label={shell.closeMenu} onClick={() => setOpen(false)} /> : null}
       <aside className={open ? 'sidebar open' : 'sidebar'}>
         <div className="sidebar-top">
-          <Link
-            className="brand-mark"
-            to="/"
-            onClick={() => setOpen(false)}
-            title={en ? 'Roles' : 'Roles'}
-          >
-            <HeliosLogo variant="mark" size={112} />
-            <p className="brand-stack">
-              Health evaluation
-              <br />
-              &amp; life indicators
-              <br />
-              observation system
-            </p>
-          </Link>
           <div className="sidebar-navs">
             <nav className="nav" aria-label={shell.sections}>
               {primary.map((link) => (
@@ -284,9 +239,6 @@ export function Shell({ children }: { children: ReactNode }) {
             </nav>
           </div>
         </div>
-        <div className="sidebar-foot">
-          <HeliosLogo variant="wordmark" />
-        </div>
       </aside>
       <div className={(isMonitor || (isHome && workspaceRole === 'chief')) ? 'workspace workspace-monitor' : isCrew ? 'workspace workspace-crew' : isAlerts ? 'workspace workspace-alerts' : isResources ? 'workspace workspace-resources' : isHistory ? 'workspace workspace-history' : isAnalysis ? 'workspace workspace-analysis' : isMedical ? 'workspace workspace-medical' : 'workspace'}>
         <Suspense fallback={null}>
@@ -302,7 +254,7 @@ export function Shell({ children }: { children: ReactNode }) {
           <Link
             className="mobile-brand"
             to="/"
-            aria-label={en ? 'Roles' : 'Roles'}
+            aria-label="HELIOS, roles"
           >
             <HeliosLogo variant="wordmark" />
           </Link>
@@ -312,17 +264,7 @@ export function Shell({ children }: { children: ReactNode }) {
                 {open ? <X aria-hidden="true" size={18} strokeWidth={1.75} /> : <Menu aria-hidden="true" size={18} strokeWidth={1.75} />}
               </button>
             </Hint>
-            {getStoredProfile() ? (
-              <Link
-                className="helios-pill"
-                to="/misiones"
-                title={profileTitle(getStoredProfile()!, lang === 'en')}
-              >
-                {getStoredProfile()?.displayName}
-                {workspaceRole ? ` · ${roleLabel(workspaceRole, en)}` : ''}
-              </Link>
-            ) : null}
-            {getStoredProfile() ? <RoleSwitcher /> : null}
+            {workspaceRole ? <RoleSwitcher /> : null}
           </div>
           <div className="top-actions">
             <div className="lang-switch" role="group" aria-label={shell.language}>
@@ -344,7 +286,11 @@ export function Shell({ children }: { children: ReactNode }) {
         </header>
         {backendError || persistenceError ? (
           <div className="connection-notices" aria-live="polite">
-            {backendError ? <p role="status">{backendError}</p> : null}
+            {backendError ? (
+              <p role="status">
+                {backendError}
+              </p>
+            ) : null}
             {persistenceError ? <p>{persistenceError}</p> : null}
           </div>
         ) : null}
@@ -365,53 +311,13 @@ export function Shell({ children }: { children: ReactNode }) {
           <PageEnter key={location.pathname}>{children}</PageEnter>
         </main>
         <nav className="bottom-nav" aria-label={shell.mainSections}>
-          {primaryLinks.slice(0, narrowPhone ? 4 : 5).map((link) => (
-            <NavLink key={link.to} to={link.to} end={link.end} onClick={() => setMore(false)}>
+          {mobileLinks.map((link) => (
+            <NavLink key={link.to} to={link.to} end={link.end}>
               <link.icon aria-hidden="true" className="nav-icon" size={NAV_ICON} strokeWidth={NAV_STROKE} />
               {link.label}
             </NavLink>
           ))}
-          <button
-            ref={moreButton}
-            type="button"
-            aria-expanded={more}
-            aria-controls="more-modules"
-            aria-current={moreIsCurrent(location.pathname, primaryLinks, narrowPhone, state.role === 'astronaut') ? 'page' : undefined}
-            onClick={() => setMore((value) => !value)}
-          >
-            <Menu aria-hidden="true" className="nav-icon" size={NAV_ICON} strokeWidth={NAV_STROKE} /> {shell.more}
-          </button>
         </nav>
-        {more ? <button className="scrim more-scrim" type="button" aria-label={shell.closeMenu} onClick={() => { setMore(false); moreButton.current?.focus() }} /> : null}
-        {more ? (
-          <div ref={morePanel} id="more-modules" className="more-menu" role="dialog" aria-label={shell.moreSections}>
-            <div className="more-lang" role="group" aria-label={shell.language}>
-              <span className="more-lang-label">{shell.language}</span>
-              <div className="lang-switch">
-                <button type="button" aria-pressed={lang === 'en'} onClick={() => setLang('en')}>EN</button>
-                <button type="button" aria-pressed={lang === 'es'} onClick={() => setLang('es')}>ES</button>
-              </div>
-            </div>
-            {primaryLinks.slice(narrowPhone ? 4 : 5).map((link) => (
-              <NavLink key={link.to} to={link.to} end={link.end} onClick={() => setMore(false)}>
-                <link.icon aria-hidden="true" className="nav-icon" size={NAV_ICON} strokeWidth={NAV_STROKE} />
-                {link.label}
-              </NavLink>
-            ))}
-            {state.role === 'astronaut' ? (
-              <NavLink to={spaceLink.to} onClick={() => setMore(false)}>
-                <spaceLink.icon aria-hidden="true" className="nav-icon" size={NAV_ICON} strokeWidth={NAV_STROKE} />
-                {spaceLink.label}
-              </NavLink>
-            ) : null}
-            {extraLinks.map((link) => (
-              <NavLink key={link.to} to={link.to} end={link.end} onClick={() => setMore(false)}>
-                <link.icon aria-hidden="true" className="nav-icon" size={NAV_ICON} strokeWidth={NAV_STROKE} />
-                {link.label}
-              </NavLink>
-            ))}
-          </div>
-        ) : null}
         <Suspense fallback={null}>
           <QuironDashboard />
         </Suspense>

@@ -11,7 +11,6 @@ import {
   draftComplete,
   intensityNote,
   newDraftMark,
-  painDisclaimer,
   painHelp,
   readPainDraft,
   regionName,
@@ -80,7 +79,7 @@ export function PainEditor({
     try { return localStorage.getItem(VIEW_PREF_KEY) === '2d' || !webglAvailable() } catch { return !webglAvailable() }
   })
   const [modelFailed, setModelFailed] = useState(false)
-  const [placeMode, setPlaceMode] = useState(false)
+  const [placeMode, setPlaceMode] = useState(true)
   const [regionChoice, setRegionChoice] = useState('chest')
   const [sideChoice, setSideChoice] = useState<PainLaterality>('midline')
   const [aspectChoice, setAspectChoice] = useState<PainAspect>('anterior')
@@ -127,7 +126,7 @@ export function PainEditor({
   })), [marks])
 
   function describe(mark: PainDraftMark) {
-    return `${displayRegion(mark, en)}. ${sideLabel(mark.laterality, en)}. ${aspectLabel(mark.aspect, en)}. ${painDisclaimer(en)}`
+    return `${displayRegion(mark, en)}. ${sideLabel(mark.laterality, en)}. ${aspectLabel(mark.aspect, en)}`
   }
 
   function place(hit: BodyHit) {
@@ -222,7 +221,6 @@ export function PainEditor({
   return (
     <div className="pain-map" data-testid="pain-editor">
       <p className="pain-help">{painHelp(en)}</p>
-      <p className="pain-disclaimer">{painDisclaimer(en)}</p>
       <p className="sr-only" aria-live="polite">{liveText}</p>
       {restored ? <p className="rd-muted">{en ? 'Unsaved text from this screen was restored.' : 'Se restauró el texto que todavía estaba en esta pantalla.'}</p> : null}
       {followsReportId ? <p className="rd-muted">{en ? 'This update is saved as a new report. The earlier one stays in the history.' : 'Esta actualización se guarda como un reporte nuevo. El anterior permanece en el historial.'}</p> : null}

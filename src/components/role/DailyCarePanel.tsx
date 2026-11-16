@@ -1,6 +1,5 @@
 import { systemText } from '../../systemText'
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
 import { useLocale } from '../../i18n'
 import { platformApi } from '../../platform/api'
 import { enqueueOfflineOp, isBrowserOnline } from '../../platform/offlineQueue'
@@ -20,26 +19,17 @@ function timeToTodayMs(value: string) {
 
 type ModalKind = 'checkin' | 'update' | null
 
-/**
- * Acciones de cuidado diario.
- * - hub: Mi salud → tarjetas que abren modales
- * - quick: Mi día → vista rápida + modal de chequeo
- */
 export function DailyCarePanel({
   missionId,
   wakeNote,
   symptomCount,
   onChanged,
-  variant = 'hub',
-  appointmentCount = 0,
   stage,
 }: {
   missionId: string | null
   wakeNote: string
   symptomCount: number
   onChanged: () => Promise<void> | void
-  variant?: 'hub' | 'quick'
-  appointmentCount?: number
   stage?: string
 }) {
   const { lang } = useLocale()
@@ -64,7 +54,6 @@ export function DailyCarePanel({
   const wantsSupport = wantPsych || wantMedic
   const writable = stage === 'aboard'
 
-  const incomplete = !wakeNote || /incomplete|sin completar|pending/i.test(wakeNote)
   const dayStatus = systemText(wakeNote) || (en ? 'Incomplete' : 'Sin completar')
 
   useEffect(() => {
@@ -329,82 +318,6 @@ export function DailyCarePanel({
       {busy ? <p className="rd-muted" aria-live="polite">{en ? 'Saving…' : 'Guardando…'}</p> : null}
     </>
   )
-
-  if (variant === 'quick') {
-    return (
-      <div className="rd-stack">
-        {feedback}
-        <section className="rd-card">
-          <h2>{en ? 'Today at a glance' : 'Hoy de un vistazo'}</h2>
-          <p className="rd-muted">
-            {en ? 'Quick status for your shift. Full records live in My Health.' : 'Estado rápido de tu turno. El detalle vive en Mi salud.'}
-          </p>
-          <ul className="health-mini-list">
-            <li>
-              <strong>{en ? 'Daily Check-in' : 'Chequeo diario'}</strong>
-              {' · '}
-              {incomplete ? (en ? 'Pending' : 'Pendiente') : dayStatus}
-            </li>
-            <li>
-              <strong>{en ? 'Mood notes' : 'Notas de ánimo'}</strong>
-              {' · '}
-              {symptomCount}
-            </li>
-            <li>
-              <strong>{en ? 'Appointments' : 'Citas'}</strong>
-              {' · '}
-              {appointmentCount}
-            </li>
-          </ul>
-          <div className="rd-actions">
-            <button type="button" className="rd-btn" disabled={!missionId || !writable} onClick={() => setModal('checkin')}>
-              {incomplete
-                ? (en ? 'Register daily check-in' : 'Registrar chequeo del día')
-                : (en ? 'Update check-in' : 'Actualizar chequeo')}
-            </button>
-            <button type="button" className="rd-btn ghost" disabled={!missionId || !writable} onClick={() => setModal('update')}>
-              {en ? 'Write how you feel' : 'Escribir cómo me siento'}
-            </button>
-            <Link className="rd-btn ghost" to="/app/mi-salud">
-              {en ? 'Open My Health' : 'Ir a Mi salud'}
-            </Link>
-          </div>
-        </section>
-
-        <section className="rd-card">
-          <h2>{en ? 'Talk with Quirón' : 'Hablar con Quirón'}</h2>
-          <div className="rd-actions">
-            <button type="button" className="rd-btn" disabled={!missionId || stage === 'postmission' || stage === 'archived' || stage === 'cancelled'} onClick={() => openQuiron('physical')}>
-              {en ? 'Physical health' : 'Salud física'}
-            </button>
-            <button type="button" className="rd-btn ghost" disabled={!missionId || !writable} onClick={() => openQuiron('emotional')}>
-              {en ? 'Emotional wellbeing' : 'Bienestar emocional'}
-            </button>
-          </div>
-        </section>
-
-        <Modal
-          open={modal === 'checkin'}
-          title={en ? 'Daily Check-in' : 'Chequeo diario'}
-          description={en ? 'Log rest and how you feel today.' : 'Registrá descanso y cómo te sentís hoy.'}
-          onClose={() => setModal(null)}
-        >
-          {feedback}
-          {checkInForm}
-        </Modal>
-        <Modal
-          open={modal === 'update'}
-          className="care-feel-modal"
-          title={en ? 'How you feel' : 'Cómo te sentís'}
-          description={en ? 'A note about your mood. Aches and pain go on the 3D body map, not here.' : 'Una nota de ánimo. El dolor del cuerpo va en el mapa 3D, no acá.'}
-          onClose={() => setModal(null)}
-        >
-          {feedback}
-          {updateForm}
-        </Modal>
-      </div>
-    )
-  }
 
   return (
     <div className="rd-stack">

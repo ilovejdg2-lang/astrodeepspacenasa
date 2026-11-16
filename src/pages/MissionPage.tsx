@@ -27,9 +27,9 @@ const STAGE_HELP: Record<MissionStage, { es: string; en: string }> = {
 }
 
 const STAGE_EN: Record<MissionStage, string> = {
-  preembarque: 'Pre-flight',
-  a_bordo: 'On board',
-  posmision: 'Post-mission',
+  preembarque: 'Preflight',
+  a_bordo: 'In Flight',
+  posmision: 'Completed',
 }
 
 export function MissionPage() {
@@ -37,6 +37,7 @@ export function MissionPage() {
   const en = lang === 'en'
   const { state, dispatch } = useApp()
   const openEpisodes = state.episodes.filter((item) => item.status !== 'closed')
+  const hasOpenEpisodes = openEpisodes.length > 0
   const canEdit = state.role === 'medical' || state.role === 'ops'
   const counts = Object.fromEntries(
     (['propuesto', 'pendiente_revision', 'aprobado', 'disponible', 'faltante', 'cargado_verificado'] as PrepStatus[]).map((status) => [
@@ -88,6 +89,7 @@ export function MissionPage() {
             const currentIdx = STAGES.indexOf(stage)
             const targetIdx = STAGES.indexOf(item)
             const goingBack = targetIdx < currentIdx
+            const blockedByEpisodes = item === 'posmision' && hasOpenEpisodes
             return (
               <button
                 key={item}
@@ -95,10 +97,12 @@ export function MissionPage() {
                 className="mission-stage"
                 data-testid={`stage-${item}`}
                 aria-pressed={stage === item}
-                disabled={!canEdit || goingBack}
+                disabled={!canEdit || goingBack || blockedByEpisodes}
                 title={goingBack
                   ? (en ? 'Cannot go back to an earlier stage' : 'No se puede volver a una etapa anterior')
-                  : undefined}
+                  : blockedByEpisodes
+                    ? (en ? 'Close all open health episodes before completing the mission' : 'Cerrá los episodios de salud abiertos antes de finalizar la misión')
+                    : undefined}
                 onClick={() => dispatch({ type: 'setMissionStage', stage: item })}
               >
                 <strong>{en ? STAGE_EN[item] : MISSION_STAGE_LABEL[item]}</strong>
@@ -108,13 +112,17 @@ export function MissionPage() {
           })}
         </div>
         <p className="mission-note">
-          {canEdit
+          {hasOpenEpisodes
             ? (en
-              ? 'Stages only move forward. History stays, and open health episodes are not closed.'
-              : 'Las etapas solo avanzan. El historial se queda y los episodios de salud abiertos no se cierran.')
-            : (en
-              ? 'You can see the stage. Only the chief or the medic can change it.'
-              : 'Podés ver la etapa. Solo la jefa o la médica pueden cambiarla.')}
+              ? `Mission Review is blocked while ${openEpisodes.length} health episode(s) remain open.`
+              : `La Revisión de misión está bloqueada mientras haya ${openEpisodes.length} episodio(s) de salud abiertos.`)
+            : (canEdit
+              ? (en
+                ? 'Stages only move forward. History stays.'
+                : 'Las etapas solo avanzan. El historial se conserva.')
+              : (en
+                ? 'You can see the stage. Only the chief or the medic can change it.'
+                : 'Podés ver la etapa. Solo la jefa o la médica pueden cambiarla.'))}
         </p>
         <p className="mission-note">
           {en ? 'Updated' : 'Actualizada'} {formatMission(state.mission.stageChangedAt)} UTC

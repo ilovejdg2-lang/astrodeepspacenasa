@@ -93,7 +93,7 @@ export function PainHistory({
   const focus = items.find((item) => item.id === focusId) ?? null
   const compatible = !focus || (focus.modelId === PAIN_MODEL.id && focus.modelVersion === PAIN_MODEL.version)
   const revision = focus?.revisions.find((item) => item.at === revisionAt) ?? null
-  const activeMarks = revision?.marks ?? focus?.marks ?? []
+  const activeMarks = useMemo(() => revision?.marks ?? focus?.marks ?? [], [revision, focus])
   const compare = items.find((item) => item.id === compareId && item.id !== focus?.id) ?? null
   const shown = useMemo(() => {
     const primary = activeMarks.map((mark, index) => ({

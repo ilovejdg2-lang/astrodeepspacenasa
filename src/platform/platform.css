@@ -257,6 +257,25 @@
   line-height: 1.35;
   color: color-mix(in srgb, currentColor 58%, transparent);
 }
+.mission-process-status {
+  flex: 0 0 auto;
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  line-height: 1.4;
+  color: color-mix(in srgb, currentColor 62%, transparent);
+  background: color-mix(in srgb, currentColor 7%, transparent);
+}
+.mission-process li.is-done .mission-process-status,
+.mission-process li.is-current .mission-process-status {
+  color: #a90036;
+  background: color-mix(in srgb, #f5004f 12%, transparent);
+}
+:root[data-theme="dark"] .mission-process li.is-done .mission-process-status,
+:root[data-theme="dark"] .mission-process li.is-current .mission-process-status {
+  color: #ff8bad;
+}
 .mission-process li.is-done .mission-process-label,
 .mission-process li.is-current .mission-process-label {
   color: inherit;

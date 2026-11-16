@@ -38,7 +38,7 @@ function LazyPage({ children }: { children: ReactNode }) {
 /** A crew member sees only their own health. Other people's monitoring stays with the commander and the clinicians. */
 function NotForCrew({ children }: { children: ReactNode }) {
   const role = useWorkspaceRole()
-  if (role === 'crew') return <Navigate to="/app/centro" replace />
+  if (role === 'crew') return <Navigate to="/app/mi-salud" replace />
   return children
 }
 

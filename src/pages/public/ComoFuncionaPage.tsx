@@ -10,33 +10,33 @@ const OrbitalMission = lazy(() =>
 
 const CAPABILITIES = [
   {
-    title: 'Quirón Bot',
-    text: 'Asistente de consulta orientado a evidencias disponibles en el prototipo. Responde con fuentes visibles, reconoce datos faltantes y no inventa certeza clínica.',
+    title: 'Asistente Quirón',
+    text: 'Puedes hacer preguntas y consultar de dónde vienen sus respuestas. Si le falta información, te lo dirá.',
     tone: 'lilac' as const,
   },
   {
-    title: 'Calidad de datos',
-    text: 'Las mediciones de demostración se acompañan de antigüedad, integridad y contexto para evitar leer un número aislado como verdad absoluta.',
+    title: 'Mediciones más claras',
+    text: 'Las mediciones de ejemplo indican cuándo se tomaron y si parecen confiables.',
     tone: 'mint' as const,
   },
   {
-    title: 'Inventario y recursos',
-    text: 'Seguimiento de recursos propuestos, aprobados o faltantes vinculados a la preparación de la misión.',
+    title: 'Recursos para la misión',
+    text: 'Consulta qué necesita la tripulación y qué recursos están listos o todavía faltan.',
     tone: 'rose' as const,
   },
   {
-    title: 'Apoyo especializado',
-    text: 'Flujos para facilitar revisión humana cuando el contexto lo sugiere, sin sustituir criterio profesional.',
+    title: 'Apoyo adicional',
+    text: 'Facilita pedir ayuda cuando algo necesita revisarse con más atención.',
     tone: 'warm' as const,
   },
   {
-    title: 'Privacidad y consentimiento',
-    text: 'Espacio privado para bienestar emocional con resumen editable antes de cualquier compartición autorizada.',
+    title: 'Privacidad y decisión',
+    text: 'Un espacio privado para hablar sobre bienestar y revisar un resumen antes de compartirlo.',
     tone: 'lilac' as const,
   },
   {
-    title: 'Continuidad local y sincronización',
-    text: 'Funciones esenciales pueden continuar en local y sincronizar cuando el enlace vuelve a estar disponible.',
+    title: 'Cuando no hay conexión',
+    text: 'Algunas funciones siguen disponibles y se actualizan cuando vuelve el servicio.',
     tone: 'mint' as const,
   },
 ]
@@ -72,7 +72,7 @@ export function ComoFuncionaPage() {
       </Suspense>
 
       <Reveal className="editorial-block space">
-        <h2>{en ? 'Quirón Bot · example questions' : 'Quirón Bot · preguntas de ejemplo'}</h2>
+        <h2>{en ? 'Questions for Quirón' : 'Preguntas para Quirón'}</h2>
         <ul className="feature-list">
           {questions.map((q) => (
             <li key={q}>{q}</li>

@@ -15,7 +15,7 @@ export function MedicalPage() {
   const { lang } = useLocale()
   const en = lang === 'en'
   const { state, dispatch } = useApp()
-  const { missionId, profile, detail, appointments, loading, error, refresh, role } = useMissionWorkspace()
+  const { missionId, profile, detail, appointments, appointmentsLoading, appointmentsError, loading, error, refresh, role } = useMissionWorkspace()
   const crew = CREW.find((item) => item.id === state.selectedCrewId)
   const openEpisodes = state.episodes.filter((item) => item.status !== 'closed')
   const episode =
@@ -134,9 +134,16 @@ export function MedicalPage() {
             ? 'Request, confirm, reschedule, or complete medical visits with authorized mission physicians. Sharing still needs the person’s permission.'
             : 'Pedí, confirmá, reprogramá o completá visitas médicas con médicos autorizados de la misión. Compartir sigue necesitando permiso de la persona.'}
         </p>
-        {error ? <p className="callout callout-amber" role="alert">{systemText(error, lang)}</p> : null}
+        {error ? (
+          <div className="callout callout-amber" role="alert">
+            <p>{systemText(error, lang)}</p>
+            <button type="button" className="rd-btn ghost" disabled={loading} onClick={() => void refresh()}>
+              {en ? 'Retry loading medical workspace' : 'Reintentar carga médica'}
+            </button>
+          </div>
+        ) : null}
         {loading ? <p className="muted">{en ? 'Loading appointments…' : 'Cargando citas…'}</p> : null}
-        {missionId ? (
+        {missionId && !error ? (
           <AppointmentDesk
             missionId={missionId}
             stage={detail?.mission.stage}
@@ -145,15 +152,17 @@ export function MedicalPage() {
             specialty="medical"
             members={detail?.members || []}
             appointments={appointments as VisitRow[]}
+            appointmentsLoading={appointmentsLoading}
+            loadError={appointmentsError}
             onChanged={() => refresh({ silent: true })}
           />
-        ) : (
+        ) : !missionId ? (
           <p className="muted" data-testid="med-no-mission">
             {en
               ? 'Enter an active mission to schedule doctor appointments. Demo explore still shows case analysis above.'
               : 'Entrá a una misión activa para agendar citas médicas. En demo exploratoria igual podés analizar el caso arriba.'}
           </p>
-        )}
+        ) : null}
       </section>
 
       <div className="med-rest">

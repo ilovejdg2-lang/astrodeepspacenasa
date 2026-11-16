@@ -387,6 +387,13 @@ function setMissionStage(state: AppState, stage: MissionStage): AppState {
   const openEpisodes = state.episodes.filter(
     (item) => item.status !== 'closed',
   ).length;
+  if (stage === 'posmision' && openEpisodes > 0) {
+    return withNotice(
+      state,
+      'err',
+      'No se puede pasar a posmisión mientras haya episodios abiertos. La etapa actual se conserva.',
+    );
+  }
   const next = {
     ...state,
     mission: {
@@ -395,10 +402,7 @@ function setMissionStage(state: AppState, stage: MissionStage): AppState {
       stageChangedAt: state.clock.simulatedAt,
     },
   };
-  const text =
-    openEpisodes > 0
-      ? `Etapa: ${MISSION_STAGE_LABEL[stage]}. Hay ${openEpisodes} episodio(s) abiertos: el cambio de etapa no los cierra.`
-      : `Etapa: ${MISSION_STAGE_LABEL[stage]}. El historial se conserva.`;
+  const text = `Etapa: ${MISSION_STAGE_LABEL[stage]}. El historial se conserva.`;
   return addAudit(withNotice(next, 'ok', text), {
     actor: state.role,
     action: 'set-mission-stage',

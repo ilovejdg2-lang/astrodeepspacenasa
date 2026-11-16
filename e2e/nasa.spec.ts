@@ -45,8 +45,10 @@ test('NASA environmental panels isolate data and expose missing quantities', asy
   await expect(
     page.getByRole('heading', { name: 'Space weather', exact: true }),
   ).toBeVisible()
+  await expect(page.getByText('NASA fixture for UI test')).not.toBeVisible()
+  await page.getByText('Event details', { exact: true }).click()
   await expect(page.getByText('NASA fixture for UI test')).toBeVisible()
-  await expect(page.getByText(/Not your exposure/)).toBeVisible()
+  await expect(page.getByText(/do not measure your personal exposure/)).toBeVisible()
   await page.route('**/api/nasa/radlab/measurements*', (route) =>
     route.fulfill({
       json: {

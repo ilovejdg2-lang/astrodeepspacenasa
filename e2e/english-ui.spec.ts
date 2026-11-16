@@ -65,6 +65,11 @@ for (const role of ['crew', 'medic', 'psychologist'] as const) {
     await page.getByRole('button', { name: 'Enter dashboard', exact: true }).first().click()
     await page.goto('/app/centro')
     await expect(page.locator('main')).toBeVisible()
+    if (role === 'crew') {
+      await expect(page).toHaveURL(/\/app\/mi-salud$/)
+      await expect(page.getByRole('navigation', { name: 'Sections', exact: true })).toContainText('My Health')
+      await expect(page.getByRole('navigation', { name: 'Sections', exact: true })).not.toContainText('My day')
+    }
     await expect(page.locator('main')).not.toContainText(/Hábitat orbital|Sin completar|Sin permiso|Chequeo pendiente|Mesa Ops/)
     await page.goto('/app/mi-salud')
     await expect(page.locator('main')).toContainText('My Health')

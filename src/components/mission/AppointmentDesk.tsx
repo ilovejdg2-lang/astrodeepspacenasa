@@ -1,4 +1,6 @@
 import { useMemo, useState } from 'react'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import { useLocale } from '../../i18n'
 import { platformApi } from '../../platform/api'
 import { profileDisplayName } from '../../platform/copy'
@@ -55,6 +57,135 @@ function tomorrowKey() {
   return date.toISOString().slice(0, 10)
 }
 
+const DAY_MS = 86_400_000
+const SCHEDULE_START_MIN = 8 * 60
+const SCHEDULE_HOURS = 10
+const SCHEDULE_HOUR_HEIGHT = 52
+
+function utcWeekStart(timestamp: number) {
+  const date = new Date(timestamp)
+  const day = date.getUTCDay()
+  return Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate() - ((day + 6) % 7))
+}
+
+function formatClock(timestamp: number, en: boolean) {
+  return new Intl.DateTimeFormat(en ? 'en-GB' : 'es-CR', {
+    timeZone: 'UTC',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+  }).format(timestamp)
+}
+
+function AppointmentWeekSchedule({ rows, en }: { rows: VisitRow[]; en: boolean }) {
+  const [weekStart, setWeekStart] = useState(() => utcWeekStart(Date.now()))
+  const days = useMemo(
+    () => Array.from({ length: 5 }, (_, index) => weekStart + index * DAY_MS),
+    [weekStart],
+  )
+  const activeRows = useMemo(
+    () => rows.filter((item) => item.scheduledAt != null && item.status !== 'cancelled'),
+    [rows],
+  )
+  const weekEnd = weekStart + 7 * DAY_MS
+  const todayStart = utcWeekStart(Date.now()) + ((new Date().getUTCDay() + 6) % 7) * DAY_MS
+  const todayCount = activeRows.filter((item) => item.scheduledAt! >= todayStart && item.scheduledAt! < todayStart + DAY_MS).length
+  const pendingCount = rows.filter((item) => item.status === 'requested' || item.status === 'pending_confirm').length
+  const nextVisit = activeRows
+    .filter((item) => item.scheduledAt! >= Date.now() && item.status !== 'completed')
+    .sort((left, right) => left.scheduledAt! - right.scheduledAt!)[0]
+  const weekAppointments = activeRows.filter((item) => item.scheduledAt! >= weekStart && item.scheduledAt! < weekEnd)
+  const rangeLabel = new Intl.DateTimeFormat(en ? 'en-GB' : 'es-CR', {
+    timeZone: 'UTC',
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  })
+  const dayLabel = new Intl.DateTimeFormat(en ? 'en-GB' : 'es-CR', {
+    timeZone: 'UTC',
+    weekday: 'short',
+    day: '2-digit',
+    month: 'short',
+  })
+  const dateRange = `${rangeLabel.format(weekStart)} – ${rangeLabel.format(weekStart + 4 * DAY_MS)}`
+
+  return (
+    <section className="rd-schedule" aria-label={en ? 'Professional schedule' : 'Horario profesional'}>
+      <div className="rd-schedule-summary">
+        <div><span>{en ? 'Today' : 'Hoy'}</span><strong>{todayCount} {en ? 'appointments' : 'citas'}</strong></div>
+        <div><span>{en ? 'Pending' : 'Pendientes'}</span><strong>{pendingCount} {en ? 'requests' : 'solicitudes'}</strong></div>
+        <div>
+          <span>{en ? 'Next appointment' : 'Próxima cita'}</span>
+          <strong>{nextVisit?.scheduledAt ? formatClock(nextVisit.scheduledAt, en) : (en ? 'None' : 'Ninguna')}</strong>
+        </div>
+      </div>
+      <div className="rd-schedule-heading">
+        <div>
+          <h3>{en ? 'Weekly schedule' : 'Horario semanal'}</h3>
+          <span>{dateRange} · UTC</span>
+        </div>
+        <div className="rd-schedule-nav">
+          <button type="button" aria-label={en ? 'Previous week' : 'Semana anterior'} onClick={() => setWeekStart((current) => current - 7 * DAY_MS)}>
+            <ChevronLeft size={18} aria-hidden="true" />
+          </button>
+          <button type="button" onClick={() => setWeekStart(utcWeekStart(Date.now()))}>{en ? 'Today' : 'Hoy'}</button>
+          <button type="button" aria-label={en ? 'Next week' : 'Semana siguiente'} onClick={() => setWeekStart((current) => current + 7 * DAY_MS)}>
+            <ChevronRight size={18} aria-hidden="true" />
+          </button>
+        </div>
+      </div>
+      <div className="rd-schedule-scroll table-wrap" role="region" aria-label={en ? 'Weekly appointments, 08:00 to 18:00 UTC' : 'Citas semanales, de 08:00 a 18:00 UTC'}>
+        <div className="rd-week-grid">
+          <div className="rd-week-corner" aria-hidden="true" />
+          {days.map((day) => (
+            <div className="rd-week-day-heading" key={day}>
+              {dayLabel.format(day).toLocaleUpperCase(en ? 'en' : 'es')}
+            </div>
+          ))}
+          <div className="rd-week-times" aria-hidden="true">
+            {Array.from({ length: SCHEDULE_HOURS }, (_, index) => (
+              <span key={index}>{`${String(8 + index).padStart(2, '0')}:00`}</span>
+            ))}
+          </div>
+          {days.map((day) => {
+            const dayKey = new Date(day).toISOString().slice(0, 10)
+            const dayAppointments = weekAppointments.filter((item) => {
+              const date = new Date(item.scheduledAt!)
+              const startMinute = date.getUTCHours() * 60 + date.getUTCMinutes()
+              return date.toISOString().slice(0, 10) === dayKey && startMinute >= SCHEDULE_START_MIN && startMinute < 18 * 60
+            })
+            return (
+              <div className="rd-week-day" key={day}>
+                {dayAppointments.map((item) => {
+                  const start = new Date(item.scheduledAt!)
+                  const startMinute = start.getUTCHours() * 60 + start.getUTCMinutes()
+                  const top = ((startMinute - SCHEDULE_START_MIN) / 60) * SCHEDULE_HOUR_HEIGHT
+                  const duration = item.durationMin || 30
+                  const height = Math.max(40, Math.min((duration / 60) * SCHEDULE_HOUR_HEIGHT, SCHEDULE_HOURS * SCHEDULE_HOUR_HEIGHT - top))
+                  return (
+                    <article
+                      className={`rd-schedule-event${item.status === 'requested' || item.status === 'pending_confirm' ? ' is-requested' : ''}`}
+                      key={item.id}
+                      style={{ top: `${top}px`, height: `${height}px` }}
+                    >
+                      <strong>{profileDisplayName(item.requesterId || '')}</strong>
+                      <span>{formatClock(item.scheduledAt!, en)} · {statusLabel(item.status, en)}</span>
+                    </article>
+                  )
+                })}
+              </div>
+            )
+          })}
+        </div>
+      </div>
+      {weekAppointments.length === 0 ? (
+        <p className="rd-muted">{en ? 'No appointments this week.' : 'No hay citas esta semana.'}</p>
+      ) : null}
+      <p className="rd-schedule-legend">{en ? 'Confirmed and requested appointments' : 'Citas confirmadas y solicitadas'}</p>
+    </section>
+  )
+}
+
 export function AppointmentDesk({
   missionId,
   stage,
@@ -63,6 +194,8 @@ export function AppointmentDesk({
   specialty,
   members,
   appointments,
+  appointmentsLoading = false,
+  loadError,
   onChanged,
 }: {
   missionId: string | null
@@ -72,6 +205,8 @@ export function AppointmentDesk({
   specialty?: 'medical' | 'psychological'
   members: Member[]
   appointments: VisitRow[]
+  appointmentsLoading?: boolean
+  loadError?: string
   onChanged: () => Promise<void> | void
 }) {
   const { lang } = useLocale()
@@ -87,6 +222,7 @@ export function AppointmentDesk({
   const [summary, setSummary] = useState('')
   const [share, setShare] = useState<string[]>([])
   const [busy, setBusy] = useState(false)
+  const [retryingAppointments, setRetryingAppointments] = useState(false)
   const [error, setError] = useState('')
   const [ok, setOk] = useState('')
   const [outcome, setOutcome] = useState('')
@@ -109,6 +245,16 @@ export function AppointmentDesk({
 
   function toggleShare(id: string) {
     setShare((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current, id])
+  }
+
+  async function retryAppointments() {
+    if (retryingAppointments) return
+    setRetryingAppointments(true)
+    try {
+      await onChanged()
+    } finally {
+      setRetryingAppointments(false)
+    }
   }
 
   async function loadSlots(nextProfessional = professionalId, nextDay = day) {
@@ -188,10 +334,26 @@ export function AppointmentDesk({
       {error ? <p className="rd-error" role="alert">{systemText(error)}</p> : null}
       {ok ? <p className="rd-ok" role="status">{ok}</p> : null}
 
-      {rows.length === 0 ? (
+      {scope === 'assigned' ? <AppointmentWeekSchedule rows={rows} en={en} /> : null}
+
+      {loadError ? (
+        <div className="rd-empty" role="alert">
+          <p className="rd-error">{systemText(loadError)}</p>
+          <div className="rd-actions" style={{ marginTop: 10 }}>
+            <button type="button" className="rd-btn ghost" disabled={retryingAppointments} onClick={() => void retryAppointments()}>
+              {retryingAppointments ? (en ? 'Retrying…' : 'Reintentando…') : (en ? 'Retry loading visits' : 'Reintentar carga de citas')}
+            </button>
+          </div>
+        </div>
+      ) : appointmentsLoading ? null : rows.length === 0 ? (
         <div className="rd-empty">
           <strong>{en ? 'No visits in this view' : 'No hay citas en esta vista'}</strong>
           <span className="rd-muted">{en ? 'History from other missions is not shown here.' : 'No se muestra el historial de otras misiones.'}</span>
+          <div className="rd-actions" style={{ marginTop: 10 }}>
+            <Link className="rd-btn ghost" to="/misiones">
+              {en ? 'Browse missions with demo visit history' : 'Ver misiones con citas de ejemplo'}
+            </Link>
+          </div>
         </div>
       ) : (
         <ul className="rd-list">

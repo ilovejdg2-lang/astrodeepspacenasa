@@ -258,8 +258,8 @@ export function answerLocal(
   ) {
     const open = state.episodes.filter((item) => item.status !== 'closed');
     summary = english
-      ? `Completed. Current stage: ${stageName(state.mission.stage, locale)}. Episodes still open: ${open.length}. Changing stage does not close a pending follow-up. Recovery decisions belong to authorized staff.`
-      : `Finalizada. Etapa actual: ${MISSION_STAGE_LABEL[state.mission.stage]}. Episodios aún abiertos: ${open.length}. Cambiar de etapa no cierra un seguimiento pendiente. Las decisiones de recuperación corresponden al personal autorizado.`;
+      ? `Mission Review requires all health episodes to be closed. Current stage: ${stageName(state.mission.stage, locale)}. Episodes still open: ${open.length}. Recovery decisions belong to authorized staff.`
+      : `La Revisión de misión requiere que todos los episodios de salud estén cerrados. Etapa actual: ${MISSION_STAGE_LABEL[state.mission.stage]}. Episodios abiertos: ${open.length}. Las decisiones de recuperación corresponden al personal autorizado.`;
   } else if (
     normalized.includes('riesgo') ||
     normalized.includes('risk') ||
@@ -406,8 +406,8 @@ export function answerMissionLocal(state: AppState, question: string, locale: La
     normalized.includes('follow-up')
   ) {
     return english
-      ? `Later follow-up: stage ${stageName(state.mission.stage, locale)}. Open episodes: ${open.length}. Finishing or changing stage does not automatically close a pending episode.`
-      : `Seguimiento posterior: etapa ${MISSION_STAGE_LABEL[state.mission.stage]}. Episodios abiertos: ${open.length}. Finalizar o cambiar de etapa no cierra automáticamente un episodio pendiente.`;
+      ? `Mission Review requires all health episodes to be closed. Current stage: ${stageName(state.mission.stage, locale)}. Open episodes: ${open.length}. Recovery decisions belong to authorized staff.`
+      : `La Revisión de misión requiere que todos los episodios de salud estén cerrados. Etapa actual: ${MISSION_STAGE_LABEL[state.mission.stage]}. Episodios abiertos: ${open.length}. Las decisiones de recuperación corresponden al personal autorizado.`;
   }
   if (
     normalized.includes('riesgo') ||

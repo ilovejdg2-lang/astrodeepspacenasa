@@ -16,6 +16,13 @@ const STEPS = [
   ['Recovery and demo completion', 'Recuperación y cierre del demo'],
 ] as const
 
+const MEASUREMENT_QUALITY_LABELS = {
+  valid: { en: 'reliable', es: 'confiable' },
+  stale: { en: 'out of date', es: 'antigua' },
+  frozen: { en: 'unchanged', es: 'sin cambios' },
+  pending: { en: 'needs review', es: 'por revisar' },
+} as const
+
 export function MissionDemoButton() {
   const { lang } = useLocale()
   const en = lang === 'en'
@@ -86,6 +93,12 @@ export function MissionDemoButton() {
   }
   const trend = vitalTrends(state, 'elena-torres')
   const quality = measurementQuality(state, 'elena-torres')
+  const qualityLabel = MEASUREMENT_QUALITY_LABELS[quality.status][en ? 'en' : 'es']
+  const linkLabel = state.link === 'up'
+    ? (en ? 'Connected' : 'Con conexión')
+    : state.link === 'delayed'
+      ? (en ? 'Connection is slow' : 'Conexión lenta')
+      : (en ? 'Connection interrupted' : 'Conexión interrumpida')
   return <>
     <button type="button" className="helios-pill demo-pill" data-testid="start-mission-demo" disabled={busy} onClick={() => void go(0)}>
       {en ? 'Judge demo' : 'Demo jueces'}
@@ -95,15 +108,15 @@ export function MissionDemoButton() {
         <strong>{en ? 'Guided mission demo' : 'Demo guiada de misión'} · {(step ?? 0) + 1}/7</strong>
         <button type="button" className="chip" disabled={busy} onClick={() => { setStep(null); setError(''); void runActions([{ type: 'setRunning', running: true }, { type: 'setSpeed', speed: 10 }]) }}>{en ? 'Close guide' : 'Cerrar guía'}</button>
       </div>
-      <p>{en ? 'Loads fictional scenarios and replaces the current simulation. Forward preserves the current messages. Restart or Previous rebuilds the scenario; no real person is notified.' : 'Carga escenarios ficticios y reemplaza la simulación actual. Avanzar conserva los mensajes; reiniciar o retroceder reconstruye el escenario. No se notifica a ninguna persona real.'}</p>
+      <p>{en ? 'Loads made-up examples and replaces the current demo. Moving forward keeps the messages; going back or restarting starts the example again. No real person is contacted.' : 'Carga situaciones de ejemplo y reemplaza la demostración actual. Al avanzar, conserva los mensajes; al volver o reiniciar, comienza el ejemplo de nuevo. No se contacta a ninguna persona real.'}</p>
       <div className="chips" role="group" aria-label={en ? 'Demo steps' : 'Pasos del demo'}>
         {STEPS.map((labels, i) => <button key={i} type="button" className="chip" data-testid={`mission-demo-step-${i + 1}`} aria-pressed={step === i} disabled={busy} onClick={() => void go(i)}>{i + 1}. {labels[en ? 0 : 1]}</button>)}
       </div>
       <div role="status" data-testid="mission-demo-evidence">
-        <p>{en ? 'Heart rate / baseline' : 'Pulso / línea base'}: {trend.currentHr ?? '—'} / {trend.hrMin}–{trend.hrMax} bpm · Δ {trend.deltaHr ?? '—'} bpm · {en ? 'Quality' : 'Calidad'}: {quality.status} · {en ? 'Resting control' : 'Control en reposo'}: {quality.restControl ? (en ? 'available' : 'disponible') : (en ? 'missing' : 'faltante')}.</p>
-        <p>{en ? 'Earth link' : 'Enlace Tierra'}: {state.link} · {backendMode === 'connected' ? 'NestJS' : (en ? 'Local simulator' : 'Simulador local')} · {en ? 'MAC integrity is verified for received simulated packets; it does not establish clinical accuracy.' : 'Se verifica la integridad MAC de los paquetes simulados recibidos; no establece exactitud clínica.'}</p>
-        {step === 5 && <p>{en ? 'Messages stay queued during blackout. Local monitoring remains available.' : 'Los mensajes permanecen en cola durante la interrupción. El monitoreo local continúa.'}</p>}
-        {step === 6 && <p>{en ? 'Simulated receipt confirmed. The demo is complete; the health episode remains open for human review. Receiving a message does not close clinical follow-up.' : 'Recepción simulada confirmada. Demo completo; el episodio sigue abierto para revisión humana. Recibir un mensaje no cierra el seguimiento clínico.'}</p>}
+        <p>{en ? 'Pulse' : 'Pulso'}: {trend.currentHr ?? '—'} {en ? 'beats per minute' : 'latidos por minuto'} · {en ? 'usual range' : 'rango habitual'}: {trend.hrMin}–{trend.hrMax} · {en ? 'change' : 'cambio'}: {trend.deltaHr ?? '—'} {en ? 'beats per minute' : 'latidos por minuto'} · {en ? 'measurement' : 'medición'}: {qualityLabel} · {en ? 'resting measurement' : 'medición en reposo'}: {quality.restControl ? (en ? 'available' : 'disponible') : (en ? 'not available' : 'no disponible')}.</p>
+        <p>{en ? 'Connection to Earth' : 'Conexión con la Tierra'}: {linkLabel} · {backendMode === 'connected' ? (en ? 'Service connected' : 'Servicio conectado') : (en ? 'Demo simulator' : 'Simulador de demostración')} · {en ? 'We check that messages arrive unchanged, but this does not confirm that health measurements are medically accurate.' : 'Comprobamos que los mensajes lleguen sin cambios, pero eso no confirma que las mediciones sean médicamente correctas.'}</p>
+        {step === 5 && <p>{en ? 'Messages wait until the connection returns. Local check-ins remain available.' : 'Los mensajes quedan pendientes hasta que vuelva la conexión. El seguimiento sigue disponible.'}</p>}
+        {step === 6 && <p>{en ? 'The example message arrived. The demo is over, but the health follow-up stays open for the team to review.' : 'Llegó el mensaje de ejemplo. La demostración terminó, pero el equipo todavía debe revisar el seguimiento de salud.'}</p>}
       </div>
       {error && <p role="alert">{error}</p>}
       <div className="row">

@@ -3,13 +3,13 @@ import { Link } from 'react-router-dom'
 import { UserPlus } from 'lucide-react'
 import { useLocale } from '../../i18n'
 import { platformApi } from '../../platform/api'
-import { MISSION_PROCESS_STEPS, profileDisplayName, roleLabel, stageHint, stageLabel } from '../../platform/copy'
+import { profileDisplayName, roleLabel } from '../../platform/copy'
 import { systemText } from '../../systemText'
 import { getActiveMissionId } from '../../platform/session'
 import { MissionReviewPanel } from '../../components/mission/MissionReviewPanel'
+import { MissionProcessStrip } from '../../components/platform/MissionProcessStrip'
 import { MissionCrewOverview } from '../../components/role/MissionCrewOverview'
 import { MonitorPage } from '../MonitorPage'
-import { RoleContextBar } from './RoleContextBar'
 import { useMissionWorkspace } from './useMissionWorkspace'
 import '../../platform/role-dash.css'
 
@@ -17,12 +17,13 @@ import '../../platform/role-dash.css'
 export function ChiefHome() {
   const { lang } = useLocale()
   const en = lang === 'en'
-  const { detail, role, mode, loading, missionId, refresh, percent, prep, error: workspaceError } = useMissionWorkspace()
+  const { detail, role, loading, missionId, refresh, percent, prep, error: workspaceError } = useMissionWorkspace()
   const activeMissionId = missionId || getActiveMissionId()
   const rosterLocked = Boolean(detail?.mission.rosterLocked)
   const stage = detail?.mission.stage
+  const hasMissionDetail = Boolean(detail?.mission)
   const afterDeploy = stage === 'aboard' || stage === 'postmission' || stage === 'archived' || stage === 'cancelled'
-  const crewAddsBlocked = afterDeploy || rosterLocked
+  const crewAddsBlocked = hasMissionDetail && (afterDeploy || rosterLocked)
   const analysisStale = Boolean(detail?.mission.analysisStale)
   const [inviteOpen, setInviteOpen] = useState(false)
   const [missionCode, setMissionCode] = useState(detail?.mission.code || '')
@@ -50,12 +51,6 @@ export function ChiefHome() {
   }, [activeMissionId, missionCode])
 
   const pending = (detail?.members || []).filter((member) => member.status === 'pending')
-  /** Personas del equipo visible (cascos): excluye mesa Ops. Default = 4. */
-  const crewSeatCount = (detail?.members || []).filter(
-    (member) => member.status === 'active' && member.role !== 'ops',
-  ).length
-  const plannedCrew = detail?.mission.plannedCrewCount
-
   async function decide(membershipId: string, accept: boolean) {
     if (!activeMissionId || (accept && crewAddsBlocked)) return
     setBusyId(membershipId)
@@ -81,30 +76,8 @@ export function ChiefHome() {
       <div className="chief-center-bar">
         <div>
           <h1 className="chief-center-title">{en ? 'Mission center' : 'Centro de misión'}</h1>
-          <RoleContextBar
-            missionName={detail?.mission.name}
-            stage={stage}
-            role={role}
-            mode={mode}
-          />
-          <p className="muted chief-invite-note" data-testid="crew-seat-count">
-            {en
-              ? `Active members: ${crewSeatCount || 0} / planned ${plannedCrew ?? '—'}`
-              : `Integrantes activos: ${crewSeatCount || 0} / previstos ${plannedCrew ?? '—'}`}
-          </p>
-          {stage ? (
-            <p className="muted chief-invite-note" data-testid="mission-stage-line">
-              {en ? 'Mission stage' : 'Etapa de misión'}
-              {': '}
-              <strong>{stageLabel(stage, en)}</strong>
-              {MISSION_PROCESS_STEPS.includes(stage as (typeof MISSION_PROCESS_STEPS)[number])
-                ? ` · ${MISSION_PROCESS_STEPS.indexOf(stage as (typeof MISSION_PROCESS_STEPS)[number]) + 1}/${MISSION_PROCESS_STEPS.length}`
-                : ''}
-              {stageHint(stage, en) ? ` — ${stageHint(stage, en)}` : ''}
-            </p>
-          ) : null}
           {loading ? <p className="muted">{en ? 'Loading…' : 'Cargando…'}</p> : null}
-          {crewAddsBlocked ? (
+          {!loading && crewAddsBlocked ? (
             <p className="muted chief-invite-note">
               {stage === 'aboard'
                 ? (en
@@ -114,14 +87,14 @@ export function ChiefHome() {
                   ? 'This mission is completed. Crew setup and new clinical operations stay closed.'
                   : 'Esta misión está finalizada. La tripulación y las operaciones clínicas nuevas quedan cerradas.')}
             </p>
-          ) : analysisStale && stage === 'preflight' ? (
+          ) : !loading && analysisStale && stage === 'preflight' ? (
             <p className="muted chief-invite-note">
               {en
                 ? 'Changes pending: run analysis again before takeoff.'
                 : 'Hay cambios pendientes: volvé a analizar antes de despegar.'}
             </p>
           ) : null}
-          {workspaceError || error ? <p className="field-error" role="alert">{workspaceError || error}</p> : null}
+          {!loading && (workspaceError || error) ? <p className="field-error" role="alert">{workspaceError || error}</p> : null}
           {note ? <p className="muted chief-invite-note">{note}</p> : null}
         </div>
         <div className="chief-invite">
@@ -212,20 +185,12 @@ export function ChiefHome() {
         </div>
       </div>
 
+      <MonitorPage embedded content="actions" />
+
       {stage === 'draft' ? (
         <section className="panel" data-testid="draft-setup">
           <h2>{en ? 'Set up your mission' : 'Configurá la misión'}</h2>
-          <p className="muted">
-            {en
-              ? 'This draft has no checklist, health records, visits, or flight history. Nothing here is filled from another mission.'
-              : 'Este borrador no tiene checklist, registros de salud, citas ni historial de vuelo. No se rellena con datos de otra misión.'}
-          </p>
-          <ol>
-            <li>{en ? 'Mission details' : 'Datos de la misión'}</li>
-            <li>{en ? 'Crew setup' : 'Tripulación'}</li>
-            <li>{en ? 'Preparation plan' : 'Plan de preparación'}</li>
-            <li>{en ? 'Checklist review' : 'Revisión del checklist'}</li>
-          </ol>
+          <MissionProcessStrip stage={stage} en={en} showStatus />
           <div className="row" style={{ gap: 8, flexWrap: 'wrap' }}>
             <Link className="btn btn-primary" to="/misiones/nueva">{en ? 'Mission details' : 'Datos de la misión'}</Link>
             <Link className="btn" to="/app/recursos?tab=checklist">{en ? 'Preparation plan' : 'Plan de preparación'}</Link>
@@ -290,7 +255,6 @@ export function ChiefHome() {
         <MissionCrewOverview />
       )}
 
-      <MonitorPage embedded />
     </div>
   )
 }

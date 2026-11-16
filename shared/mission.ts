@@ -138,7 +138,7 @@ export function defaultPrepItems(at: number): PrepItem[] {
       status: 'propuesto',
       riskIds: ['risk-sensorimotor', 'risk-msk-cv', 'risk-bmed'],
       resourceId: null,
-      note: 'Activates when the mission is Completed; it does not close open episodes.',
+      note: 'Activates when the mission is Completed, after all open health episodes are closed.',
       updatedAt: at,
     },
   ]

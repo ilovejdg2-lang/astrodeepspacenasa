@@ -14,6 +14,7 @@ import { Badge, Field, Modal } from '../components/ui'
 import { roleLabel } from '../platform/copy'
 import { useWorkspaceRole, getWorkspaceMode } from '../platform/workspace'
 import { useApp } from '../state/store'
+import { systemText } from '../systemText'
 
 const SYMPTOMS = ['cansancio', 'mareo', 'cefalea', 'nausea', 'otro'] as const
 
@@ -22,7 +23,13 @@ const SYMPTOM_LABEL = {
   es: { cansancio: 'Cansancio', mareo: 'Mareo', cefalea: 'Dolor de cabeza', nausea: 'Náusea', otro: 'Otro' },
 } as const
 
-export function MonitorPage({ embedded = false }: { embedded?: boolean } = {}) {
+export function MonitorPage({
+  embedded = false,
+  content = 'all',
+}: {
+  embedded?: boolean
+  content?: 'all' | 'vitals' | 'actions'
+} = {}) {
   const { crewId } = useParams()
   const navigate = useNavigate()
   const { lang } = useLocale()
@@ -112,52 +119,57 @@ export function MonitorPage({ embedded = false }: { embedded?: boolean } = {}) {
 
   return (
     <div className={shellClass}>
-      {embedded ? null : (
+      {content !== 'actions' && !embedded && crewId ? (
         <Link className="monitor-back-link" to="/app/tripulacion">{en ? '← Back to crew' : '← Volver a tripulación'}</Link>
-      )}
-      <CarouselStrip className="crew-carousel" trackClassName="crew-picker" label={en ? 'Crew' : 'Tripulación'}>
-        {CREW.map((item) => (
-          <button
-            key={item.id}
-            type="button"
-            className="crew-pick"
-            data-testid={`crew-${item.id}`}
-            aria-pressed={item.id === crew.id}
-            aria-label={
-              item.id === crew.id
+      ) : null}
+      {content !== 'actions' ? (
+        <>
+          <CarouselStrip className="crew-carousel" trackClassName="crew-picker" label={en ? 'Crew' : 'Tripulación'}>
+            {CREW.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                className="crew-pick"
+                data-testid={`crew-${item.id}`}
+                aria-pressed={item.id === crew.id}
+                aria-label={
+                  item.id === crew.id
+                    ? en
+                      ? `${item.name}, selected`
+                      : `${item.name}, seleccionada`
+                    : item.name
+                }
+                onClick={() => {
+                  dispatch({ type: 'selectCrew', crewId: item.id })
+                  if (!embedded) navigate(`/app/tripulacion/${item.id}`)
+                }}
+              >
+                <CrewHelmet id={item.id} name={item.name} selected={item.id === crew.id} />
+                <span aria-hidden="true">{item.name.split(' ')[0]}</span>
+              </button>
+            ))}
+          </CarouselStrip>
+
+          <header className="monitor-id">
+            <div className="monitor-avatar">
+              <CrewHelmet id={crew.id} name={crew.name} selected />
+            </div>
+            <p className="monitor-kicker">{embedded ? (en ? 'Mission center' : 'Centro') : (en ? 'Crew monitoring' : 'Monitoreo del tripulante')}</p>
+            <h1 className="monitor-name">{crew.name}</h1>
+            <p className="monitor-meta">{crewDuty(crew, lang)} · {crewPlace(crew, lang)}</p>
+            <p className="monitor-summary">
+              {hrAbove && hrText
                 ? en
-                  ? `${item.name}, selected`
-                  : `${item.name}, seleccionada`
-                : item.name
-            }
-            onClick={() => {
-              dispatch({ type: 'selectCrew', crewId: item.id })
-              if (!embedded) navigate(`/app/tripulacion/${item.id}`)
-            }}
-          >
-            <CrewHelmet id={item.id} name={item.name} selected={item.id === crew.id} />
-            <span aria-hidden="true">{item.name.split(' ')[0]}</span>
-          </button>
-        ))}
-      </CarouselStrip>
+                  ? `Heart rate (${hrText}) is above baseline (${baseline}).`
+                  : `La frecuencia cardíaca (${hrText}) está por encima de su línea base (${baseline}).`
+                : posture.summary}
+            </p>
+          </header>
+        </>
+      ) : null}
 
-      <header className="monitor-id">
-        <div className="monitor-avatar">
-          <CrewHelmet id={crew.id} name={crew.name} selected />
-        </div>
-        <p className="monitor-kicker">{embedded ? (en ? 'Mission center' : 'Centro') : (en ? 'Crew monitoring' : 'Monitoreo del tripulante')}</p>
-        <h1 className="monitor-name">{crew.name}</h1>
-        <p className="monitor-meta">{crewDuty(crew, lang)} · {crewPlace(crew, lang)}</p>
-        <p className="monitor-summary">
-          {hrAbove && hrText
-            ? en
-              ? `Heart rate (${hrText}) is above baseline (${baseline}).`
-              : `La frecuencia cardíaca (${hrText}) está por encima de su línea base (${baseline}).`
-            : posture.summary}
-        </p>
-      </header>
-
-      <section className="monitor-card" aria-label={en ? 'Current reading' : 'Lectura actual'}>
+      {content !== 'actions' ? (
+        <section className="monitor-card" aria-label={en ? 'Current reading' : 'Lectura actual'}>
         <div className="monitor-card-hr">
           <div className="hr-hero">
             <Heart aria-hidden="true" size={36} strokeWidth={2.25} fill="currentColor" />
@@ -180,9 +192,11 @@ export function MonitorPage({ embedded = false }: { embedded?: boolean } = {}) {
             <Vital stateNow={state.clock.simulatedAt} crewId={crew.id} kind="sleep_hours" />
           </dl>
         </div>
-      </section>
+        </section>
+      ) : null}
 
-      <section className="monitor-actions panel" aria-label={en ? 'Monitor actions' : 'Acciones del monitor'}>
+      {content !== 'vitals' ? (
+        <section className="monitor-actions panel" aria-label={en ? 'Monitor actions' : 'Acciones del monitor'}>
         <div className="monitor-actions-head">
           <div>
             <h2>{en ? 'What you can do now' : 'Qué puedes hacer ahora'}</h2>
@@ -249,14 +263,17 @@ export function MonitorPage({ embedded = false }: { embedded?: boolean } = {}) {
               <li key={item.id}>
                 {item.symptoms.map((id) => SYMPTOM_LABEL[lang][id as keyof typeof SYMPTOM_LABEL.en] ?? id).join(', ') || (en ? 'Note' : 'Nota')}
                 {' — '}
-                {item.note || (en ? 'no note' : 'sin nota')}
+                {item.id === 'sym-elena-seed' && item.note
+                  ? systemText(item.note, lang)
+                  : item.note || (en ? 'no note' : 'sin nota')}
                 {' · '}
                 {ageLabel(state.clock.simulatedAt, item.reportedAt)}
               </li>
             ))}
           </ul>
         ) : null}
-      </section>
+        </section>
+      ) : null}
     </div>
   )
 }

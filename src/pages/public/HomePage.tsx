@@ -140,7 +140,7 @@ export function HomePage() {
             <div className="quiron-wave">
               <span /><span /><span /><span /><span />
             </div>
-            <strong>Quirón Bot</strong>
+            <strong>Quirón</strong>
             <p>{en ? 'Assistance demo' : 'Demo de asistencia'}</p>
           </div>
           <div>

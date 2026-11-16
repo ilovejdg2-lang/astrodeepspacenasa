@@ -28,7 +28,6 @@ export interface ScienceBrief {
   cause: string;
   signals: ScienceSignal[];
   sources: ScienceSource[];
-  note: string;
 }
 
 const KINDS: MeasurementKind[] = [
@@ -205,15 +204,9 @@ export function briefForCrew(
       ? 'This episode uses simulated crew readings. It is not a live NASA medical feed.'
       : 'Este episodio usa lecturas simuladas de la tripulación. No es un canal médico en vivo de NASA.';
 
-  const note =
-    lang === 'en'
-      ? 'NASA documents below are public references. HELIOS does not download astronaut medical records and does not turn these papers into a diagnosis or a treatment.'
-      : 'Los documentos NASA de abajo son referencias públicas. HELIOS no descarga historias clínicas de astronautas ni convierte esos textos en un diagnóstico o un tratamiento.';
-
   return {
     cause,
     signals,
     sources: risks.map((risk) => toSource(risk, lang)),
-    note,
   };
 }

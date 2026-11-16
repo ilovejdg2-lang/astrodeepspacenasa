@@ -324,8 +324,8 @@ export function MySpacePage() {
       )
         setModelStatus(
           en
-            ? 'Model access failed. Check the demo PIN and backend connection. Local conversation remains available.'
-            : 'No se pudo autorizar el modelo. Revisá el PIN simulado y la conexión con Nest. La conversación local sigue disponible.',
+            ? 'The mission assistant could not be opened. Check the demo PIN or your connection. You can still use the basic conversation here.'
+            : 'No se pudo abrir la ayuda de la misión. Revisa el PIN de demostración o la conexión. Puedes seguir usando la conversación básica aquí.',
         )
     } finally {
       if (version === generation.current && owner.current === scope) {
@@ -397,8 +397,8 @@ export function MySpacePage() {
           <h1>{en ? 'My space · Private' : 'Mi espacio · Privado'}</h1>
           <p className="lede">
             {en
-              ? 'A private conversation with Quirón Bot. Review, edit, and authorize a summary before sharing it. The full conversation does not appear on the general panel.'
-              : 'Conversación privada con Quirón Bot. Revisá, editá y autorizá un resumen antes de compartirlo. La conversación completa no aparece en el panel general.'}
+              ? 'A private conversation with Quirón. Review a summary and decide whether to share it. The full conversation does not appear on the general panel.'
+              : 'Conversación privada con Quirón. Revisá el resumen y decidí si querés compartirlo. La conversación completa no aparece en el panel general.'}
           </p>
         </div>
       </header>
@@ -501,8 +501,8 @@ export function MySpacePage() {
             )}
             <p className="muted">
               {en
-                ? 'Public demo PINs and IndexedDB do not provide real authentication or confidential storage. Mission tools require the backend; the local conversation works without them.'
-                : 'Los PIN públicos e IndexedDB no proporcionan autenticación ni almacenamiento confidencial real. Las herramientas requieren Nest; la conversación local funciona sin ellas.'}
+                ? 'This demo PIN does not protect your information. Do not enter real or private health details. Some mission features need a connection; the basic conversation is still available.'
+                : 'Este PIN de demostración no protege tu información. No escribas datos médicos reales o privados. Algunas funciones de la misión necesitan conexión; la conversación básica sigue disponible.'}
             </p>
           </section>
           <section className="panel">
@@ -817,7 +817,7 @@ function PinGate({
         }}
       >
         <p>
-          {en ? 'This PIN is simulated. It is only for the demonstration and does not protect the data. Whoever controls the browser can read IndexedDB.' : 'Este PIN es simulado. Sirve solo para la demostración y no protege los datos. Quien controla el navegador puede leer IndexedDB.'}
+          {en ? 'This PIN is only for the demo and does not keep your information secure. Do not enter real or private health information.' : 'Este PIN solo sirve para la demostración y no protege tu información. No escribas datos médicos reales o privados.'}
         </p>
         <p className="muted">{en ? 'Demonstration codes' : 'Códigos de demostración'}: {pinHint}.</p>
         <Field

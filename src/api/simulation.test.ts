@@ -23,6 +23,23 @@ describe('cliente NestJS', () => {
     })
     expect(client.revision).toBe(4)
   })
+  it('reutiliza un límite de conexión al recuperar una sesión nueva', async () => {
+    const state = createInitialState('baseline')
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(Response.json({ message: 'not found' }, { status: 404 }))
+      .mockResolvedValueOnce(Response.json({ state, revision: 0, simulated: true }))
+    vi.stubGlobal('fetch', fetchMock)
+    const client = new SimulationClient(crypto.randomUUID())
+
+    await client.connect(state)
+
+    const get = fetchMock.mock.calls[0]?.[1] as RequestInit
+    const initialize = fetchMock.mock.calls[1]?.[1] as RequestInit
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+    expect(get.signal).toBeInstanceOf(AbortSignal)
+    expect(initialize.signal).toBe(get.signal)
+  })
   it('rechaza estados y análisis inválidos del servidor', async () => {
     vi.stubGlobal(
       'fetch',

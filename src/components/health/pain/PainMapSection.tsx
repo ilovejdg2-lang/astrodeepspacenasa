@@ -44,11 +44,6 @@ export function PainMapSection({
   return (
     <section className="rd-card" aria-labelledby="pain-heading">
       <h2 id="pain-heading">{en ? 'Record pain' : 'Registrar dolor'}</h2>
-      <p className="rd-muted">
-        {en
-          ? 'Mark an approximate place on a body diagram and describe it in your own words. A physician can open the same marks only after you share symptoms. Being chief does not grant this map.'
-          : 'Marcá un lugar aproximado en un diagrama corporal y describilo con tus palabras. Un médico puede abrir las mismas marcas solo después de que compartas síntomas. Ser jefe no concede este mapa.'}
-      </p>
       {!aboard ? (
         <p className="rd-muted">
           {stage === 'postmission' || stage === 'archived' || stage === 'cancelled'

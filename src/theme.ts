@@ -34,18 +34,22 @@ export function useTheme(): {
   setChoice: (choice: ThemeChoice) => void
   toggle: () => void
 } {
-  const [choice, setChoiceState] = useState<ThemeChoice>(() => readThemeChoice())
-  const [resolved, setResolved] = useState<'light' | 'dark'>(
-    document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light',
-  )
+  const [choice, setChoiceState] = useState<ThemeChoice>(() => {
+    const current = readThemeChoice()
+    if (typeof document !== 'undefined') {
+      document.documentElement.dataset.theme = current
+      document.documentElement.style.colorScheme = current
+    }
+    return current
+  })
 
   useEffect(() => {
-    setResolved(applyTheme(choice))
+    applyTheme(choice)
   }, [choice])
 
   return {
     choice,
-    resolved,
+    resolved: choice,
     setChoice: setChoiceState,
     toggle: () => setChoiceState((current) => (current === 'dark' ? 'light' : 'dark')),
   }

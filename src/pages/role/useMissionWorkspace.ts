@@ -18,6 +18,8 @@ export function useMissionWorkspace() {
   const [prep, setPrep] = useState<PrepItem[]>([])
   const [percent, setPercent] = useState(0)
   const [appointments, setAppointments] = useState<unknown[]>([])
+  const [appointmentsLoading, setAppointmentsLoading] = useState(true)
+  const [appointmentsError, setAppointmentsError] = useState('')
   const [wakeNote, setWakeNote] = useState('')
   const [symptoms, setSymptoms] = useState<unknown[]>([])
   const [grants, setGrants] = useState<unknown[]>([])
@@ -29,11 +31,23 @@ export function useMissionWorkspace() {
     if (!missionId) return
     if (!opts?.silent) setLoading(true)
     setError('')
+    setAppointmentsLoading(true)
+    setAppointmentsError('')
+    const appointmentsRequest = platformApi.appointments(missionId)
+      .then((data) => {
+        setAppointments(data.items)
+        setAppointmentsError('')
+      })
+      .catch((err: unknown) => {
+        setAppointments([])
+        setAppointmentsError(err instanceof Error ? err.message : 'Error')
+      })
+      .finally(() => setAppointmentsLoading(false))
     try {
-      const [mission, prepData, appts, wake, symptomData, grantData] = await Promise.all([
+      const [mission, prepData, , wake, symptomData, grantData] = await Promise.all([
         platformApi.mission(missionId),
         platformApi.prep(missionId).catch(() => ({ items: [] as PrepItem[], percent: 0, canStart: false })),
-        platformApi.appointments(missionId).catch(() => ({ items: [] as unknown[] })),
+        appointmentsRequest,
         platformApi.wake(missionId, false).catch(() => ({ note: '', check: null })),
         platformApi.listSymptoms(missionId).catch(() => ({ items: [] as unknown[] })),
         platformApi.grants(missionId).catch(() => ({ items: [] as unknown[], chief: { sharesWithChief: [], neverAutoShared: [], note: '' } })),
@@ -41,7 +55,6 @@ export function useMissionWorkspace() {
       setDetail(mission)
       setPrep(prepData.items)
       setPercent(prepData.percent)
-      setAppointments(appts.items)
       setWakeNote(wake.note || '')
       setSymptoms(symptomData.items)
       setGrants(grantData.items)
@@ -72,6 +85,8 @@ export function useMissionWorkspace() {
     prep,
     percent,
     appointments,
+    appointmentsLoading,
+    appointmentsError,
     wakeNote,
     symptoms,
     grants,

@@ -23,6 +23,14 @@ describe('system display localization', () => {
     expect(systemText('Mission not found', 'es')).toBe('Misión no encontrada')
     expect(systemText('Oximeter available and verified', 'es')).toBe('Oxímetro disponible y verificado')
   })
+  it('keeps the seeded symptom note English by default and translates it for Spanish', () => {
+    const note = createInitialState('gradual-fatigue').symptoms.find((item) => item.id === 'sym-elena-seed')?.note
+    expect(note).toBe('More fatigue than usual today, especially this morning.')
+    expect(systemText(note ?? '', 'en')).toBe('More fatigue than usual today, especially this morning.')
+    expect(systemText(note ?? '', 'es')).toBe('Fatiga mayor a la habitual hoy, especialmente en la mañana.')
+    expect(systemText('Fatiga mayor a la habitual hoy, especialmente en la mañana.', 'en'))
+      .toBe('More fatigue than usual today, especially this morning.')
+  })
   it('recomputes history language without changing the snapshot', () => {
     const state = createInitialState('gradual-fatigue')
     const before = JSON.stringify(state)

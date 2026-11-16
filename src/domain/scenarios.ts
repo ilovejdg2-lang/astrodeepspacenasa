@@ -118,7 +118,7 @@ function buildGradual(state: AppState): AppState {
   next = registerSymptom(next, {
     crewId: 'elena-torres',
     symptoms: ['cansancio', 'mareo'],
-    note: 'Fatiga mayor a la habitual hoy, especialmente en la mañana.',
+    note: 'More fatigue than usual today, especially this morning.',
     idempotencyKey: 'seed-elena-symptom',
     id: 'sym-elena-seed',
     episodeId,
