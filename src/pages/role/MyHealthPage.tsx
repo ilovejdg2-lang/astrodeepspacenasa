@@ -119,7 +119,6 @@ export function MyHealthPage() {
       ) : null}
 
       <DailyCarePanel
-        variant="hub"
         missionId={missionId}
         wakeNote={wakeNote}
         symptomCount={symptoms.length}

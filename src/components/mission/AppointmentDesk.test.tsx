@@ -43,8 +43,7 @@ describe('AppointmentDesk weekly schedule', () => {
     )
 
     expect(screen.getByText('Weekly schedule')).toBeTruthy()
-    const appointmentName = screen.getAllByText('Mateo Ruiz')[0]
-    expect(appointmentName).toBeTruthy()
+    const appointmentName = screen.getByText('Mateo Ruiz')
     expect(appointmentName.closest('article')?.getAttribute('style')).toContain('height: 40px')
     expect(screen.getByText(/10:00 · Confirmed/)).toBeTruthy()
 
