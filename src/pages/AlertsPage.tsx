@@ -49,12 +49,17 @@ const READING_NAME: Record<MeasurementKind, { es: string; en: string }> = {
   respiratory_rate: { es: 'Respiración', en: 'Breathing' },
 }
 
-function personFromSensor(sensorId: string) {
+function personFromSensor(sensorId: string | null | undefined) {
+  if (!sensorId) return null
   const id = sensorId.toLowerCase()
-  return CREW.find((person) => id.includes(person.id.split('-')[0])) ?? null
+  return CREW.find((person) => {
+    const crewPrefix = person.id.split('-')[0]
+    return crewPrefix !== undefined && id.includes(crewPrefix)
+  }) ?? null
 }
 
-function readingFromSensor(sensorId: string): MeasurementKind | null {
+function readingFromSensor(sensorId: string | null | undefined): MeasurementKind | null {
+  if (!sensorId) return null
   const id = sensorId.toLowerCase()
   if (id.includes('spo2')) return 'spo2'
   if (id.includes('temp')) return 'temperature'

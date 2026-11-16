@@ -7,6 +7,14 @@ type StorageLike = {
   setItem(key: string, value: string): void
 }
 
+type DocumentLike = {
+  documentElement: {
+    lang: string
+    setAttribute(name: string, value: string): void
+  }
+  querySelector(selector: string): { setAttribute(name: string, value: string): void } | null
+}
+
 function storage(): StorageLike | null {
   const box = globalThis as { localStorage?: StorageLike }
   return box.localStorage ?? null
@@ -36,7 +44,7 @@ const DESCRIPTION: Record<Lang, string> = {
 }
 
 export function applyDocumentLocale(lang: Lang) {
-  const root = (globalThis as { document?: Document }).document
+  const root = (globalThis as { document?: DocumentLike }).document
   if (!root) return
   root.documentElement.lang = lang
   root.documentElement.setAttribute('translate', 'no')

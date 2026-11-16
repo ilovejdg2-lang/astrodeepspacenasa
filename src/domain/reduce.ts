@@ -863,6 +863,8 @@ function updateResource(
   const location = action.location.trim();
   if (name.length < 2 || location.length < 2)
     return withNotice(state, 'err', 'Nombre y ubicación son obligatorios.');
+  const kind: Resource['kind'] =
+    action.category === 'supply' ? 'consumable' : 'reusable';
   const resources = state.resources.map((item) =>
     item.id === current.id
       ? {
@@ -871,7 +873,7 @@ function updateResource(
           location,
           status: action.status,
           category: action.category,
-          kind: action.category === 'supply' ? 'consumable' : 'reusable',
+          kind,
         }
       : item,
   );
