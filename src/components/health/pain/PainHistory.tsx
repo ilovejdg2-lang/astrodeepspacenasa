@@ -249,7 +249,7 @@ export function PainHistory({
               {focus.clinicalNotes.map((entry) => (
                 <p key={entry.id}><strong>{profileDisplayName(entry.authorProfileId)}</strong> · {when(entry.createdAt, en)}<br />{entry.body}</p>
               ))}
-              {canNote && stage === 'aboard' ? (
+              {canNote && stage !== 'postmission' && stage !== 'archived' && stage !== 'cancelled' ? (
                 <>
                   <div className="rd-field">
                     <label htmlFor="clinical-note">{en ? 'Add a clinical note' : 'Agregar una nota clínica'}</label>

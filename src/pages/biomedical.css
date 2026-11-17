@@ -1,0 +1,1214 @@
+/* —— Biomedical Insights Styles —— */
+
+.biomedical-page {
+  display: grid;
+  gap: 22px;
+  min-width: 0;
+  padding-bottom: 96px;
+}
+
+/* Header */
+.biomed-main-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.biomed-header-title-block {
+  display: grid;
+  gap: 4px;
+}
+
+.biomed-patient-select-box {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  background: color-mix(in srgb, var(--rd-wash, #efe8f8) 75%, transparent);
+  padding: 8px 12px;
+  border-radius: 14px;
+  border: 1px solid color-mix(in srgb, var(--rd-accent, #d46a8e) 24%, transparent);
+}
+
+.biomed-patient-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.biomed-patient-dropdown {
+  padding: 4px 8px;
+  border-radius: 8px;
+  border: 1px solid color-mix(in srgb, currentColor 18%, transparent);
+  background: var(--surface, #fff);
+  color: inherit;
+  font-size: 0.84rem;
+  font-weight: 650;
+}
+
+:root[data-theme="dark"] .biomed-patient-dropdown {
+  background: var(--surface-2, #311820);
+  color-scheme: dark;
+  color: #f7f2f4;
+}
+
+.biomed-psych-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: color-mix(in srgb, #8a6bc2 16%, transparent);
+  border: 1px solid color-mix(in srgb, #8a6bc2 30%, transparent);
+  color: #6b5cae;
+  font-size: 0.8rem;
+  font-weight: 750;
+}
+
+:root[data-theme="dark"] .biomed-psych-badge {
+  color: #c4adff;
+}
+
+/* Systems Navigation Bar */
+.biomed-systems-bar {
+  display: flex;
+  overflow-x: auto;
+  gap: 10px;
+  padding: 4px 2px 8px;
+  scrollbar-width: thin;
+}
+
+.biomed-system-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, currentColor 14%, transparent);
+  background: color-mix(in srgb, var(--surface, #fff) 85%, transparent);
+  color: inherit;
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+}
+
+.biomed-system-tab:hover {
+  background: color-mix(in srgb, var(--rd-accent, #d46a8e) 12%, var(--surface, #fff));
+  border-color: color-mix(in srgb, var(--rd-accent, #d46a8e) 35%, transparent);
+}
+
+.biomed-system-tab.is-active {
+  background: var(--rd-accent, #d46a8e);
+  color: #fff;
+  border-color: var(--rd-accent, #d46a8e);
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--rd-accent, #d46a8e) 30%, transparent);
+}
+
+.biomed-system-tab.is-restricted {
+  opacity: 0.65;
+}
+
+.biomed-tab-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.biomed-tab-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  background: color-mix(in srgb, currentColor 14%, transparent);
+}
+
+.biomed-system-tab.is-active .biomed-tab-pill {
+  background: rgba(255, 255, 255, 0.25);
+  color: #fff;
+}
+
+/* Two-Column Desktop Layout */
+.biomed-split-layout {
+  display: grid;
+  gap: 20px;
+  align-items: start;
+}
+
+@media (min-width: 960px) {
+  .biomed-split-layout {
+    grid-template-columns: minmax(320px, 420px) minmax(0, 1fr);
+  }
+}
+
+/* Viewer Card */
+.biomed-viewer-card {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 22px;
+  border: 1px solid color-mix(in srgb, currentColor 12%, transparent);
+  background: color-mix(in srgb, var(--surface, #fff) 85%, transparent);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.03);
+}
+
+.biomed-viewer-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.biomed-mode-pills {
+  display: flex;
+  gap: 6px;
+}
+
+.biomed-cam-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.rd-btn-xs {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 5px 11px;
+  border-radius: 999px;
+  font-size: 0.76rem;
+  font-weight: 750;
+  border: 1px solid color-mix(in srgb, currentColor 14%, transparent);
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.rd-btn-xs.is-active {
+  background: var(--rd-accent, #d46a8e);
+  color: #fff;
+  border-color: var(--rd-accent, #d46a8e);
+}
+
+.rd-btn-xs.ghost:hover {
+  background: color-mix(in srgb, currentColor 8%, transparent);
+}
+
+.rd-btn-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 8px;
+  border-radius: 8px;
+  font-size: 0.72rem;
+  font-weight: 750;
+  border: 1px solid color-mix(in srgb, currentColor 12%, transparent);
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.rd-btn-icon.icon-only {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+}
+
+.rd-btn-icon:hover {
+  background: color-mix(in srgb, currentColor 8%, transparent);
+}
+
+.biomed-viewport-area {
+  position: relative;
+  height: 440px;
+  min-height: 380px;
+  border-radius: 18px;
+  overflow: hidden;
+  background: var(--surface-2, #fff0f5);
+  border: 1px solid color-mix(in srgb, currentColor 10%, transparent);
+}
+
+:root[data-theme="dark"] .biomed-viewport-area {
+  background: #18101a;
+}
+
+.biomed-three-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+  touch-action: none;
+}
+
+/* 3D Mannequin Orientation Pill */
+.pain-orientation {
+  position: absolute;
+  z-index: 2;
+  top: 10px;
+  left: 10px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  max-width: calc(100% - 20px);
+  padding: 6px 12px 6px 6px;
+  border: 1px solid rgba(0, 0, 0, 0.14);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.94);
+  color: #1a0f14;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  font-size: 0.8rem;
+  font-weight: 750;
+  pointer-events: none;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+:root[data-theme="dark"] .pain-orientation {
+  background: rgba(28, 16, 23, 0.9);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: #f7f2f4;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+}
+
+.pain-orientation-compass {
+  position: relative;
+  display: block;
+  flex: 0 0 38px;
+  width: 38px;
+  height: 38px;
+  border: 1.5px solid rgba(0, 0, 0, 0.25);
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.04);
+}
+
+:root[data-theme="dark"] .pain-orientation-compass {
+  border-color: rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.pain-orientation-compass span {
+  position: absolute;
+  z-index: 1;
+  font-size: 0.58rem;
+  font-weight: 800;
+  line-height: 1;
+  color: #21151a;
+  opacity: 0.9;
+}
+
+:root[data-theme="dark"] .pain-orientation-compass span {
+  color: #f7f2f4;
+  opacity: 0.95;
+}
+
+.pain-orientation-compass .north { top: 3px; left: 50%; transform: translateX(-50%); }
+.pain-orientation-compass .east { top: 50%; right: 3px; transform: translateY(-50%); }
+.pain-orientation-compass .south { bottom: 3px; left: 50%; transform: translateX(-50%); }
+.pain-orientation-compass .west { top: 50%; left: 3px; transform: translateY(-50%); }
+
+.pain-orientation-compass i {
+  position: absolute;
+  top: 7px;
+  left: 17px;
+  width: 3px;
+  height: 12px;
+  border-radius: 3px;
+  background: var(--rd-accent, #ff2d6a);
+  box-shadow: 0 0 4px var(--rd-accent, #ff2d6a);
+  transform-origin: 50% 12px;
+}
+
+.biomed-2d-canvas {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+}
+
+.biomed-svg-figure {
+  width: 100%;
+  height: 100%;
+  max-height: 400px;
+}
+
+.biomed-svg-part {
+  fill: color-mix(in srgb, var(--surface, #fff) 70%, #d9c4b4);
+  stroke: color-mix(in srgb, currentColor 40%, transparent);
+  stroke-width: 1.5px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.biomed-svg-part:hover {
+  fill: #ffd1dc;
+  stroke: var(--rd-accent, #d46a8e);
+}
+
+.biomed-svg-part.is-active {
+  fill: #fcb3ca;
+  stroke: var(--rd-accent, #d46a8e);
+  stroke-width: 3px;
+  filter: drop-shadow(0 0 6px color-mix(in srgb, var(--rd-accent, #d46a8e) 45%, transparent));
+}
+
+:root[data-theme="dark"] .biomed-svg-part.is-active {
+  fill: #8a2b4b;
+}
+
+.biomed-list-canvas {
+  padding: 18px;
+  overflow-y: auto;
+  height: 100%;
+}
+
+.biomed-systems-list {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.biomed-system-btn {
+  display: grid;
+  gap: 2px;
+  width: 100%;
+  text-align: left;
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, currentColor 12%, transparent);
+  background: var(--surface, #fff);
+  color: inherit;
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.biomed-system-btn:hover,
+.biomed-system-btn.is-active {
+  background: color-mix(in srgb, var(--rd-accent, #d46a8e) 14%, var(--surface, #fff));
+  border-color: var(--rd-accent, #d46a8e);
+}
+
+.biomed-system-btn strong {
+  font-size: 0.92rem;
+}
+
+.biomed-system-btn span {
+  font-size: 0.78rem;
+  color: color-mix(in srgb, currentColor 70%, transparent);
+}
+
+.biomed-viewer-caption {
+  font-size: 0.82rem;
+  line-height: 1.4;
+}
+
+/* System Panel */
+.biomed-system-panel {
+  display: grid;
+  gap: 18px;
+  padding: 20px;
+  border-radius: 24px;
+  border: 1px solid color-mix(in srgb, currentColor 12%, transparent);
+  background: color-mix(in srgb, var(--surface, #fff) 90%, transparent);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.03);
+}
+
+.biomed-system-header {
+  display: grid;
+  gap: 8px;
+  border-bottom: 1px solid color-mix(in srgb, currentColor 10%, transparent);
+  padding-bottom: 14px;
+}
+
+.biomed-system-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.biomed-system-icon-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--rd-accent, #d46a8e) 15%, transparent);
+  color: var(--rd-accent, #d46a8e);
+  flex-shrink: 0;
+}
+
+.biomed-system-desc {
+  margin: 0;
+  font-size: 0.92rem;
+  line-height: 1.45;
+  color: color-mix(in srgb, currentColor 80%, transparent);
+}
+
+.biomed-subhead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.biomed-subhead h3,
+.biomed-subhead-title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 780;
+  letter-spacing: -0.01em;
+}
+
+/* Indicator Cards */
+.biomed-indicators-list {
+  display: grid;
+  gap: 12px;
+}
+
+.biomed-indicator-card {
+  display: grid;
+  gap: 10px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  border: 1px solid color-mix(in srgb, currentColor 12%, transparent);
+  background: color-mix(in srgb, var(--rd-wash, #f8e9ef) 40%, var(--surface, #fff));
+}
+
+.biomed-indicator-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.biomed-indicator-title-group {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.biomed-indicator-title-group h4 {
+  margin: 0;
+  font-size: 0.98rem;
+  font-weight: 750;
+}
+
+.biomed-origin-badge {
+  display: inline-flex;
+  padding: 2px 7px;
+  border-radius: 6px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  background: color-mix(in srgb, currentColor 8%, transparent);
+  color: color-mix(in srgb, currentColor 75%, transparent);
+}
+
+.biomed-state-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 750;
+}
+
+.state-available {
+  background: color-mix(in srgb, #1a7a4c 14%, transparent);
+  color: #1a7a4c;
+  border: 1px solid color-mix(in srgb, #1a7a4c 30%, transparent);
+}
+
+:root[data-theme="dark"] .state-available {
+  color: #6dcea0;
+}
+
+.state-change_observed {
+  background: color-mix(in srgb, #9a5b00 14%, transparent);
+  color: #9a5b00;
+  border: 1px solid color-mix(in srgb, #9a5b00 30%, transparent);
+}
+
+:root[data-theme="dark"] .state-change_observed {
+  color: #f0b35a;
+}
+
+.state-needs_check,
+.state-stale {
+  background: color-mix(in srgb, #8a4b00 14%, transparent);
+  color: #8a4b00;
+  border: 1px solid color-mix(in srgb, #8a4b00 30%, transparent);
+}
+
+:root[data-theme="dark"] .state-needs_check,
+:root[data-theme="dark"] .state-stale {
+  color: #f0b35a;
+}
+
+.state-professional_review {
+  background: color-mix(in srgb, #b3003a 14%, transparent);
+  color: #b3003a;
+  border: 1px solid color-mix(in srgb, #b3003a 30%, transparent);
+}
+
+:root[data-theme="dark"] .state-professional_review {
+  color: #ff7aa8;
+}
+
+.state-no_data {
+  background: color-mix(in srgb, currentColor 8%, transparent);
+  color: color-mix(in srgb, currentColor 65%, transparent);
+}
+
+.biomed-indicator-values-row {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+}
+
+@media (max-width: 600px) {
+  .biomed-indicator-values-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+.biomed-reading-primary {
+  display: grid;
+  gap: 2px;
+}
+
+.biomed-value-big {
+  font-size: 1.55rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+.biomed-reading-time {
+  font-size: 0.76rem;
+  color: color-mix(in srgb, currentColor 65%, transparent);
+}
+
+.biomed-baseline-block {
+  display: grid;
+  gap: 2px;
+  padding-left: 12px;
+  border-left: 1.5px solid color-mix(in srgb, currentColor 14%, transparent);
+}
+
+.biomed-baseline-sentence {
+  margin: 0;
+  font-size: 0.84rem;
+  font-weight: 650;
+  color: color-mix(in srgb, currentColor 82%, transparent);
+  line-height: 1.35;
+}
+
+.biomed-actions-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.biomed-pain-mini-list {
+  list-style: none;
+  margin: 6px 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+  font-size: 0.86rem;
+}
+
+/* Explanations Section */
+.biomed-explanations-section {
+  display: grid;
+  gap: 12px;
+}
+
+.biomed-explain-box {
+  padding: 14px 16px;
+  border-radius: 16px;
+  border: 1px solid color-mix(in srgb, currentColor 12%, transparent);
+}
+
+.biomed-explain-box h4 {
+  margin: 0 0 6px 0;
+  font-size: 0.94rem;
+  font-weight: 750;
+}
+
+.biomed-explain-box p {
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.45;
+  color: color-mix(in srgb, currentColor 80%, transparent);
+}
+
+.what-tells {
+  background: color-mix(in srgb, var(--surface, #fff) 80%, transparent);
+}
+
+.what-not-tells {
+  background: color-mix(in srgb, #f5004f 6%, var(--surface, #fff));
+  border-color: color-mix(in srgb, #f5004f 22%, transparent);
+}
+
+.biomed-explain-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.biomed-expand-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, currentColor 16%, transparent);
+  background: transparent;
+  color: inherit;
+  font-size: 0.74rem;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.biomed-limits-expanded {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px dashed color-mix(in srgb, currentColor 14%, transparent);
+}
+
+/* Next Steps */
+.biomed-next-steps-section {
+  display: grid;
+  gap: 10px;
+  border-top: 1px solid color-mix(in srgb, currentColor 10%, transparent);
+  padding-top: 14px;
+}
+
+.biomed-next-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* Trends Section & Charts */
+.biomed-trends-section {
+  display: grid;
+  gap: 16px;
+  padding: 20px;
+  border-radius: 22px;
+  border: 1px solid color-mix(in srgb, currentColor 12%, transparent);
+  background: color-mix(in srgb, var(--surface, #fff) 85%, transparent);
+}
+
+.biomed-trends-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.biomed-section-title {
+  margin: 0 0 4px 0;
+  font-size: 1.25rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.biomed-range-toggle {
+  display: flex;
+  gap: 6px;
+}
+
+.biomed-charts-grid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+}
+
+.biomed-chart-card {
+  display: grid;
+  gap: 10px;
+  padding: 16px;
+  border-radius: 16px;
+  border: 1px solid color-mix(in srgb, currentColor 12%, transparent);
+  background: color-mix(in srgb, var(--surface, #fff) 95%, transparent);
+}
+
+.biomed-chart-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.biomed-chart-card-head h4 {
+  margin: 0;
+  font-size: 0.96rem;
+  font-weight: 750;
+}
+
+.biomed-chart-baseline-text {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.76rem;
+  margin-top: 2px;
+}
+
+.biomed-baseline-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #3d6fd8;
+}
+
+.biomed-chart-stat-pill {
+  font-size: 0.85rem;
+}
+
+.biomed-chart-svg-wrap {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.biomed-chart-svg {
+  width: 100%;
+  height: 140px;
+  display: block;
+}
+
+.biomed-grid-line {
+  stroke: color-mix(in srgb, currentColor 10%, transparent);
+  stroke-dasharray: 3 3;
+  stroke-width: 1;
+}
+
+.biomed-axis-label {
+  fill: color-mix(in srgb, currentColor 60%, transparent);
+  font-size: 10px;
+  font-family: inherit;
+  font-weight: 600;
+}
+
+.biomed-baseline-line {
+  stroke: #3d6fd8;
+  stroke-width: 1.5;
+  stroke-dasharray: 4 2;
+}
+
+.biomed-baseline-label {
+  fill: #3d6fd8;
+  font-size: 9px;
+  font-weight: 700;
+  font-family: inherit;
+}
+
+.biomed-chart-path {
+  fill: none;
+  stroke: var(--rd-accent, #d46a8e);
+  stroke-width: 2.5px;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.biomed-chart-dot {
+  fill: var(--rd-accent, #d46a8e);
+  stroke: var(--surface, #fff);
+  stroke-width: 2px;
+}
+
+.biomed-chart-foot {
+  font-size: 0.78rem;
+  color: color-mix(in srgb, currentColor 65%, transparent);
+  text-align: right;
+}
+
+.biomed-empty-chart {
+  display: grid;
+  place-items: center;
+  padding: 30px 16px;
+  text-align: center;
+  gap: 8px;
+}
+
+/* Spaceflight Context Block */
+.biomed-space-context-card {
+  display: grid;
+  gap: 16px;
+  padding: 20px;
+  border-radius: 22px;
+  border: 1px solid color-mix(in srgb, currentColor 12%, transparent);
+  background: color-mix(in srgb, var(--surface, #fff) 85%, transparent);
+}
+
+.biomed-space-grid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
+.biomed-space-item {
+  display: grid;
+  gap: 8px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  border: 1px solid color-mix(in srgb, currentColor 12%, transparent);
+  background: color-mix(in srgb, var(--surface, #fff) 90%, transparent);
+}
+
+.biomed-space-item-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.biomed-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 750;
+}
+
+.badge-risk {
+  background: color-mix(in srgb, #f5004f 14%, transparent);
+  color: #f5004f;
+  border: 1px solid color-mix(in srgb, #f5004f 28%, transparent);
+}
+
+.badge-observation {
+  background: color-mix(in srgb, #2a9bb0 14%, transparent);
+  color: #1a7b8e;
+  border: 1px solid color-mix(in srgb, #2a9bb0 28%, transparent);
+}
+
+:root[data-theme="dark"] .badge-observation {
+  color: #5ed6ec;
+}
+
+.badge-environment {
+  background: color-mix(in srgb, #6b5cae 14%, transparent);
+  color: #6b5cae;
+  border: 1px solid color-mix(in srgb, #6b5cae 28%, transparent);
+}
+
+:root[data-theme="dark"] .badge-environment {
+  color: #b7a4ff;
+}
+
+.badge-hypothesis {
+  background: color-mix(in srgb, #e6a800 14%, transparent);
+  color: #8c6600;
+  border: 1px solid color-mix(in srgb, #e6a800 28%, transparent);
+}
+
+.biomed-hazard-tag {
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: color-mix(in srgb, currentColor 65%, transparent);
+}
+
+.biomed-space-item-title {
+  margin: 0;
+  font-size: 0.94rem;
+  font-weight: 750;
+  line-height: 1.3;
+}
+
+.biomed-space-item-text {
+  margin: 0;
+  font-size: 0.86rem;
+  line-height: 1.45;
+  color: color-mix(in srgb, currentColor 80%, transparent);
+}
+
+.biomed-space-item-ref {
+  font-size: 0.76rem;
+  margin-top: 4px;
+}
+
+.biomed-link {
+  color: var(--rd-accent, #d46a8e);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.biomed-space-disclaimer {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: color-mix(in srgb, #e6a800 12%, transparent);
+  border: 1px solid color-mix(in srgb, #e6a800 28%, transparent);
+  color: color-mix(in srgb, currentColor 85%, transparent);
+  font-size: 0.82rem;
+  line-height: 1.4;
+}
+
+/* Evidence Cards */
+.biomed-evidence-section {
+  display: grid;
+  gap: 16px;
+  padding: 20px;
+  border-radius: 22px;
+  border: 1px solid color-mix(in srgb, currentColor 12%, transparent);
+  background: color-mix(in srgb, var(--surface, #fff) 85%, transparent);
+}
+
+.biomed-evidence-grid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+}
+
+.biomed-evidence-card {
+  display: grid;
+  gap: 8px;
+  padding: 16px;
+  border-radius: 16px;
+  border: 1px solid color-mix(in srgb, currentColor 12%, transparent);
+  background: color-mix(in srgb, var(--surface, #fff) 92%, transparent);
+}
+
+.biomed-evidence-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.biomed-model-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 7px;
+  border-radius: 6px;
+  font-size: 0.7rem;
+  font-weight: 750;
+  text-transform: uppercase;
+}
+
+.model-flight {
+  background: color-mix(in srgb, #1a7a4c 14%, transparent);
+  color: #1a7a4c;
+}
+:root[data-theme="dark"] .model-flight { color: #6dcea0; }
+
+.model-analogue {
+  background: color-mix(in srgb, #3d6fd8 14%, transparent);
+  color: #3d6fd8;
+}
+:root[data-theme="dark"] .model-analogue { color: #8bb3ff; }
+
+.model-lab {
+  background: color-mix(in srgb, #8a6bc2 14%, transparent);
+  color: #8a6bc2;
+}
+
+.model-standard {
+  background: color-mix(in srgb, currentColor 8%, transparent);
+  color: inherit;
+}
+
+.biomed-evidence-version {
+  font-size: 0.74rem;
+  color: color-mix(in srgb, currentColor 65%, transparent);
+}
+
+.biomed-evidence-title {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 750;
+  line-height: 1.35;
+}
+
+.biomed-evidence-inst {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: color-mix(in srgb, currentColor 75%, transparent);
+}
+
+.biomed-evidence-rel {
+  margin: 0;
+  font-size: 0.86rem;
+  line-height: 1.4;
+}
+
+.biomed-evidence-limit {
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: color-mix(in srgb, currentColor 4%, transparent);
+  border: 1px dashed color-mix(in srgb, currentColor 12%, transparent);
+}
+
+.biomed-evidence-limit p {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.35;
+  color: color-mix(in srgb, currentColor 75%, transparent);
+}
+
+.biomed-evidence-foot {
+  margin-top: 6px;
+}
+
+.biomed-source-link {
+  text-decoration: none;
+}
+
+/* Quirón Context Modal */
+.biomed-quiron-modal {
+  display: grid;
+  gap: 16px;
+}
+
+.biomed-quiron-hero {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px;
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--rd-wash, #efe8f8) 75%, transparent);
+  border: 1px solid color-mix(in srgb, var(--rd-accent, #d46a8e) 24%, transparent);
+}
+
+.biomed-quiron-avatar {
+  width: 52px;
+  height: 52px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: color-mix(in srgb, #f5004f 12%, transparent);
+  border: 1.5px solid color-mix(in srgb, #f5004f 24%, transparent);
+  padding: 6px;
+}
+
+.biomed-quiron-avatar svg {
+  width: 100%;
+  height: 100%;
+}
+
+.biomed-quiron-hero h4 {
+  margin: 0 0 2px 0;
+  font-size: 1.05rem;
+  font-weight: 780;
+}
+
+.biomed-quiron-hero p {
+  margin: 0;
+  font-size: 0.86rem;
+  line-height: 1.35;
+}
+
+.biomed-disclosed-context {
+  display: grid;
+  gap: 8px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: color-mix(in srgb, currentColor 4%, transparent);
+  border: 1px solid color-mix(in srgb, currentColor 12%, transparent);
+}
+
+.biomed-disclosed-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.82rem;
+  color: var(--rd-accent, #d46a8e);
+}
+
+.biomed-disclosed-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+  font-size: 0.84rem;
+}
+
+.biomed-privacy-note {
+  font-size: 0.78rem;
+  color: color-mix(in srgb, currentColor 68%, transparent);
+  border-top: 1px dashed color-mix(in srgb, currentColor 10%, transparent);
+  padding-top: 6px;
+  margin-top: 2px;
+}
+
+.biomed-quiron-textarea {
+  width: 100%;
+  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, currentColor 18%, transparent);
+  background: color-mix(in srgb, currentColor 3%, transparent);
+  color: inherit;
+  font: inherit;
+  padding: 10px 12px;
+  line-height: 1.4;
+  resize: vertical;
+}
+
+.biomed-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+/* Link Card in MyHealth */
+.biomedical-link-card {
+  border: 1.5px solid color-mix(in srgb, var(--rd-accent, #d46a8e) 35%, transparent);
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--rd-wash, #f8e9ef) 80%, transparent), transparent 70%),
+    color-mix(in srgb, var(--surface, #fff) 90%, transparent);
+}
+
+.biomedical-link-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.biomedical-link-head h2 {
+  margin: 4px 0 6px 0;
+  font-size: 1.3rem;
+  letter-spacing: -0.02em;
+}
+
+.biomedical-link-head p {
+  margin: 0;
+  font-size: 0.92rem;
+  line-height: 1.4;
+  max-width: 680px;
+}

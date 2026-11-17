@@ -39,7 +39,6 @@ export function PlatformIndicatorCharts({ missionId }: { missionId: string | nul
   const series = useMemo(() => platformDailySeries(items, kind), [items, kind])
   const scale = useMemo(() => autoDomain(series), [series])
   const meta = catalogEntry(kind)
-  const moodItems = items.filter((item) => item.kind === 'mood').slice(0, 12)
 
   if (!missionId) {
     return <p className="rd-muted">{en ? 'No active mission for platform charts.' : 'No hay misión activa para gráficos platform.'}</p>
@@ -95,18 +94,6 @@ export function PlatformIndicatorCharts({ missionId }: { missionId: string | nul
           ) : null}
         </>
       )}
-      {moodItems.length ? (
-        <div style={{ marginTop: 12 }}>
-          <h3>{en ? 'Mood self-reports (categorical)' : 'Autorreportes de ánimo (categóricos)'}</h3>
-          <ul className="health-mini-list">
-            {moodItems.map((item) => (
-              <li key={item.id}>
-                {item.value}/5 · {new Date(item.measuredAt).toLocaleString(en ? 'en-US' : 'es-CR')} · {item.origin}
-              </li>
-            ))}
-          </ul>
-        </div>
-      ) : null}
     </section>
   )
 }

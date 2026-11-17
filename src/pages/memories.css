@@ -1,8 +1,30 @@
 .memories-page {
+  --rd-accent: #d46a8e;
+  --rd-accent-2: #4db6a0;
+  --rd-wash: #f8e9ef;
   display: grid;
   gap: 20px;
   min-width: 0;
   padding-bottom: 96px; /* Ensure mobile bottom nav and Quirón fab do not cover actions */
+}
+
+:root[data-theme="dark"] .memories-page {
+  --rd-wash: rgba(212, 106, 142, 0.16);
+}
+
+.memories-header-actions .rd-btn,
+.memory-companionship-card .rd-btn:not(.ghost),
+.memory-empty-state .rd-btn {
+  background: var(--rd-accent, #d46a8e);
+  color: #ffffff;
+  font-weight: 750;
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--rd-accent, #d46a8e) 28%, transparent);
+}
+
+.memories-header-actions .rd-btn:hover,
+.memory-companionship-card .rd-btn:not(.ghost):hover,
+.memory-empty-state .rd-btn:hover {
+  filter: brightness(1.08);
 }
 
 /* Header */

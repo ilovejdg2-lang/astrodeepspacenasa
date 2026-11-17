@@ -25,7 +25,7 @@ export function MissionChecklist() {
           <h2 id="mission-checklist-title">{en ? 'Mission checklist' : 'Checklist de misión'}</h2>
           <p className="muted">{systemText(detail.mission.name)}</p>
         </div>
-        <Link className="btn" to="/app/centro">{en ? 'Mission center' : 'Centro de misión'}</Link>
+        <Link className="btn" to="/app/monitor">{en ? 'Mission monitor' : 'Monitor de misión'}</Link>
       </div>
       {error ? <p className="field-error" role="alert">{systemText(error)}</p> : null}
       {loading ? <p role="status">{en ? 'Updating checklist…' : 'Actualizando checklist…'}</p> : null}

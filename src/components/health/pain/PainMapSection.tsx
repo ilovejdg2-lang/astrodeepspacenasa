@@ -33,7 +33,7 @@ export function PainMapSection({
   const [open, setOpen] = useState(() => Boolean(readPainDraft(missionId, profileId)?.marks.length))
   const [seed, setSeed] = useState<PainDraft | null>(null)
   const [reloadKey, setReloadKey] = useState(0)
-  const aboard = stage === 'aboard'
+  const canRecord = stage !== 'postmission' && stage !== 'archived' && stage !== 'cancelled'
   const mine = appointments.filter((visit) => !visit.requesterId || visit.requesterId === profileId)
 
   function begin(next: PainDraft | null) {
@@ -44,14 +44,14 @@ export function PainMapSection({
   return (
     <section className="rd-card" aria-labelledby="pain-heading">
       <h2 id="pain-heading">{en ? 'Record pain' : 'Registrar dolor'}</h2>
-      {!aboard ? (
+      {!canRecord ? (
         <p className="rd-muted">
-          {stage === 'postmission' || stage === 'archived' || stage === 'cancelled'
-            ? (en ? 'This mission is complete. You can review pain history. New clinical records stay closed.' : 'Esta misión está completa. Podés consultar el historial de dolor. No se abren registros clínicos nuevos.')
-            : (en ? 'Pain records can be created while the mission is in flight. Draft and preflight keep this action closed.' : 'Los registros de dolor se crean con la misión a bordo. En borrador y preembarque esta acción está cerrada.')}
+          {en
+            ? 'This mission is complete. You can review pain history. New clinical records stay closed.'
+            : 'Esta misión está completa. Podés consultar el historial de dolor. No se abren registros clínicos nuevos.'}
         </p>
       ) : null}
-      {aboard && !open ? (
+      {canRecord && !open ? (
         <button type="button" className="rd-btn" data-testid="record-pain" onClick={() => begin(readPainDraft(missionId, profileId))}>
           {en ? 'Record pain' : 'Registrar dolor'}
         </button>
@@ -72,7 +72,7 @@ export function PainMapSection({
         en={en}
         missionId={missionId}
         stage={stage}
-        writable={aboard}
+        writable={canRecord}
         canNote={false}
         appointments={mine}
         reloadKey={reloadKey}
@@ -124,7 +124,7 @@ export function PainCasePanel({
         subjectId={subjectId}
         stage={stage}
         writable={false}
-        canNote={stage === 'aboard'}
+        canNote={stage !== 'postmission' && stage !== 'archived' && stage !== 'cancelled'}
         appointments={visits}
         highlightAppointmentId={highlightAppointmentId}
         reloadKey={reloadKey}

@@ -224,11 +224,42 @@ export function MemoriesPage() {
     // Fetch from backend
     platformApi
       .memories()
-      .then((data) => {
+      .then(async (data) => {
         if (!active) return
-        setMemories(data.items)
+        const backendItems = data.items || []
+        const cached = await readLocalMemories(profile.id)
+        const backendIds = new Set(backendItems.map((m) => m.id))
+
+        // Check if there are unsynced memories in local storage that aren't on backend
+        const unsynced = cached.filter((m) => !backendIds.has(m.id))
+
+        if (unsynced.length > 0) {
+          const merged = [...backendItems]
+          for (const item of unsynced) {
+            try {
+              const localImg = await readLocalMemoryImage(item.id)
+              const uploaded = await platformApi.createMemory({
+                title: item.title,
+                message: item.message,
+                imageBase64: localImg,
+                imageContentType: item.imageContentType,
+              })
+              merged.unshift(uploaded)
+              if (localImg) {
+                await writeLocalMemoryImage(uploaded.id, localImg)
+                await deleteLocalMemoryImage(item.id)
+              }
+            } catch {
+              merged.unshift(item)
+            }
+          }
+          setMemories(merged)
+          void writeLocalMemories(profile.id, merged)
+        } else {
+          setMemories(backendItems)
+          void writeLocalMemories(profile.id, backendItems)
+        }
         setError('')
-        void writeLocalMemories(profile.id, data.items)
       })
       .catch((err: unknown) => {
         if (!active) return
@@ -421,7 +452,7 @@ export function MemoriesPage() {
     if (!deleteCandidate || !profile?.id) return
     setFormBusy(true)
     try {
-      await platformApi.deleteMemory(deleteCandidate.id).catch(() => {})
+      await platformApi.deleteMemory(deleteCandidate.id).catch(() => { })
       const nextList = memories.filter((m) => m.id !== deleteCandidate.id)
       setMemories(nextList)
       void writeLocalMemories(profile.id, nextList)
@@ -503,7 +534,7 @@ export function MemoriesPage() {
   }, [selectedPsychId, psychMembers, en])
 
   return (
-    <div className="rd memories-page">
+    <div className="rd rd-crew memories-page">
       <header className="rd-head">
         <div className="memories-header-row">
           <div>

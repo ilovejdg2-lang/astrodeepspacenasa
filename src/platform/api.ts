@@ -453,6 +453,7 @@ export type UserMemory = {
   message: string
   imageFileId: string | null
   imageContentType: string | null
+  imageBase64?: string | null
   createdAt: number
   updatedAt: number
 }

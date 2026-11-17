@@ -18,7 +18,6 @@ const EvidencePage = lazy(() =>
   import('./pages/platform/EvidencePage').then((m) => ({ default: m.EvidencePage })),
 )
 
-const RoleHome = lazy(() => import('./pages/role/RoleHome').then((m) => ({ default: m.RoleHome })))
 const MyHealthPage = lazy(() => import('./pages/role/MyHealthPage').then((m) => ({ default: m.MyHealthPage })))
 const MonitorGate = lazy(() => import('./pages/role/MonitorGate').then((m) => ({ default: m.MonitorGate })))
 const MonitorPage = lazy(() => import('./pages/MonitorPage').then((m) => ({ default: m.MonitorPage })))
@@ -32,6 +31,9 @@ const RisksPage = lazy(() => import('./pages/RisksPage').then((m) => ({ default:
 const MedicalPage = lazy(() => import('./pages/MedicalPage').then((m) => ({ default: m.MedicalPage })))
 const MySpacePage = lazy(() => import('./pages/MySpacePage').then((m) => ({ default: m.MySpacePage })))
 const MemoriesPage = lazy(() => import('./pages/MemoriesPage').then((m) => ({ default: m.MemoriesPage })))
+const BiomedicalPage = lazy(() =>
+  import('./pages/BiomedicalPage').then((m) => ({ default: m.BiomedicalPage })),
+)
 
 function LazyPage({ children }: { children: ReactNode }) {
   return <Suspense fallback={<RouteFallback />}>{children}</Suspense>
@@ -52,7 +54,7 @@ function Dashboard() {
           <LazyPage>
             <Routes>
               <Route index element={<NotForCrew><MonitorGate /></NotForCrew>} />
-              <Route path="centro" element={<RoleHome />} />
+              <Route path="centro" element={<Navigate to="/app" replace />} />
               <Route path="monitor" element={<NotForCrew><MonitorPage /></NotForCrew>} />
               <Route path="mi-salud" element={<MyHealthPage />} />
               <Route path="mision" element={<MissionPage />} />
@@ -65,6 +67,8 @@ function Dashboard() {
               <Route path="riesgos" element={<RisksPage />} />
               <Route path="medico" element={<NotForCrew><MedicalPage /></NotForCrew>} />
               <Route path="mi-espacio" element={<MySpacePage />} />
+              <Route path="biomedical" element={<BiomedicalPage />} />
+              <Route path="biomedical-insights" element={<BiomedicalPage />} />
               <Route path="memories" element={<MemoriesPage />} />
               <Route path="recuerdos" element={<MemoriesPage />} />
               <Route path="*" element={<Navigate to="/app" replace />} />

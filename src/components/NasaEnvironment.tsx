@@ -291,6 +291,7 @@ export function RadiationPanel({ compact = false }: { compact?: boolean }) {
   const [end, setEnd] = useState('2023-05-16')
   const [instrument, setInstrument] = useState('REM-Lid')
   const [query, setQuery] = useState<Record<string, string>>({
+    example: 'true',
     startDate: '2023-05-16',
     endDate: '2023-05-16',
     instrument: 'REM-Lid',
