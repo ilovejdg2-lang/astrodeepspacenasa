@@ -88,16 +88,8 @@ export function Shell({ children }: { children: ReactNode }) {
       setStorageNote(error instanceof Error ? error.message : (en ? 'Could not restore the copy.' : 'No se pudo restaurar la copia.'))
     }
   }
-  const homeLabel =
-    workspaceRole === 'chief'
-      ? (en ? 'Mission center' : 'Centro')
-      : workspaceRole === 'medic'
-        ? (en ? 'Care' : 'Atención')
-        : workspaceRole === 'psychologist'
-          ? (en ? 'Wellbeing' : 'Bienestar')
-          : (en ? 'Home' : 'Inicio')
-  const homeLink = { to: '/app/centro', label: homeLabel, icon: Activity, end: false }
   const healthLink = { to: '/app/mi-salud', label: en ? 'My Health' : 'Mi salud', icon: Heart, end: false }
+  const biomedicalLink = { to: '/app/biomedical', label: en ? 'Biomedical Insights' : 'Perspectivas biomédicas', icon: Activity, end: false }
   const monitorLink = { to: '/app/monitor', label: shell.monitor, icon: Activity, end: false }
   const crewLink = { to: '/app/tripulacion', label: shell.crew, icon: HelmetIcon, end: false }
   const alertsLink = { to: '/app/alertas', label: shell.alerts, icon: AlertTriangle, end: false }
@@ -109,15 +101,13 @@ export function Shell({ children }: { children: ReactNode }) {
   const risksLink = { to: '/app/riesgos', label: shell.risks, icon: BookOpen, end: false }
   // Crew members do not get the shared monitor, the crew roster, or other people's alerts.
   const primaryLinks = workspaceRole === 'crew'
-    ? [healthLink]
-    : workspaceRole === 'chief'
-      ? [homeLink, monitorLink, alertsLink, crewLink]
-      : [alertsLink, monitorLink, crewLink]
+    ? [healthLink, biomedicalLink]
+    : [monitorLink, alertsLink, crewLink]
   const extraLinks = workspaceRole === 'crew'
     ? [resourcesLink, missionLink, risksLink]
     : [
-        ...(workspaceRole === 'chief' ? [] : [homeLink]),
         healthLink,
+        biomedicalLink,
         analysisLink,
         medicalLink,
         resourcesLink,
@@ -134,7 +124,7 @@ export function Shell({ children }: { children: ReactNode }) {
     const path = location.pathname
     if (path.startsWith('/app/monitor')) return
     const section = path.startsWith('/app/mi-salud') ? (en ? 'My Health' : 'Mi salud')
-      : path.startsWith('/app/centro') ? (en ? 'Mission center' : 'Centro de misión')
+      : path.startsWith('/app/biomedical') ? (en ? 'Biomedical Insights' : 'Perspectivas biomédicas')
       : path.startsWith('/app/monitor') ? (en ? 'Monitor' : 'Monitor')
       : path.startsWith('/app/tripulacion') ? (en ? 'Crew' : 'Tripulación')
       : path.startsWith('/app/alertas') ? (en ? 'Alerts' : 'Alertas')
@@ -158,7 +148,7 @@ export function Shell({ children }: { children: ReactNode }) {
   const heard = useRef<Set<string> | null>(null)
   const [badgePop, setBadgePop] = useState(false)
   const previousAlerts = useRef(alerts)
-  const isHome = location.pathname === '/app' || location.pathname === '/app/' || location.pathname.startsWith('/app/centro')
+  const isHome = location.pathname === '/app' || location.pathname === '/app/'
   const isMyHealth = location.pathname.startsWith('/app/mi-salud')
   const isMonitor = location.pathname.startsWith('/app/monitor')
   const isCrew = location.pathname.startsWith('/app/tripulacion')
@@ -168,7 +158,8 @@ export function Shell({ children }: { children: ReactNode }) {
   const isAnalysis = location.pathname.startsWith('/app/analisis')
   const isMedical = location.pathname.startsWith('/app/medico')
   const isMemories = location.pathname.startsWith('/app/memories') || location.pathname.startsWith('/app/recuerdos')
-  const section = isHome || isMyHealth
+  const isBiomedical = location.pathname.startsWith('/app/biomedical')
+  const section = isHome || isMyHealth || isBiomedical
     ? (workspaceRole === 'medic' ? 'is-medical' : workspaceRole === 'psychologist' ? 'is-analysis' : workspaceRole === 'chief' ? 'is-monitor' : 'is-monitor')
     : isMonitor
       ? 'is-monitor'

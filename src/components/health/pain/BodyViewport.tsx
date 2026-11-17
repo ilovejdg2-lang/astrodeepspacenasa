@@ -486,14 +486,16 @@ export function PainCameraControls({
   viewRef: RefObject<BodyViewportHandle | null>
 }) {
   return (
-    <div className="pain-toolbar" aria-label={en ? 'Body view controls' : 'Controles de vista corporal'}>
-      <button type="button" className="rd-btn ghost" onClick={() => viewRef.current?.view('reset')}>{en ? 'Reset view' : 'Restablecer vista'}</button>
-      <button type="button" className="rd-btn ghost" onClick={() => viewRef.current?.view('front')}>{en ? 'Front' : 'Frente'}</button>
-      <button type="button" className="rd-btn ghost" onClick={() => viewRef.current?.view('back')}>{en ? 'Back' : 'Espalda'}</button>
-      <button type="button" className="rd-btn ghost" onClick={() => viewRef.current?.view('left')}>{en ? 'Left' : 'Izquierda'}</button>
-      <button type="button" className="rd-btn ghost" onClick={() => viewRef.current?.view('right')}>{en ? 'Right' : 'Derecha'}</button>
-      <button type="button" className="rd-btn ghost" onClick={() => viewRef.current?.zoom(1)} aria-label={en ? 'Zoom in' : 'Acercar'}>+</button>
-      <button type="button" className="rd-btn ghost" onClick={() => viewRef.current?.zoom(-1)} aria-label={en ? 'Zoom out' : 'Alejar'}>−</button>
+    <div className="pain-camera-bar" role="group" aria-label={en ? 'Body view controls' : 'Controles de vista corporal'}>
+      <button type="button" className="pain-cam-btn" onClick={() => viewRef.current?.view('reset')}>{en ? 'Reset' : 'Restablecer'}</button>
+      <span className="pain-cam-divider" aria-hidden="true" />
+      <button type="button" className="pain-cam-btn" onClick={() => viewRef.current?.view('front')}>{en ? 'Front' : 'Frente'}</button>
+      <button type="button" className="pain-cam-btn" onClick={() => viewRef.current?.view('back')}>{en ? 'Back' : 'Espalda'}</button>
+      <button type="button" className="pain-cam-btn" onClick={() => viewRef.current?.view('left')}>{en ? 'Left' : 'Izquierda'}</button>
+      <button type="button" className="pain-cam-btn" onClick={() => viewRef.current?.view('right')}>{en ? 'Right' : 'Derecha'}</button>
+      <span className="pain-cam-divider" aria-hidden="true" />
+      <button type="button" className="pain-cam-btn pain-cam-zoom" onClick={() => viewRef.current?.zoom(1)} aria-label={en ? 'Zoom in' : 'Acercar'}>+</button>
+      <button type="button" className="pain-cam-btn pain-cam-zoom" onClick={() => viewRef.current?.zoom(-1)} aria-label={en ? 'Zoom out' : 'Alejar'}>−</button>
     </div>
   )
 }

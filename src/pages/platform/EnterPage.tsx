@@ -92,7 +92,13 @@ export function EnterPage() {
       ) : null}
 
       <header className="enter-top">
-        <HeliosLogo variant="wordmark" />
+        <a
+          href="https://helios-publico.netlify.app/"
+          className="enter-logo-link"
+          aria-label="HELIOS"
+        >
+          <HeliosLogo variant="wordmark" />
+        </a>
         <div className="enter-top-actions">
           <LocaleThemeSwitch />
         </div>

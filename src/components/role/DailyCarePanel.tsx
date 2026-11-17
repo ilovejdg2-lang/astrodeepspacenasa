@@ -52,7 +52,7 @@ export function DailyCarePanel({
   const [wantMedic, setWantMedic] = useState(false)
   const [shareConsent, setShareConsent] = useState(false)
   const wantsSupport = wantPsych || wantMedic
-  const writable = stage === 'aboard'
+  const writable = stage !== 'postmission' && stage !== 'archived' && stage !== 'cancelled'
 
   const dayStatus = systemText(wakeNote) || (en ? 'Incomplete' : 'Sin completar')
 

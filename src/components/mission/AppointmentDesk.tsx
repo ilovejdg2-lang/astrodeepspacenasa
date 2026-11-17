@@ -211,7 +211,7 @@ export function AppointmentDesk({
 }) {
   const { lang } = useLocale()
   const en = lang === 'en'
-  const writable = stage === 'aboard'
+  const writable = stage !== 'postmission' && stage !== 'archived' && stage !== 'cancelled'
   const [step, setStep] = useState(1)
   const [kind, setKind] = useState<'medical' | 'psychological'>(specialty || 'medical')
   const [professionalId, setProfessionalId] = useState('')
@@ -360,7 +360,11 @@ export function AppointmentDesk({
           {rows.map((item) => (
             <li key={item.id} className="rd-row">
               <div>
-                <strong>{item.specialty === 'psychological' ? (en ? 'Psychological Consultation' : 'Consulta psicológica') : (en ? 'Medical Appointment' : 'Cita médica')}</strong>
+                <strong>
+                  {item.specialty === 'psychological' ? (en ? 'Psychological Consultation' : 'Consulta psicológica') : (en ? 'Medical Appointment' : 'Cita médica')}
+                  {scope === 'assigned' && item.requesterId ? ` · ${profileDisplayName(item.requesterId)}` : ''}
+                  {scope === 'mine' && item.professionalId ? ` · ${profileDisplayName(item.professionalId)}` : ''}
+                </strong>
                 <span>{statusLabel(item.status, en)} · {when(item.scheduledAt, en, item.timezone || 'UTC')}</span>
                 {item.reason ? <span>{item.reason}</span> : null}
                 {item.summary ? <span>{en ? 'Shared summary: ' : 'Resumen compartido: '}{item.summary}</span> : null}
@@ -383,8 +387,8 @@ export function AppointmentDesk({
                 <div className="rd-actions">
                   {(item.status === 'requested' || item.status === 'pending_confirm') ? (
                     <>
-                      <button type="button" className="rd-btn" disabled={busy} onClick={() => void act(() => platformApi.confirmAppointment(item.id, true), en ? 'Confirmed' : 'Confirmada')}>{en ? 'Confirm' : 'Confirmar'}</button>
-                      <button type="button" className="rd-btn ghost" disabled={busy} onClick={() => void act(() => platformApi.confirmAppointment(item.id, false), en ? 'Declined' : 'Rechazada')}>{en ? 'Decline' : 'Rechazar'}</button>
+                      <button type="button" className="rd-btn" disabled={busy} onClick={() => void act(() => platformApi.confirmAppointment(item.id, true), en ? 'Appointment accepted' : 'Cita aceptada')}>{en ? 'Accept' : 'Aceptar'}</button>
+                      <button type="button" className="rd-btn ghost" disabled={busy} onClick={() => void act(() => platformApi.confirmAppointment(item.id, false), en ? 'Appointment declined' : 'Cita rechazada')}>{en ? 'Decline' : 'Rechazar'}</button>
                     </>
                   ) : null}
                   <button

@@ -1,20 +1,19 @@
 import { systemText } from '../../systemText'
-import { useCallback, useEffect, useMemo, useState } from 'react'
-import { HealthIndicatorsPanel } from '../../components/health/HealthIndicatorsPanel'
+import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
+import { Activity, ArrowRight } from 'lucide-react'
 import { OfflineSyncBar } from '../../components/health/OfflineSyncBar'
 import { AppointmentDesk, type VisitRow } from '../../components/mission/AppointmentDesk'
-import { PainMapSection } from '../../components/health/pain/PainMapSection'
 import { DailyCarePanel } from '../../components/role/DailyCarePanel'
 import { CrewArt } from '../../components/role/RoleArt'
 import { useLocale } from '../../i18n'
-import { platformApi, type HealthIndicatorReading } from '../../platform/api'
+import { platformApi } from '../../platform/api'
 import { profileDisplayName } from '../../platform/copy'
 import { isActiveGrant, type PlatformGrant } from '../../platform/grants'
 import '../../platform/role-dash.css'
 import { useMissionWorkspace } from './useMissionWorkspace'
 
 type GrantRow = PlatformGrant & { id: string; granteeProfileId: string; categories: string[] }
-type ApptRow = VisitRow
 
 export function MyHealthPage() {
   const { lang } = useLocale()
@@ -37,46 +36,8 @@ export function MyHealthPage() {
     refresh,
   } = useMissionWorkspace()
 
-  const [indicators, setIndicators] = useState<HealthIndicatorReading[]>([])
   const [urgentNote, setUrgentNote] = useState('')
   const [grantBusy, setGrantBusy] = useState(false)
-
-  const reloadIndicators = useCallback(async () => {
-    if (!missionId) return
-    const data = await platformApi.listIndicators(missionId)
-    setIndicators(data.items)
-  }, [missionId])
-
-  useEffect(() => {
-    void reloadIndicators().catch(() => undefined)
-  }, [reloadIndicators])
-
-  const routine = useMemo(() => {
-    const items: { id: string; label: string; status: 'pending' | 'done' | 'overdue' }[] = []
-    const wakeDone = Boolean(wakeNote && !/incomplete|sin completar|pending/i.test(wakeNote))
-    items.push({
-      id: 'wake',
-      label: en ? 'Post-wake check-in' : 'Chequeo después del despertar',
-      status: wakeDone ? 'done' : 'pending',
-    })
-    items.push({
-      id: 'sleep',
-      label: en ? 'Rest / sleep log' : 'Descanso / sueño',
-      status: indicators.some((i) => i.kind === 'sleep_hours') ? 'done' : 'pending',
-    })
-    const openAppts = (appointments as ApptRow[]).filter((a) => a.status === 'requested' || a.status === 'pending_confirm')
-    items.push({
-      id: 'appts',
-      label: en ? 'Pending appointments' : 'Citas pendientes',
-      status: openAppts.length ? 'overdue' : 'done',
-    })
-    items.push({
-      id: 'follow',
-      label: en ? 'Professional follow-ups / shared summaries' : 'Seguimientos / resúmenes compartidos',
-      status: 'pending',
-    })
-    return items
-  }, [wakeNote, indicators, appointments, en])
 
   const medicId = detail?.members.find((m) => m.role === 'medic' && m.status === 'active')?.profileId
   const psychId = detail?.members.find((m) => m.role === 'psychologist' && m.status === 'active')?.profileId
@@ -94,47 +55,6 @@ export function MyHealthPage() {
 
       <OfflineSyncBar />
 
-      <section className="rd-card">
-        <h2>{en ? 'Mission routine' : 'Rutina de misión'}</h2>
-        <ul className="health-mini-list">
-          {routine.map((item) => (
-            <li key={item.id}>
-              <strong>{item.label}</strong>
-              {' · '}
-              {item.status === 'done' ? (en ? 'Done' : 'Hecho') : item.status === 'overdue' ? (en ? 'Pending / overdue' : 'Pendiente / vencido') : (en ? 'Pending' : 'Pendiente')}
-            </li>
-          ))}
-        </ul>
-      </section>
-
-      {missionId && profile?.id ? (
-        <PainMapSection
-          en={en}
-          missionId={missionId}
-          profileId={profile.id}
-          stage={detail?.mission.stage}
-          appointments={appointments as VisitRow[]}
-          onChanged={() => refresh({ silent: true })}
-        />
-      ) : null}
-
-      <DailyCarePanel
-        missionId={missionId}
-        wakeNote={wakeNote}
-        symptomCount={symptoms.length}
-        stage={detail?.mission.stage}
-        onChanged={() => refresh({ silent: true })}
-      />
-
-      <HealthIndicatorsPanel
-        missionId={missionId}
-        writable={detail?.mission.stage === 'aboard'}
-        onChanged={async () => {
-          await reloadIndicators()
-          await refresh({ silent: true })
-        }}
-      />
-
       {missionId ? (
         <AppointmentDesk
           missionId={missionId}
@@ -148,6 +68,37 @@ export function MyHealthPage() {
           onChanged={() => refresh({ silent: true })}
         />
       ) : null}
+
+      <section className="rd-card" style={{ display: 'flex', flexDirection: 'column', gap: 12, border: '1px solid rgba(255, 77, 106, 0.28)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 14 }}>
+          <div style={{ maxWidth: 620 }}>
+            <p className="rd-kicker" style={{ margin: 0 }}>{en ? 'Biomedical Telemetry & Body Systems' : 'Telemetría biomédica y sistemas corporales'}</p>
+            <h2 style={{ margin: '4px 0 6px' }}>{en ? 'Biomedical Insights' : 'Perspectivas biomédicas'}</h2>
+            <p className="rd-muted" style={{ margin: 0 }}>
+              {en
+                ? 'Explore your 3D interactive body map, physiological indicators (cardiovascular, respiratory, sleep, musculoskeletal, metabolism), NASA spaceflight hazard context, and trends in the dedicated module.'
+                : 'Explorá tu mapa corporal interactivo 3D, indicadores fisiológicos (cardiovascular, respiratorio, sueño, musculoesquelético, metabolismo), riesgos espaciales de la NASA y tendencias en el módulo dedicado.'}
+            </p>
+          </div>
+          <Link
+            to="/app/biomedical"
+            className="rd-btn"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '10px 18px', textDecoration: 'none' }}
+          >
+            <Activity size={16} aria-hidden="true" />
+            <span>{en ? 'Open Biomedical Insights' : 'Abrir perspectivas biomédicas'}</span>
+            <ArrowRight size={14} aria-hidden="true" />
+          </Link>
+        </div>
+      </section>
+
+      <DailyCarePanel
+        missionId={missionId}
+        wakeNote={wakeNote}
+        symptomCount={symptoms.length}
+        stage={detail?.mission.stage}
+        onChanged={() => refresh({ silent: true })}
+      />
 
       <section className="rd-card" data-testid="consent-demo">
         <h2>{en ? 'Act: appointments, grants & urgent help' : 'Actuar: citas, permisos y ayuda urgente'}</h2>

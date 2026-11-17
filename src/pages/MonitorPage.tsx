@@ -154,7 +154,7 @@ export function MonitorPage({
             <div className="monitor-avatar">
               <CrewHelmet id={crew.id} name={crew.name} selected />
             </div>
-            <p className="monitor-kicker">{embedded ? (en ? 'Mission center' : 'Centro') : (en ? 'Crew monitoring' : 'Monitoreo del tripulante')}</p>
+            <p className="monitor-kicker">{en ? 'Crew monitoring' : 'Monitoreo del tripulante'}</p>
             <h1 className="monitor-name">{crew.name}</h1>
             <p className="monitor-meta">{crewDuty(crew, lang)} · {crewPlace(crew, lang)}</p>
             <p className="monitor-summary">
@@ -248,8 +248,8 @@ export function MonitorPage({
             </Link>
           ) : null}
           {caps.psychOnly ? (
-            <Link className="btn btn-primary" to="/app/centro">
-              {en ? 'Open wellbeing' : 'Abrir bienestar'}
+            <Link className="btn btn-primary" to="/app/analisis">
+              {en ? 'Open analysis' : 'Abrir análisis'}
             </Link>
           ) : null}
           <Link className="btn" to="/app/mi-salud">

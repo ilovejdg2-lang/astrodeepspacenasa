@@ -1,102 +1,743 @@
-.pain-map { display: grid; gap: 12px; min-width: 0; }
-.pain-help { margin: 0; font-weight: 650; }
-.pain-disclaimer {
+/* ==========================================================================
+   HELIOS · Pain Map & 3D Body Editor Styles
+   ========================================================================== */
+
+/* Modal sizing for wide 3D body editor */
+.modal.modal-pain-editor {
+  width: min(1120px, calc(100vw - 32px)) !important;
+  max-width: 1120px !important;
+  max-height: min(92vh, 880px) !important;
+  padding: 24px 28px !important;
+  display: flex;
+  flex-direction: column;
+}
+
+.pain-modal-scroll {
+  max-height: calc(92vh - 90px);
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 4px;
+}
+
+/* Base pain map container */
+.pain-map {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+}
+
+.pain-help {
   margin: 0;
-  padding: 10px 12px;
-  border-radius: 14px;
-  background: color-mix(in srgb, var(--amber-bg, #fff3d6) 80%, transparent);
-  color: var(--amber, #8a5a00);
-  font-size: 0.88rem;
+  font-size: 0.94rem;
+  font-weight: 600;
+  color: var(--ink);
   line-height: 1.45;
 }
-:root[data-theme="dark"] .pain-disclaimer { color: #f3d7a1; }
-.pain-layout { display: grid; gap: 16px; min-width: 0; }
-@media (min-width: 960px) {
-  .pain-layout { grid-template-columns: minmax(0, 1.15fr) minmax(280px, 0.9fr); align-items: start; }
+
+.pain-disclaimer {
+  margin: 0;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--amber-bg, #fff3d6) 80%, transparent);
+  color: var(--amber, #8a5a00);
+  font-size: 0.85rem;
+  line-height: 1.45;
 }
-.pain-stage, .pain-side { display: grid; gap: 10px; min-width: 0; }
-.pain-toolbar { display: flex; flex-wrap: wrap; gap: 8px; }
-.pain-map .rd-btn { min-height: 44px; height: auto; padding: 8px 14px; }
-.pain-map .rd-btn.is-on {
-  outline: 2px solid color-mix(in srgb, var(--rd-accent, #f5004f) 70%, transparent);
-  outline-offset: 1px;
+
+:root[data-theme="dark"] .pain-disclaimer {
+  color: #f3d7a1;
+  background: rgba(245, 158, 11, 0.12);
 }
+
+/* --------------------------------------------------------------------------
+   Top Bar: Step Navigation & View Switcher
+   -------------------------------------------------------------------------- */
+.pain-editor-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--line, rgba(255, 255, 255, 0.12));
+}
+
+.pain-steps-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pain-step-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--line, rgba(0, 0, 0, 0.12));
+  background: var(--surface-2, rgba(255, 255, 255, 0.06));
+  color: var(--ink, #1a0f14);
+  font-size: 0.84rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 160ms ease;
+}
+
+:root[data-theme="dark"] .pain-step-pill {
+  border-color: rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.05);
+  color: #f7f2f4;
+}
+
+.pain-step-pill:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--rd-accent, #ff2d6a) 15%, transparent);
+}
+
+.pain-step-pill.is-active {
+  background: var(--rd-accent, #ff2d6a);
+  border-color: var(--rd-accent, #ff2d6a);
+  color: #ffffff;
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--rd-accent, #ff2d6a) 40%, transparent);
+}
+
+.pain-step-pill:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.pain-step-num {
+  display: inline-grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: color-mix(in srgb, currentColor 18%, transparent);
+  font-size: 0.72rem;
+  font-weight: 850;
+}
+
+.pain-step-arrow {
+  color: var(--muted, rgba(120, 100, 110, 0.6));
+  font-size: 0.9rem;
+  user-select: none;
+}
+
+.pain-view-toggle {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px;
+  border-radius: 999px;
+  background: var(--surface-2, rgba(255, 255, 255, 0.08));
+  border: 1px solid var(--line, rgba(255, 255, 255, 0.12));
+}
+
+.pain-view-btn {
+  padding: 5px 14px;
+  border-radius: 999px;
+  border: none;
+  background: transparent;
+  color: var(--muted, #66505c);
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 140ms ease;
+}
+
+:root[data-theme="dark"] .pain-view-btn {
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.pain-view-btn.is-active {
+  background: var(--surface, #ffffff);
+  color: var(--ink, #1a0f14);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+}
+
+:root[data-theme="dark"] .pain-view-btn.is-active {
+  background: rgba(255, 255, 255, 0.16);
+  color: #ffffff;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.4);
+}
+
+/* --------------------------------------------------------------------------
+   Two-column Main Layout
+   -------------------------------------------------------------------------- */
+.pain-layout {
+  display: grid;
+  gap: 20px;
+  min-width: 0;
+  align-items: start;
+}
+
+@media (min-width: 860px) {
+  .pain-layout {
+    grid-template-columns: minmax(0, 1.15fr) minmax(320px, 0.85fr);
+    gap: 24px;
+  }
+}
+
+.pain-stage {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+
+.pain-side {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+/* --------------------------------------------------------------------------
+   Stage Header & Camera Controls Bar
+   -------------------------------------------------------------------------- */
+.pain-stage-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.pain-camera-bar {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 3px 6px;
+  background: var(--surface-2, rgba(255, 255, 255, 0.08));
+  border: 1px solid var(--line, rgba(255, 255, 255, 0.14));
+  border-radius: 999px;
+  max-width: 100%;
+}
+
+.pain-cam-btn {
+  height: 30px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: none;
+  background: transparent;
+  color: var(--ink, #1a0f14);
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 130ms ease;
+  white-space: nowrap;
+}
+
+:root[data-theme="dark"] .pain-cam-btn {
+  color: #f7f2f4;
+}
+
+.pain-cam-btn:hover {
+  background: color-mix(in srgb, currentColor 12%, transparent);
+}
+
+.pain-cam-divider {
+  width: 1px;
+  height: 16px;
+  background: var(--line, rgba(255, 255, 255, 0.18));
+  margin: 0 2px;
+}
+
+.pain-cam-zoom {
+  width: 28px;
+  padding: 0;
+  font-size: 1.05rem;
+  font-weight: 750;
+  line-height: 1;
+}
+
+/* --------------------------------------------------------------------------
+   3D Mannequin Viewport Area
+   -------------------------------------------------------------------------- */
 .pain-viewer {
   position: relative;
-  height: min(52vh, 420px);
-  min-height: 280px;
+  width: 100%;
+  height: 480px;
+  min-height: 420px;
+  max-height: 520px;
   border-radius: 18px;
   overflow: hidden;
   background: var(--surface-2, #ffe8f0);
   border: 1px solid color-mix(in srgb, currentColor 12%, transparent);
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.04);
 }
-@media (min-width: 960px) {
-  .pain-viewer { height: min(68vh, 640px); min-height: 460px; }
+
+:root[data-theme="dark"] .pain-viewer {
+  background: #1c0e18;
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow: inset 0 2px 12px rgba(0, 0, 0, 0.5);
 }
-.pain-canvas { width: 100%; height: 100%; display: block; touch-action: none; }
+
+@media (max-width: 640px) {
+  .pain-viewer {
+    height: 360px;
+    min-height: 320px;
+  }
+}
+
+.pain-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+  touch-action: none;
+}
+
+.pain-stage-hint {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  color: var(--muted, #66505c);
+}
+
+:root[data-theme="dark"] .pain-stage-hint {
+  color: rgba(255, 255, 255, 0.65);
+}
+
+/* Orientation Compass Pill (Fixed in previous session, high-contrast) */
 .pain-orientation {
   position: absolute;
-  z-index: 1;
-  top: 10px;
-  left: 10px;
+  z-index: 10;
+  top: 12px;
+  left: 12px;
   display: flex;
   align-items: center;
   gap: 9px;
-  max-width: calc(100% - 20px);
-  padding: 6px 10px 6px 6px;
-  border: 1px solid color-mix(in srgb, currentColor 14%, transparent);
+  max-width: calc(100% - 24px);
+  padding: 6px 12px 6px 6px;
+  border: 1px solid rgba(0, 0, 0, 0.14);
   border-radius: 999px;
-  background: color-mix(in srgb, var(--surface-1, white) 86%, transparent);
-  box-shadow: 0 2px 12px #0002;
+  background: rgba(255, 255, 255, 0.94);
+  color: #1a0f14;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
   font-size: 0.8rem;
-  font-weight: 700;
+  font-weight: 750;
   pointer-events: none;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
+
+:root[data-theme="dark"] .pain-orientation {
+  background: rgba(28, 16, 23, 0.9);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: #f7f2f4;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+}
+
 .pain-orientation-compass {
   position: relative;
   display: block;
   flex: 0 0 38px;
   width: 38px;
   height: 38px;
-  border: 1px solid color-mix(in srgb, currentColor 30%, transparent);
+  border: 1.5px solid rgba(0, 0, 0, 0.25);
   border-radius: 50%;
+  background: rgba(0, 0, 0, 0.04);
 }
+
+:root[data-theme="dark"] .pain-orientation-compass {
+  border-color: rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.08);
+}
+
 .pain-orientation-compass span {
   position: absolute;
   z-index: 1;
-  font-size: 0.56rem;
+  font-size: 0.58rem;
+  font-weight: 800;
   line-height: 1;
-  opacity: 0.7;
+  color: #21151a;
+  opacity: 0.9;
 }
+
+:root[data-theme="dark"] .pain-orientation-compass span {
+  color: #f7f2f4;
+  opacity: 0.95;
+}
+
 .pain-orientation-compass .north { top: 3px; left: 50%; transform: translateX(-50%); }
 .pain-orientation-compass .east { top: 50%; right: 3px; transform: translateY(-50%); }
 .pain-orientation-compass .south { bottom: 3px; left: 50%; transform: translateX(-50%); }
 .pain-orientation-compass .west { top: 50%; left: 3px; transform: translateY(-50%); }
+
 .pain-orientation-compass i {
   position: absolute;
-  top: 8px;
+  top: 7px;
   left: 17px;
-  width: 2px;
-  height: 11px;
-  border-radius: 2px;
-  background: var(--rd-accent, #f5004f);
-  transform-origin: 50% 11px;
+  width: 3px;
+  height: 12px;
+  border-radius: 3px;
+  background: var(--rd-accent, #ff2d6a);
+  box-shadow: 0 0 4px var(--rd-accent, #ff2d6a);
+  transform-origin: 50% 12px;
 }
+
 .pain-loading {
-  position: absolute; inset: 0; display: grid; place-items: center; margin: 0;
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  font-size: 0.88rem;
+  color: var(--muted);
 }
-.pain-flat { display: grid; gap: 12px; }
-@media (min-width: 720px) {
-  .pain-flat { grid-template-columns: 1fr 1fr; }
+
+/* --------------------------------------------------------------------------
+   Manual Region Selector Accordion
+   -------------------------------------------------------------------------- */
+.pain-manual-picker {
+  border: 1px solid var(--line, rgba(255, 255, 255, 0.12));
+  border-radius: 14px;
+  background: var(--surface-2, rgba(255, 255, 255, 0.04));
+  overflow: hidden;
+  transition: all 160ms ease;
 }
+
+.pain-manual-summary {
+  padding: 10px 14px;
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: var(--ink);
+  cursor: pointer;
+  user-select: none;
+  outline: none;
+}
+
+.pain-manual-summary:hover {
+  background: color-mix(in srgb, currentColor 5%, transparent);
+}
+
+.pain-manual-content {
+  padding: 12px 14px 14px;
+  display: grid;
+  gap: 12px;
+  border-top: 1px solid var(--line, rgba(255, 255, 255, 0.1));
+}
+
+.pain-manual-content .rd-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 10px;
+}
+
+.pain-manual-content .rd-field {
+  display: grid;
+  gap: 4px;
+}
+
+.pain-manual-content .rd-field label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--muted, #66505c);
+}
+
+:root[data-theme="dark"] .pain-manual-content .rd-field label {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.pain-manual-content select {
+  height: 38px;
+  padding: 0 10px;
+  border-radius: 10px;
+  border: 1px solid var(--line, rgba(0, 0, 0, 0.15));
+  background: var(--surface, #ffffff);
+  color: var(--ink, #1a0f14);
+  font-size: 0.85rem;
+}
+
+:root[data-theme="dark"] .pain-manual-content select {
+  border-color: rgba(255, 255, 255, 0.18);
+  background: #25141e;
+  color: #f7f2f4;
+  color-scheme: dark;
+}
+
+/* --------------------------------------------------------------------------
+   Side Panel: Header, List, Details & Footer
+   -------------------------------------------------------------------------- */
+.pain-side-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--line, rgba(255, 255, 255, 0.1));
+}
+
+.pain-side-header h3 {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 750;
+  color: var(--ink);
+}
+
+.pain-count-badge {
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--rd-accent, #ff2d6a) 15%, transparent);
+  color: var(--rd-accent, #ff2d6a);
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+/* Pain List */
+.pain-list {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  max-height: 380px;
+  overflow-y: auto;
+}
+
+.pain-list-item {
+  display: grid;
+  gap: 8px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1.5px solid var(--line, rgba(0, 0, 0, 0.1));
+  background: var(--surface-2, rgba(255, 255, 255, 0.05));
+  transition: all 140ms ease;
+}
+
+:root[data-theme="dark"] .pain-list-item {
+  border-color: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.pain-list-item.is-active {
+  border-color: var(--rd-accent, #ff2d6a);
+  background: color-mix(in srgb, var(--rd-accent, #ff2d6a) 8%, var(--surface-2, transparent));
+  box-shadow: 0 2px 10px color-mix(in srgb, var(--rd-accent, #ff2d6a) 15%, transparent);
+}
+
+.pain-mark-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border: none;
+  background: transparent;
+  padding: 0;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  color: inherit;
+}
+
+.pain-mark-title-block {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.pain-mark-num-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--rd-accent, #ff2d6a);
+  color: #ffffff;
+  font-size: 0.78rem;
+  font-weight: 850;
+  margin-right: 8px;
+  vertical-align: middle;
+}
+
+.pain-mark strong {
+  font-size: 0.95rem;
+  font-weight: 750;
+}
+
+.pain-mark-subtitle {
+  font-size: 0.8rem;
+  color: var(--muted, #66505c);
+  margin-left: 32px;
+}
+
+:root[data-theme="dark"] .pain-mark-subtitle {
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.pain-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: 32px;
+}
+
+.pain-toolbar .rd-btn-xs,
+.pain-toolbar .rd-btn {
+  min-height: 32px;
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.pain-empty-callout {
+  padding: 24px 18px;
+  text-align: center;
+  border-radius: 14px;
+  border: 1.5px dashed var(--line, rgba(255, 255, 255, 0.16));
+  background: var(--surface-2, rgba(255, 255, 255, 0.02));
+  color: var(--muted, #66505c);
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+:root[data-theme="dark"] .pain-empty-callout {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* Step 2 Form Fieldsets */
+.pain-side fieldset {
+  border: 1px solid var(--line, rgba(255, 255, 255, 0.14));
+  border-radius: 16px;
+  padding: 16px;
+  display: grid;
+  gap: 12px;
+  background: var(--surface-2, rgba(255, 255, 255, 0.03));
+}
+
+.pain-side legend {
+  font-weight: 750;
+  font-size: 0.9rem;
+  padding: 0 8px;
+  color: var(--rd-accent, #ff2d6a);
+}
+
+.pain-side .rd-field {
+  display: grid;
+  gap: 5px;
+}
+
+.pain-side .rd-field label {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.pain-side select,
+.pain-side input[type="text"],
+.pain-side input[type="datetime-local"],
+.pain-side textarea {
+  width: 100%;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--line, rgba(0, 0, 0, 0.15));
+  background: var(--surface, #ffffff);
+  color: var(--ink, #1a0f14);
+  font-size: 0.86rem;
+  font-family: inherit;
+}
+
+:root[data-theme="dark"] .pain-side select,
+:root[data-theme="dark"] .pain-side input[type="text"],
+:root[data-theme="dark"] .pain-side input[type="datetime-local"],
+:root[data-theme="dark"] .pain-side textarea {
+  border-color: rgba(255, 255, 255, 0.16);
+  background: #25141e;
+  color: #f7f2f4;
+  color-scheme: dark;
+}
+
+.pain-side textarea {
+  min-height: 60px;
+  resize: vertical;
+}
+
+.pain-range {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.pain-range input[type="range"] {
+  flex: 1;
+  accent-color: var(--rd-accent, #ff2d6a);
+  cursor: pointer;
+}
+
+.pain-range input[type="number"] {
+  width: 60px;
+  height: 38px;
+  text-align: center;
+  border-radius: 8px;
+  font-weight: 750;
+}
+
+/* --------------------------------------------------------------------------
+   Footer Navigation Buttons
+   -------------------------------------------------------------------------- */
+.pain-bottom-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line, rgba(255, 255, 255, 0.12));
+  margin-top: auto;
+}
+
+.pain-bottom-actions .rd-btn {
+  min-height: 40px;
+  padding: 0 18px;
+  font-size: 0.86rem;
+  font-weight: 750;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pain-bottom-actions .rd-btn.is-primary {
+  background: var(--rd-accent, #ff2d6a);
+  color: #ffffff;
+  border: none;
+  box-shadow: 0 2px 10px color-mix(in srgb, var(--rd-accent, #ff2d6a) 35%, transparent);
+}
+
+.pain-bottom-actions .rd-btn.is-primary:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+
+.pain-bottom-actions .rd-btn.is-primary:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* 2D Flat view styling */
+.pain-flat {
+  display: grid;
+  gap: 14px;
+  max-height: 480px;
+  overflow-y: auto;
+}
+
+@media (min-width: 640px) {
+  .pain-flat {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
 .pain-flat figure { margin: 0; min-width: 0; }
-.pain-flat figcaption { font-weight: 750; margin-bottom: 4px; }
-.pain-flat svg { width: 100%; height: auto; max-height: 460px; }
+.pain-flat figcaption { font-weight: 750; margin-bottom: 6px; font-size: 0.86rem; }
+.pain-flat svg { width: 100%; height: auto; max-height: 420px; }
 .pain-flat ellipse {
   fill: color-mix(in srgb, var(--surface-2, #ffe8f0) 70%, #d9c4b4);
   stroke: color-mix(in srgb, currentColor 40%, transparent);
   stroke-width: 1.5;
   cursor: pointer;
+  transition: all 130ms ease;
+}
+.pain-flat ellipse:hover {
+  stroke: #f5004f;
+  stroke-width: 2.5;
 }
 .pain-flat ellipse.is-on {
   stroke: #f5004f;
@@ -109,34 +750,3 @@
 .pain-flat ellipse:focus-visible { outline: 3px solid #f5004f; outline-offset: 2px; }
 .pain-flat text { font-size: 14px; font-weight: 800; fill: #f5004f; pointer-events: none; }
 .pain-flat text.series-b { fill: #0f6e75; }
-.pain-list { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
-.pain-mark {
-  display: grid; gap: 4px;
-  padding: 10px 12px;
-  border-radius: 14px;
-  border: 1px solid transparent;
-  background: color-mix(in srgb, var(--rd-wash, #f8e9ef) 70%, transparent);
-  text-align: left;
-  color: inherit;
-  font: inherit;
-  width: 100%;
-  cursor: pointer;
-}
-.pain-mark.is-on { border-color: #f5004f; }
-.pain-mark strong { font-size: 0.92rem; }
-.pain-steps { display: flex; flex-wrap: wrap; gap: 8px; }
-.pain-legend { display: flex; flex-wrap: wrap; gap: 12px; font-size: 0.85rem; }
-.pain-swatch { width: 0.8rem; height: 0.8rem; border-radius: 99px; display: inline-block; margin-right: 6px; }
-.pain-swatch.a { background: #f5004f; }
-.pain-swatch.b { background: #0f6e75; }
-.pain-clinical {
-  display: grid; gap: 8px;
-  padding: 12px;
-  border-radius: 16px;
-  border: 1px dashed color-mix(in srgb, var(--rd-accent, #2a9bb0) 45%, transparent);
-}
-.pain-report { display: grid; gap: 6px; padding-top: 8px; border-top: 1px solid color-mix(in srgb, currentColor 10%, transparent); }
-.pain-map fieldset { border: 1px solid color-mix(in srgb, currentColor 14%, transparent); border-radius: 14px; padding: 10px 12px; display: grid; gap: 8px; }
-.pain-map legend { font-weight: 750; padding: 0 4px; }
-.pain-range { display: flex; align-items: center; gap: 10px; }
-.pain-range input[type="range"] { flex: 1; min-height: 44px; }

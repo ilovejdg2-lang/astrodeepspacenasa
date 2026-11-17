@@ -51,6 +51,9 @@ function addDailyHistory(state: AppState): AppState {
       const sleep = Number((crew.baseline.sleepMin + (day % 3) * 0.3).toFixed(1))
       next = send(next, reading(crew, 'heart_rate', hr, at, `hist-${crew.id}-hr-${day}`))
       next = send(next, reading(crew, 'sleep_hours', sleep, at, `hist-${crew.id}-sleep-${day}`))
+      next = send(next, reading(crew, 'spo2', 98, at, `hist-${crew.id}-spo2-${day}`))
+      next = send(next, reading(crew, 'temperature', 36.6, at, `hist-${crew.id}-temp-${day}`))
+      next = send(next, reading(crew, 'respiratory_rate', 13 + (day % 2), at, `hist-${crew.id}-rr-${day}`))
     }
   }
   return next

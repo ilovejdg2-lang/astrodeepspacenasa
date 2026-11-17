@@ -92,13 +92,14 @@ export function PainEditor({
   const viewRef = useRef<BodyViewportHandle>(null)
   const followsReportId = stored?.followsReportId ?? null
   const correctingId = stored?.correctingId ?? null
-  const writable = stage === 'aboard' && !conflict
+  const isStageReadOnly = stage === 'postmission' || stage === 'archived' || stage === 'cancelled'
+  const writable = !isStageReadOnly && !conflict
 
   useEffect(() => {
-    if (stage && stage !== 'aboard') {
+    if (stage && (stage === 'postmission' || stage === 'archived' || stage === 'cancelled')) {
       setConflict(en
-        ? 'The mission stage changed while this form was open. A new pain record cannot be saved in this stage. What you wrote is still here and was kept temporarily in this browser.'
-        : 'La etapa de la misión cambió mientras este formulario estaba abierto. No se puede guardar un registro de dolor nuevo en esta etapa. Lo que escribiste sigue aquí y se conservó temporalmente en este navegador.')
+        ? 'The mission is complete or archived. A new pain record cannot be saved in this stage. What you wrote was kept temporarily in this browser.'
+        : 'La misión ha finalizado o está archivada. No se puede guardar un registro de dolor nuevo en esta etapa. Lo que escribiste se conservó temporalmente en este navegador.')
     } else {
       setConflict('')
     }
@@ -113,7 +114,6 @@ export function PainEditor({
     writePainDraft(missionId, profileId, { v: 1, marks, followsReportId, correctingId, appointmentId })
   }, [missionId, profileId, marks, followsReportId, correctingId, appointmentId])
 
-  const selected = marks.find((mark) => mark.id === selectedId) ?? null
   const shown = useMemo(() => marks.map((mark, index) => ({
     id: mark.id,
     label: String(index + 1),
@@ -220,37 +220,74 @@ export function PainEditor({
 
   return (
     <div className="pain-map" data-testid="pain-editor">
+      {/* Top Bar: Wizard Steps Navigation & 3D/2D View Toggle */}
+      <div className="pain-editor-top">
+        <div className="pain-steps-bar" role="tablist" aria-label={en ? 'Wizard steps' : 'Pasos del formulario'}>
+          <button
+            type="button"
+            className={`pain-step-pill ${step === 'locate' ? 'is-active' : ''}`}
+            onClick={() => setStep('locate')}
+          >
+            <span className="pain-step-num">1</span>
+            <span>{en ? 'Location' : 'Ubicación'}</span>
+          </button>
+          <span className="pain-step-arrow" aria-hidden="true">→</span>
+          <button
+            type="button"
+            className={`pain-step-pill ${step === 'details' ? 'is-active' : ''}`}
+            disabled={!marks.length}
+            onClick={() => setStep('details')}
+          >
+            <span className="pain-step-num">2</span>
+            <span>{en ? 'Details' : 'Detalles'}</span>
+          </button>
+          <span className="pain-step-arrow" aria-hidden="true">→</span>
+          <button
+            type="button"
+            className={`pain-step-pill ${step === 'preview' ? 'is-active' : ''}`}
+            disabled={!marks.every(draftComplete)}
+            onClick={() => setStep('preview')}
+          >
+            <span className="pain-step-num">3</span>
+            <span>{en ? 'Preview' : 'Vista previa'}</span>
+          </button>
+        </div>
+
+        <div className="pain-view-toggle">
+          <button
+            type="button"
+            className={`pain-view-btn ${!useFlat ? 'is-active' : ''}`}
+            onClick={() => preferFlat(false)}
+            disabled={modelFailed}
+          >
+            {en ? '3D Body' : 'Cuerpo 3D'}
+          </button>
+          <button
+            type="button"
+            className={`pain-view-btn ${useFlat ? 'is-active' : ''}`}
+            onClick={() => preferFlat(true)}
+          >
+            {en ? '2D Diagram' : 'Diagrama 2D'}
+          </button>
+        </div>
+      </div>
+
       <p className="pain-help">{painHelp(en)}</p>
       <p className="sr-only" aria-live="polite">{liveText}</p>
       {restored ? <p className="rd-muted">{en ? 'Unsaved text from this screen was restored.' : 'Se restauró el texto que todavía estaba en esta pantalla.'}</p> : null}
       {followsReportId ? <p className="rd-muted">{en ? 'This update is saved as a new report. The earlier one stays in the history.' : 'Esta actualización se guarda como un reporte nuevo. El anterior permanece en el historial.'}</p> : null}
       {conflict ? <p className="rd-error" role="alert">{conflict}</p> : null}
       {error ? <p className="rd-error" role="alert">{error}</p> : null}
-      <div className="pain-steps" role="tablist" aria-label={en ? 'Pain report steps' : 'Pasos del reporte de dolor'}>
-        {(['locate', 'details', 'preview'] as const).map((item) => (
-          <button key={item} type="button" className={`rd-btn${step === item ? '' : ' ghost'}`} onClick={() => setStep(item)}>
-            {item === 'locate' ? (en ? '1. Location' : '1. Ubicación') : item === 'details' ? (en ? '2. Details' : '2. Detalles') : (en ? '3. Preview' : '3. Vista previa')}
-          </button>
-        ))}
-      </div>
+
       <div className="pain-layout">
+        {/* Left Column: 3D Body Model Viewport */}
         <div className="pain-stage">
-          <div className="pain-toolbar">
-            <button type="button" className={`rd-btn${placeMode ? '' : ' ghost'}`} aria-pressed={placeMode} data-testid="pain-place-mode" onClick={() => setPlaceMode(true)}>
-              {en ? 'Mark pain' : 'Marcar dolor'}
-            </button>
-            <button type="button" className={`rd-btn${!placeMode ? '' : ' ghost'}`} aria-pressed={!placeMode} onClick={() => setPlaceMode(false)}>
-              {en ? 'Rotate' : 'Girar'}
-            </button>
-            <button type="button" className={`rd-btn${useFlat ? '' : ' ghost'}`} data-testid="pain-view-2d" aria-pressed={useFlat} onClick={() => preferFlat(!useFlat)}>
-              {useFlat ? (en ? 'Try 3D' : 'Probar 3D') : (en ? 'Flat diagram' : 'Diagrama plano')}
-            </button>
-          </div>
           {modelFailed ? <p className="rd-muted">{en ? 'The 3D model did not load. The form and the flat diagram are still available.' : 'El modelo 3D no cargó. El formulario y el diagrama plano siguen disponibles.'}</p> : null}
           {!useFlat ? (
             <>
-              <PainCameraControls en={en} viewRef={viewRef} />
-              <p className="rd-muted">{en ? 'Left and right mean the person’s left and right. Drag to rotate; use the wheel or pinch to zoom. Only a tap in Mark pain mode places a mark.' : 'Izquierda y derecha son las de la persona. Arrastrá para girar y usá la rueda o pellizcá para acercar. Solo un toque en modo Marcar dolor coloca una marca.'}</p>
+              <div className="pain-stage-header">
+                <PainCameraControls en={en} viewRef={viewRef} />
+              </div>
               <ModelBoundary fallback={null} onError={() => { setModelFailed(true); preferFlat(true) }}>
                 <BodyViewport
                   ref={viewRef}
@@ -264,56 +301,114 @@ export function PainEditor({
                   onUnavailable={() => { setModelFailed(true); preferFlat(true) }}
                 />
               </ModelBoundary>
+              <p className="pain-stage-hint">
+                {en
+                  ? 'Drag to rotate; use wheel or pinch to zoom. Tap the body to mark a location.'
+                  : 'Arrastrá para girar; usá la rueda o pellizcá para acercar. Tocá el cuerpo para marcar una ubicación.'}
+              </p>
             </>
           ) : (
             <BodyMap2D marks={shown} selectedId={selectedId} placeEnabled={placeMode && step !== 'preview'} onPlace={place} onSelect={setSelectedId} en={en} />
           )}
-          <p>{selected ? describe(selected) : (en ? 'No location selected yet.' : 'Todavía no hay una ubicación seleccionada.')}</p>
-          <div className="rd-form-grid">
-            <div className="rd-field">
-              <label htmlFor="pain-region">{en ? 'Region' : 'Región'}</label>
-              <select id="pain-region" value={regionChoice} onChange={(event) => setRegionChoice(event.target.value)}>
-                {BODY_REGIONS.map((region) => <option key={region.id} value={region.id}>{en ? region.en : region.es}</option>)}
-              </select>
-            </div>
-            <div className="rd-field">
-              <label htmlFor="pain-side">{en ? 'Side of the body' : 'Lado del cuerpo'}</label>
-              <select id="pain-side" value={sideChoice} onChange={(event) => setSideChoice(event.target.value as PainLaterality)}>
-                {sidesFor(regionChoice).map((side) => <option key={side} value={side}>{sideLabel(side, en)}</option>)}
-              </select>
-            </div>
-            <div className="rd-field">
-              <label htmlFor="pain-aspect">{en ? 'Facing' : 'Orientación'}</label>
-              <select id="pain-aspect" value={aspectChoice} onChange={(event) => setAspectChoice(event.target.value as PainAspect)}>
-                {(['anterior', 'posterior', 'lateral'] as const).map((aspect) => <option key={aspect} value={aspect}>{aspectLabel(aspect, en)}</option>)}
-              </select>
-            </div>
-          </div>
-          <button type="button" className="rd-btn" disabled={!placeMode || step !== 'locate'} onClick={addRegion}>{en ? 'Add this region' : 'Agregar esta región'}</button>
-        </div>
-        <div className="pain-side">
-          <ul className="pain-list">
-            {marks.map((mark, index) => (
-              <li key={mark.id}>
-                <button type="button" className={`pain-mark${mark.id === selectedId ? ' is-on' : ''}`} onClick={() => selectMark(mark.id)}>
-                  <strong>{index + 1}. {displayRegion(mark, en)}</strong>
-                  <span>{sideLabel(mark.laterality, en)} · {aspectLabel(mark.aspect, en)}{mark.intensity != null ? ` · ${mark.intensity}/10` : ''}</span>
-                </button>
-                <div className="pain-toolbar">
-                  <button type="button" className="rd-btn ghost" onClick={() => { setSelectedId(mark.id); setMovingId(mark.id); setPlaceMode(true); setStep('locate') }}>
-                    {movingId === mark.id ? (en ? 'Tap the new spot' : 'Tocá el nuevo punto') : (en ? 'Move' : 'Mover')}
-                  </button>
-                  <button type="button" className="rd-btn ghost" onClick={() => setMarks((current) => current.filter((item) => item.id !== mark.id))}>
-                    {en ? 'Remove' : 'Quitar'}
-                  </button>
+
+          {/* Collapsible manual region picker */}
+          <details className="pain-manual-picker">
+            <summary className="pain-manual-summary">
+              {en ? '+ Manual region selector (without 3D tap)' : '+ Selector manual de región (sin tocar el 3D)'}
+            </summary>
+            <div className="pain-manual-content">
+              <div className="rd-form-grid">
+                <div className="rd-field">
+                  <label htmlFor="pain-region">{en ? 'Region' : 'Región'}</label>
+                  <select id="pain-region" value={regionChoice} onChange={(event) => setRegionChoice(event.target.value)}>
+                    {BODY_REGIONS.map((region) => <option key={region.id} value={region.id}>{en ? region.en : region.es}</option>)}
+                  </select>
                 </div>
-              </li>
-            ))}
-          </ul>
-          {marks.length === 0 ? <p className="rd-muted">{en ? 'Add a point on the diagram or choose a region from the list. You do not have to touch the 3D surface.' : 'Agregá un punto en el diagrama o elegí una región de la lista. No hace falta tocar la superficie 3D.'}</p> : null}
+                <div className="rd-field">
+                  <label htmlFor="pain-side">{en ? 'Side of the body' : 'Lado del cuerpo'}</label>
+                  <select id="pain-side" value={sideChoice} onChange={(event) => setSideChoice(event.target.value as PainLaterality)}>
+                    {sidesFor(regionChoice).map((side) => <option key={side} value={side}>{sideLabel(side, en)}</option>)}
+                  </select>
+                </div>
+                <div className="rd-field">
+                  <label htmlFor="pain-aspect">{en ? 'Facing' : 'Orientación'}</label>
+                  <select id="pain-aspect" value={aspectChoice} onChange={(event) => setAspectChoice(event.target.value as PainAspect)}>
+                    {(['anterior', 'posterior', 'lateral'] as const).map((aspect) => <option key={aspect} value={aspect}>{aspectLabel(aspect, en)}</option>)}
+                  </select>
+                </div>
+              </div>
+              <button type="button" className="rd-btn" disabled={!placeMode || step !== 'locate'} onClick={addRegion}>
+                {en ? 'Add this region' : 'Agregar esta región'}
+              </button>
+            </div>
+          </details>
+        </div>
+
+        {/* Right Column: Pain Details & Wizard Actions */}
+        <div className="pain-side">
+          <div className="pain-side-header">
+            <h3>
+              {step === 'locate'
+                ? (en ? 'Marked pain spots' : 'Puntos de dolor marcados')
+                : step === 'details'
+                  ? (en ? 'Pain details' : 'Detalles del dolor')
+                  : (en ? 'Review report' : 'Revisar reporte')}
+            </h3>
+            <span className="pain-count-badge">{marks.length}/8</span>
+          </div>
+
+          {step === 'locate' ? (
+            <>
+              {marks.length === 0 ? (
+                <div className="pain-empty-callout">
+                  <p>
+                    {en
+                      ? 'No pain spots added yet. Tap on the 3D body model to place a spot, or expand the manual selector below.'
+                      : 'Todavía no hay puntos de dolor. Tocá en el modelo 3D para ubicar uno, o abrí el selector manual abajo.'}
+                  </p>
+                </div>
+              ) : (
+                <ul className="pain-list">
+                  {marks.map((mark, index) => (
+                    <li key={mark.id} className={`pain-list-item${mark.id === selectedId ? ' is-active' : ''}`}>
+                      <button type="button" className="pain-mark-trigger" onClick={() => selectMark(mark.id)}>
+                        <div className="pain-mark-title-block">
+                          <div>
+                            <span className="pain-mark-num-badge">{index + 1}</span>
+                            <strong>{displayRegion(mark, en)}</strong>
+                          </div>
+                          <span className="pain-mark-subtitle">
+                            {sideLabel(mark.laterality, en)} · {aspectLabel(mark.aspect, en)}
+                            {mark.intensity != null ? ` · ${mark.intensity}/10` : ''}
+                          </span>
+                        </div>
+                      </button>
+                      <div className="pain-toolbar">
+                        <button
+                          type="button"
+                          className="rd-btn ghost"
+                          onClick={() => { setSelectedId(mark.id); setMovingId(mark.id); setPlaceMode(true); setStep('locate') }}
+                        >
+                          {movingId === mark.id ? (en ? 'Tap new spot' : 'Tocá nuevo punto') : (en ? 'Move' : 'Mover')}
+                        </button>
+                        <button
+                          type="button"
+                          className="rd-btn ghost"
+                          onClick={() => setMarks((current) => current.filter((item) => item.id !== mark.id))}
+                        >
+                          {en ? 'Remove' : 'Quitar'}
+                        </button>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </>
+          ) : null}
+
           {step !== 'locate' ? marks.map((mark, index) => (
             <fieldset key={mark.id}>
-              <legend>{en ? `Location ${index + 1}` : `Ubicación ${index + 1}`}</legend>
+              <legend>{en ? `Location ${index + 1}: ${displayRegion(mark, en)}` : `Ubicación ${index + 1}: ${displayRegion(mark, en)}`}</legend>
               <div className="rd-field">
                 <label htmlFor={`loc-${mark.id}`}>{en ? 'Location' : 'Ubicación'}</label>
                 <select
@@ -340,7 +435,7 @@ export function PainEditor({
                 </div>
               </div>
               <div className="rd-field">
-                <label htmlFor={`int-${mark.id}`}>{en ? 'Pain intensity' : 'Intensidad del dolor'}</label>
+                <label htmlFor={`int-${mark.id}`}>{en ? 'Pain intensity (0–10)' : 'Intensidad del dolor (0–10)'}</label>
                 <div className="pain-range">
                   <input
                     id={`int-${mark.id}`}
@@ -368,11 +463,13 @@ export function PainEditor({
                 <label htmlFor={`start-${mark.id}`}>{en ? 'Started at' : 'Empezó'}</label>
                 <input id={`start-${mark.id}`} type="datetime-local" value={stamp(mark.startedAt)} onChange={(event) => update(mark.id, { startedAt: fromStamp(event.target.value) })} />
               </div>
-              <fieldset>
-                <legend>{en ? 'Pattern' : 'Patrón'}</legend>
-                <label className="rd-check"><input type="radio" name={`pattern-${mark.id}`} checked={mark.pattern === 'constant'} onChange={() => update(mark.id, { pattern: 'constant' })} /> {en ? 'Constant' : 'Constante'}</label>
-                <label className="rd-check"><input type="radio" name={`pattern-${mark.id}`} checked={mark.pattern === 'intermittent'} onChange={() => update(mark.id, { pattern: 'intermittent' })} /> {en ? 'Intermittent' : 'Intermitente'}</label>
-              </fieldset>
+              <div className="rd-field">
+                <label>{en ? 'Pattern' : 'Patrón'}</label>
+                <div style={{ display: 'flex', gap: 16 }}>
+                  <label className="rd-check"><input type="radio" name={`pattern-${mark.id}`} checked={mark.pattern === 'constant'} onChange={() => update(mark.id, { pattern: 'constant' })} /> {en ? 'Constant' : 'Constante'}</label>
+                  <label className="rd-check"><input type="radio" name={`pattern-${mark.id}`} checked={mark.pattern === 'intermittent'} onChange={() => update(mark.id, { pattern: 'intermittent' })} /> {en ? 'Intermittent' : 'Intermitente'}</label>
+                </div>
+              </div>
               <div className="rd-field">
                 <label htmlFor={`desc-${mark.id}`}>{en ? 'Description' : 'Descripción'}</label>
                 <textarea id={`desc-${mark.id}`} value={mark.description} onChange={(event) => update(mark.id, { description: event.target.value })} required />
@@ -391,17 +488,24 @@ export function PainEditor({
               </div>
             </fieldset>
           )) : null}
+
           {step === 'preview' ? (
-            <div>
-              <h3>{en ? 'Preview' : 'Vista previa'}</h3>
-              <p className="rd-muted">{en ? 'Patient-reported pain. Nothing here is a diagnosis.' : 'Dolor reportado por la persona. Nada de esto es un diagnóstico.'}</p>
+            <div style={{ display: 'grid', gap: 12 }}>
+              <p className="rd-muted">{en ? 'Patient-reported pain. Nothing here is a clinical diagnosis.' : 'Dolor reportado por la persona. Nada de esto es un diagnóstico clínico.'}</p>
               {marks.map((mark, index) => (
-                <p key={mark.id}><strong>{index + 1}. {displayRegion(mark, en)}</strong> · {sideLabel(mark.laterality, en)} · {aspectLabel(mark.aspect, en)} · {mark.intensity ?? '—'}/10 · {mark.pattern === 'constant' ? (en ? 'Constant' : 'Constante') : mark.pattern === 'intermittent' ? (en ? 'Intermittent' : 'Intermitente') : '—'}<br />{mark.description}</p>
+                <div key={mark.id} className="pain-list-item">
+                  <strong>{index + 1}. {displayRegion(mark, en)}</strong>
+                  <span className="rd-muted">
+                    {sideLabel(mark.laterality, en)} · {aspectLabel(mark.aspect, en)} · {mark.intensity ?? '—'}/10 · {mark.pattern === 'constant' ? (en ? 'Constant' : 'Constante') : mark.pattern === 'intermittent' ? (en ? 'Intermittent' : 'Intermitente') : '—'}
+                  </span>
+                  <p style={{ margin: 0, fontSize: '0.88rem' }}>{mark.description}</p>
+                </div>
               ))}
             </div>
           ) : null}
+
           {appointments.length ? (
-            <div className="rd-field">
+            <div className="rd-field" style={{ marginTop: 8 }}>
               <label htmlFor="pain-visit">{en ? 'Link a visit (optional)' : 'Vincular una cita (opcional)'}</label>
               <select id="pain-visit" value={appointmentId ?? ''} onChange={(event) => setAppointmentId(event.target.value || null)}>
                 <option value="">{en ? 'No visit' : 'Sin cita'}</option>
@@ -409,16 +513,60 @@ export function PainEditor({
               </select>
             </div>
           ) : null}
-          <div className="pain-toolbar">
-            {step !== 'locate' ? <button type="button" className="rd-btn ghost" onClick={() => setStep(step === 'preview' ? 'details' : 'locate')}>{en ? 'Back' : 'Atrás'}</button> : null}
-            {step === 'locate' ? <button type="button" className="rd-btn" disabled={!marks.length} onClick={() => setStep('details')}>{en ? 'Continue' : 'Continuar'}</button> : null}
-            {step === 'details' ? <button type="button" className="rd-btn" disabled={!marks.every(draftComplete)} onClick={() => setStep('preview')}>{en ? 'Preview' : 'Vista previa'}</button> : null}
-            {step === 'preview' ? (
-              <button type="button" className="rd-btn" data-testid="pain-save" disabled={!writable || busy || !marks.length} onClick={() => void save()}>
-                {busy ? (en ? 'Saving…' : 'Guardando…') : (en ? 'Save report' : 'Guardar reporte')}
+
+          {/* Bottom Action Bar */}
+          <div className="pain-bottom-actions">
+            <div>
+              {step !== 'locate' ? (
+                <button type="button" className="rd-btn ghost" onClick={() => setStep(step === 'preview' ? 'details' : 'locate')}>
+                  {en ? '← Back' : '← Atrás'}
+                </button>
+              ) : null}
+            </div>
+
+            <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+              <button
+                type="button"
+                className="rd-btn ghost"
+                onClick={() => { clearPainDraft(missionId, profileId); onClose() }}
+              >
+                {en ? 'Close' : 'Cerrar'}
               </button>
-            ) : null}
-            <button type="button" className="rd-btn ghost" onClick={() => { clearPainDraft(missionId, profileId); onClose() }}>{en ? 'Close' : 'Cerrar'}</button>
+
+              {step === 'locate' ? (
+                <button
+                  type="button"
+                  className="rd-btn is-primary"
+                  disabled={!marks.length}
+                  onClick={() => setStep('details')}
+                >
+                  {en ? 'Continue →' : 'Continuar →'}
+                </button>
+              ) : null}
+
+              {step === 'details' ? (
+                <button
+                  type="button"
+                  className="rd-btn is-primary"
+                  disabled={!marks.every(draftComplete)}
+                  onClick={() => setStep('preview')}
+                >
+                  {en ? 'Preview →' : 'Vista previa →'}
+                </button>
+              ) : null}
+
+              {step === 'preview' ? (
+                <button
+                  type="button"
+                  className="rd-btn is-primary"
+                  data-testid="pain-save"
+                  disabled={!writable || busy || !marks.length}
+                  onClick={() => void save()}
+                >
+                  {busy ? (en ? 'Saving…' : 'Guardando…') : (en ? 'Save report' : 'Guardar reporte')}
+                </button>
+              ) : null}
+            </div>
           </div>
         </div>
       </div>

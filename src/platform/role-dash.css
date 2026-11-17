@@ -255,10 +255,13 @@
   min-height: 36px; height: 36px;
   min-width: 7.5rem; padding: 0 12px;
   border-radius: 999px; border: 0;
-  background: var(--rd-accent); color: #fff;
+  background: var(--rd-accent, var(--rd-fucsia, #d46a8e)); color: #fff;
   font: inherit; font-weight: 700; font-size: 0.82rem;
   line-height: 1; text-decoration: none; cursor: pointer;
   white-space: nowrap;
+}
+.rd-btn:hover:not(:disabled) {
+  filter: brightness(1.08);
 }
 .rd-btn.ghost {
   background: transparent; color: inherit;
@@ -291,7 +294,17 @@
 :root[data-theme="dark"] .rd-field input,
 :root[data-theme="dark"] .rd-field select,
 :root[data-theme="dark"] .rd-field textarea {
-  background: rgba(255,255,255,0.06);
+  background: var(--surface-2, #311820);
+  color-scheme: dark;
+  color: #f7f2f4;
+}
+.rd-field select option {
+  background-color: #ffffff;
+  color: #1a0f14;
+}
+:root[data-theme="dark"] .rd-field select option {
+  background-color: #24141c;
+  color: #f7f2f4;
 }
 .rd-field input:focus,
 .rd-field select:focus,
