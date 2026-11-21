@@ -18,6 +18,7 @@ const EvidencePage = lazy(() =>
   import('./pages/platform/EvidencePage').then((m) => ({ default: m.EvidencePage })),
 )
 
+const RoleHome = lazy(() => import('./pages/role/RoleHome').then((m) => ({ default: m.RoleHome })))
 const MyHealthPage = lazy(() => import('./pages/role/MyHealthPage').then((m) => ({ default: m.MyHealthPage })))
 const MonitorGate = lazy(() => import('./pages/role/MonitorGate').then((m) => ({ default: m.MonitorGate })))
 const MonitorPage = lazy(() => import('./pages/MonitorPage').then((m) => ({ default: m.MonitorPage })))
@@ -39,10 +40,17 @@ function LazyPage({ children }: { children: ReactNode }) {
   return <Suspense fallback={<RouteFallback />}>{children}</Suspense>
 }
 
-/** A crew member sees only their own health. Other people's monitoring stays with the commander and the clinicians. */
+/** A crew member sees only their own health. Clinicians and psychologists have role-restricted spaces. */
 function NotForCrew({ children }: { children: ReactNode }) {
   const role = useWorkspaceRole()
   if (role === 'crew') return <Navigate to="/app/mi-salud" replace />
+  if (role === 'psychologist') return <Navigate to="/app" replace />
+  return children
+}
+
+function NotForPsych({ children }: { children: ReactNode }) {
+  const role = useWorkspaceRole()
+  if (role === 'psychologist') return <Navigate to="/app" replace />
   return children
 }
 
@@ -53,11 +61,11 @@ function Dashboard() {
         <Shell>
           <LazyPage>
             <Routes>
-              <Route index element={<NotForCrew><MonitorGate /></NotForCrew>} />
+              <Route index element={<RoleHome />} />
               <Route path="centro" element={<Navigate to="/app" replace />} />
               <Route path="monitor" element={<NotForCrew><MonitorPage /></NotForCrew>} />
               <Route path="mi-salud" element={<MyHealthPage />} />
-              <Route path="mision" element={<MissionPage />} />
+              <Route path="mision" element={<NotForPsych><MissionPage /></NotForPsych>} />
               <Route path="tripulacion" element={<NotForCrew><CrewPage /></NotForCrew>} />
               <Route path="tripulacion/:crewId" element={<NotForCrew><MonitorGate /></NotForCrew>} />
               <Route path="recursos" element={<ResourcesPage />} />
@@ -65,7 +73,8 @@ function Dashboard() {
               <Route path="historial" element={<NotForCrew><HistoryPage /></NotForCrew>} />
               <Route path="analisis" element={<NotForCrew><AnalysisPage /></NotForCrew>} />
               <Route path="riesgos" element={<RisksPage />} />
-              <Route path="medico" element={<NotForCrew><MedicalPage /></NotForCrew>} />
+              <Route path="medico" element={<MedicalPage />} />
+              <Route path="citas" element={<MedicalPage />} />
               <Route path="mi-espacio" element={<MySpacePage />} />
               <Route path="biomedical" element={<BiomedicalPage />} />
               <Route path="biomedical-insights" element={<BiomedicalPage />} />

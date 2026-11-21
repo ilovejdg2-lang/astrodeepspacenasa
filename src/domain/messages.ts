@@ -104,7 +104,7 @@ function markFrozenSeries(state: AppState, sensorId: string, kind: Measurement['
     sensorId,
     episodeId: null,
     title: 'Lecturas repetidas',
-    reason: 'Valores idénticos en 3 lecturas consecutivas. Se requiere verificación. No se interpreta como un ataque.',
+    reason: 'Valores idénticos en 3 lecturas consecutivas. Se requiere verificación de la señal del sensor.',
     openedAt: state.clock.simulatedAt,
     updatedAt: state.clock.simulatedAt,
     astronautAck: false,

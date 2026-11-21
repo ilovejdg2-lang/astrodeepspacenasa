@@ -7,7 +7,7 @@ async function openAnalysis(page: Page) {
   await page.route('**/api/nasa/**', (route) => route.fulfill({ status: 503, json: { message: 'Unavailable' } }))
   await page.goto('/entrar')
   await page.getByRole('button', { name: 'EN', exact: true }).click()
-  await page.getByRole('button', { name: 'Explore as Mission Commander', exact: true }).click()
+  await page.getByRole('button', { name: 'Explore as Physician', exact: true }).click()
   await page.getByRole('button', { name: 'Enter dashboard', exact: true }).first().click()
   await page.goto('/app/analisis')
   await expect(page.getByTestId('run-ai-analysis')).toBeVisible()

@@ -368,9 +368,9 @@ export function answerMissionLocal(state: AppState, question: string, locale: La
   const open = state.episodes.filter((item) => item.status !== 'closed');
   if (
     normalized.includes('abord') ||
-    normalized.includes('prepar') ||
     normalized.includes('preembar') ||
-    normalized.includes('board')
+    normalized.includes('board') ||
+    (normalized.includes('prepar') && !normalized.includes('dolor') && !normalized.includes('pain') && !normalized.includes('consulta') && !normalized.includes('check-in'))
   ) {
     const list =
       pending

@@ -750,3 +750,136 @@
 .pain-flat ellipse:focus-visible { outline: 3px solid #f5004f; outline-offset: 2px; }
 .pain-flat text { font-size: 14px; font-weight: 800; fill: #f5004f; pointer-events: none; }
 .pain-flat text.series-b { fill: #0f6e75; }
+
+/* --------------------------------------------------------------------------
+   Pattern Radio Pills (Constant / Intermittent)
+   -------------------------------------------------------------------------- */
+.pain-pattern-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  margin-top: 4px;
+}
+
+.pain-pattern-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: inherit;
+  cursor: pointer;
+  font-size: 0.88rem;
+  font-weight: 600;
+  transition: all 140ms ease;
+  user-select: none;
+}
+
+:root[data-theme="light"] .pain-pattern-toggle-btn {
+  background: rgba(0, 0, 0, 0.04);
+  border-color: rgba(0, 0, 0, 0.14);
+  color: #1e293b;
+}
+
+.pain-pattern-toggle-btn:hover {
+  background: rgba(236, 72, 153, 0.12);
+  border-color: rgba(236, 72, 153, 0.4);
+}
+
+.pain-pattern-toggle-btn.is-active {
+  background: rgba(236, 72, 153, 0.24);
+  border-color: #ec4899;
+  color: #ffffff;
+  box-shadow: 0 0 10px rgba(236, 72, 153, 0.3);
+}
+
+:root[data-theme="light"] .pain-pattern-toggle-btn.is-active {
+  background: rgba(236, 72, 153, 0.15);
+  border-color: #db2777;
+  color: #be185d;
+}
+
+.pain-pattern-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.45);
+  display: inline-block;
+  flex-shrink: 0;
+  position: relative;
+  transition: all 140ms ease;
+}
+
+:root[data-theme="light"] .pain-pattern-dot {
+  border-color: rgba(0, 0, 0, 0.38);
+}
+
+.pain-pattern-toggle-btn.is-active .pain-pattern-dot {
+  border-color: #ec4899;
+  background: #ec4899;
+  box-shadow: inset 0 0 0 2.5px var(--surface, #1e131d);
+}
+
+:root[data-theme="light"] .pain-pattern-toggle-btn.is-active .pain-pattern-dot {
+  border-color: #db2777;
+  background: #db2777;
+  box-shadow: inset 0 0 0 2.5px #ffffff;
+}
+
+.pain-radio-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  cursor: pointer;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: inherit;
+  user-select: none;
+  transition: all 140ms ease;
+}
+
+:root[data-theme="light"] .pain-radio-pill {
+  background: rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  color: #1e293b;
+}
+
+.pain-radio-pill input[type="radio"] {
+  appearance: auto !important;
+  -webkit-appearance: auto !important;
+  position: static !important;
+  width: 18px !important;
+  min-width: 18px !important;
+  max-width: 18px !important;
+  height: 18px !important;
+  min-height: 18px !important;
+  max-height: 18px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  flex: 0 0 18px !important;
+  cursor: pointer;
+}
+
+.pain-radio-pill:hover {
+  border-color: rgba(236, 72, 153, 0.5);
+  background: rgba(236, 72, 153, 0.1);
+}
+
+.pain-radio-pill:has(input:checked) {
+  border-color: #ec4899;
+  background: rgba(236, 72, 153, 0.22);
+  color: #ffffff;
+}
+
+:root[data-theme="light"] .pain-radio-pill:has(input:checked) {
+  background: rgba(236, 72, 153, 0.15);
+  border-color: #db2777;
+  color: #be185d;
+}

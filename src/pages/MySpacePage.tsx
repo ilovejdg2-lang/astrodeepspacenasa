@@ -1,7 +1,8 @@
 import { Brain, CalendarDays, Clock3, Stethoscope } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import type { VisitRow } from '../components/mission/AppointmentDesk'
+import { InfoHelp } from '../components/InfoHelp'
+import { getShareCategoryLabel, type VisitRow } from '../components/mission/AppointmentDesk'
 import { useLocale } from '../i18n'
 import { platformApi } from '../platform/api'
 import { profileDisplayName } from '../platform/copy'
@@ -132,7 +133,27 @@ export function MySpacePage() {
     <div className="rd rd-crew">
       <header className="rd-head">
         <p className="rd-kicker">{en ? 'Private health space' : 'Espacio privado de salud'}</p>
-        <h1>{en ? 'My appointments' : 'Mis citas'}</h1>
+        <h1>
+          {en ? 'My appointments' : 'Mis citas'}
+          <InfoHelp
+            title="Mis Citas y Consultas Privadas"
+            enTitle="My Private Appointments & Visits"
+            whatIs="Tu agenda personal y confidencial como tripulante. Aquí ves todas tus consultas médicas y psicológicas programadas, podés solicitar una nueva cita y gestionar qué información compartís."
+            enWhatIs="Your personal and confidential scheduling hub as a crew member. View all scheduled medical and psychological consultations, book visits, and manage what records are shared."
+            steps={[
+              'Revisá la lista de próximas citas con la fecha y hora exacta en tiempo universal UTC.',
+              'Verificá el estado: "Confirmada", "Pendiente de aceptación" o "Reprogramación solicitada".',
+              'Si el doctor o psicólogo solicitó reprogramar, hacé clic en "Elegir nuevo horario" para escoger otro turno libre del profesional, o cancelá la cita si ya no la necesitás.',
+              'Para agendar una nueva visita, desplazate a "Pedir una cita", elegí el profesional, la fecha disponible y el motivo.',
+            ]}
+            enSteps={[
+              'Review your upcoming visits with exact date and time in UTC universal spaceflight time.',
+              'Check each appointment status: "Confirmed", "Pending review", or "Reschedule requested".',
+              'If the clinician requested a reschedule, click "Choose new slot" to pick from their open hours, or cancel if no longer needed.',
+              'To book a new consultation, scroll to "Request appointment", pick physician or psychologist, choose a date, and send your request.',
+            ]}
+          />
+        </h1>
         <p className="rd-muted">
           {en
             ? 'See your medical and psychology appointments in one place. This list uses your mission records and only shows information shared for each visit.'
@@ -283,7 +304,7 @@ export function MySpacePage() {
                     {visit.shareCategories?.length ? (
                       <span>
                         {en ? 'Shared for this visit: ' : 'Compartido para esta cita: '}
-                        {visit.shareCategories.join(', ')}
+                        {visit.shareCategories.map((c) => getShareCategoryLabel(c, en)).join(', ')}
                       </span>
                     ) : null}
                   </div>
@@ -294,7 +315,7 @@ export function MySpacePage() {
         )}
 
         <div className="rd-actions">
-          <Link className="rd-btn" style={{ minHeight: 44 }} to="/app/mi-salud">
+          <Link className="rd-btn" style={{ minHeight: 44 }} to="/app/citas">
             {en ? 'Request an appointment' : 'Solicitar una cita'}
           </Link>
         </div>

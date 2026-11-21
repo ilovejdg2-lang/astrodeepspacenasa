@@ -65,7 +65,8 @@ export function RoleSwitcher() {
       setWorkspaceMode('demo')
       setDemoExplore(true)
       // SPA only — hard reload remounts AppProvider and can leave a blank/black boot screen.
-      navigate(missionId ? '/app' : '/misiones', { replace: true })
+      const targetPath = role === 'crew' ? '/app/mi-salud' : role === 'chief' ? '/app/monitor' : '/app'
+      navigate(missionId ? targetPath : '/misiones', { replace: true })
     } catch (err) {
       setError(err instanceof Error ? err.message : (en ? 'Could not switch role' : 'No se pudo cambiar de rol'))
       setOpen(true)

@@ -21,6 +21,10 @@
         document.documentElement.dataset.theme = 'dark'
         document.documentElement.style.colorScheme = 'dark'
       }
+      // Non-blocking Render backend warm-up ping
+      try {
+        fetch('/api/platform/profiles', { method: 'GET', headers: { 'Accept': 'application/json' } }).catch(function() {})
+      } catch (e) {}
     </script>
   </head>
   <body>

@@ -24,6 +24,10 @@ export function canCloseHealthAlert(role: Role): boolean {
   return role === 'medical'
 }
 
+export function canRunAnalysis(role: Role): boolean {
+  return role === 'medical'
+}
+
 export function isSensorAlert(type: AlertType): boolean {
   return SENSOR_ALERTS.has(type)
 }

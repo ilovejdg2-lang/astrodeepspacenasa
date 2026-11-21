@@ -1,62 +1,133 @@
 import { useEffect, useRef, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import { Brain, LoaderCircle, RefreshCw } from 'lucide-react'
-import type { AnalysisRecord, AppState } from '../../shared/types'
+import type { AnalysisRecord, AppState, Episode } from '../../shared/types'
 import type { AnalysisContextInput } from '../../shared/aiSchema'
 import { buildAnalysisContext } from '../ai/context'
 import { askModel, getAiHealth, type AiHealth } from '../ai/client'
 import { analysisIsStale, episodeFingerprint } from '../domain/analysis'
 import { CREW } from '../domain/crew'
 import { formatMission, kindLabel } from '../domain/format'
+import { reportHasPhysicalSymptoms } from '../domain/symptoms'
+import { getStoredProfile } from '../platform/session'
+import { getWorkspaceRole } from '../platform/workspace'
+import { InfoHelp } from '../components/InfoHelp'
 import { useApp } from '../state/store'
 import { useLocale } from '../i18n'
 import { systemText } from '../systemText'
 import { QUIRON_LOCALE } from '../ai/locale'
+
+function episodeHasReportedSymptoms(state: AppState, ep: Episode): boolean {
+  return state.symptoms.some((s) => (s.episodeId === ep.id || (ep.symptomIds && ep.symptomIds.includes(s.id)) || s.crewId === ep.crewId) && reportHasPhysicalSymptoms(s))
+}
 
 export function AnalysisPage() {
   const { state, dispatch } = useApp()
   const { lang } = useLocale()
   const en = lang === 'en'
   const location = useLocation()
+  const workspaceRole = getWorkspaceRole()
+  const profile = getStoredProfile()
+  const isDoctor = workspaceRole === 'medic' || profile?.demoRole === 'medic' || profile?.id === 'sofia-chen' || state.role === 'medical'
+
   const linkedId = (location.state as { alertId?: string } | null)?.alertId
   const linked = state.alerts.find((alert) => alert.id === linkedId)
-  const episode = linked
-    ? state.episodes.find((item) => item.id === linked.episodeId)
-    : state.episodes.find((item) => item.id === state.selectedEpisodeId && item.crewId === state.selectedCrewId)
-      ?? state.episodes.find((item) => item.crewId === state.selectedCrewId && item.status !== 'closed')
+  const linkedEpisode = linked ? state.episodes.find((item) => item.id === linked.episodeId) : null
+
+  const eligibleEpisodes = state.episodes.filter((item) => episodeHasReportedSymptoms(state, item))
+  const defaultEpisode = (linkedEpisode && episodeHasReportedSymptoms(state, linkedEpisode) ? linkedEpisode : null)
+    ?? eligibleEpisodes.find((item) => item.id === state.selectedEpisodeId && item.crewId === state.selectedCrewId)
+    ?? eligibleEpisodes.find((item) => item.crewId === state.selectedCrewId && item.status !== 'closed')
+    ?? eligibleEpisodes[0]
+    ?? null
+
   const [chosenId, setChosenId] = useState<string | null>(null)
-  const chosen = state.episodes.find((item) => item.id === chosenId) ?? episode
+  const chosen = (chosenId ? eligibleEpisodes.find((item) => item.id === chosenId) : null) ?? defaultEpisode
   return (
     <div className="an-page">
       <header className="an-head">
         <p className="kicker">{en ? 'Analysis' : 'Análisis'}</p>
-        <h1>{en ? 'Analysis with Quirón' : 'Análisis con Quirón'}</h1>
+        <h1>
+          {en ? 'Analysis with Quirón' : 'Análisis con Quirón'}
+          <InfoHelp
+            title="Análisis Clínico con Quirón"
+            enTitle="Clinical AI Analysis with Quirón"
+            whatIs="Herramienta de asistencia diagnóstica con Inteligencia Artificial exclusiva para el médico de vuelo. Analiza en conjunto los signos vitales, las zonas corporales donde el astronauta siente dolor y las guías médicas aeroespaciales de la NASA."
+            enWhatIs="Clinical diagnostic AI assistant exclusive to flight surgeons. It synthesizes real-time vitals, crew-reported body pain locations, and NASA spaceflight medical guidelines."
+            steps={[
+              'En el selector superior, elegí al paciente y el caso clínico activo (solo aparecen pacientes que compartieron sus síntomas).',
+              'Revisá el resumen de telemetría reciente: cantidad de mediciones, reportes de síntomas y alertas abiertas.',
+              'Hacé clic en "Ejecutar análisis" para que Quirón procese los datos y compare los hallazgos con protocolos espaciales.',
+              'Examiná las hipótesis diagnósticas, las contramedidas recomendadas por la NASA y guardá tus conclusiones médicas.',
+            ]}
+            enSteps={[
+              'Select the patient and active clinical case from the dropdown (only crew members who submitted symptoms appear).',
+              'Review the telemetry summary: recent measurements count, symptom reports, and open alerts.',
+              'Click "Run analysis" so Quirón evaluates the data and cross-references space medicine protocols.',
+              'Inspect diagnostic hypotheses and NASA-backed countermeasures, then document your medical decisions.',
+            ]}
+          />
+        </h1>
         <p className="lede">{en ? 'Ask Quirón to review the available measurements, symptoms and alerts for a crew member.' : 'Pedile a Quirón que revise las mediciones, síntomas y alertas disponibles de una persona.'}</p>
       </header>
-      <label className="field" htmlFor="analysis-case">
-        {en ? 'Person and case' : 'Persona y caso'}
-        <select id="analysis-case" value={chosen?.id ?? ''} onChange={(event) => {
-          const next = state.episodes.find((item) => item.id === event.target.value)
-          if (!next) return
-          setChosenId(next.id)
-          dispatch({ type: 'selectCrew', crewId: next.crewId })
-          dispatch({ type: 'selectEpisode', episodeId: next.id })
-        }}>
-          {!chosen ? <option value="">{en ? 'Select a case' : 'Seleccioná un caso'}</option> : null}
-          {state.episodes.map((item) => <option key={item.id} value={item.id}>{CREW.find((crew) => crew.id === item.crewId)?.name} · {systemText(item.title, lang)}</option>)}
-        </select>
-      </label>
-      {chosen ? <QuironAnalysis key={`${chosen.id}-${lang}`} episodeId={chosen.id} /> : (
+      {!isDoctor ? (
+        <section className="callout callout-amber" role="alert" style={{ marginBottom: 16 }}>
+          <strong>{en ? 'Restricted medical access' : 'Acceso médico restringido'}</strong>
+          <p>{en
+            ? 'Clinical analysis with Quirón can only be performed by the medical officer with patients who have submitted their symptom reports.'
+            : 'Los análisis clínicos con Quirón solo los puede realizar el médico con los pacientes que le enviaron sus síntomas.'}
+          </p>
+        </section>
+      ) : null}
+      {eligibleEpisodes.length > 0 ? (
+        <label className="field" htmlFor="analysis-case">
+          {en ? 'Patient and case (with reported symptoms)' : 'Paciente y caso (con síntomas reportados)'}
+          <select id="analysis-case" value={chosen?.id ?? ''} onChange={(event) => {
+            const next = eligibleEpisodes.find((item) => item.id === event.target.value)
+            if (!next) return
+            setChosenId(next.id)
+            dispatch({ type: 'selectCrew', crewId: next.crewId })
+            dispatch({ type: 'selectEpisode', episodeId: next.id })
+          }}>
+            {!chosen ? <option value="">{en ? 'Select a patient case' : 'Seleccioná un caso de paciente'}</option> : null}
+            {eligibleEpisodes.map((item) => <option key={item.id} value={item.id}>{CREW.find((crew) => crew.id === item.crewId)?.name} · {systemText(item.title, lang)}</option>)}
+          </select>
+        </label>
+      ) : (
         <section className="an-card an-empty">
-          <h2>{en ? 'No health episode selected' : 'Sin episodio de salud seleccionado'}</h2>
-          <p>{en ? 'Select an existing case to run an analysis. A sensor notice alone does not create a health episode.' : 'Elegí un caso existente para realizar el análisis. Un aviso de sensor por sí solo no crea un episodio de salud.'}</p>
+          <h2>{en ? 'No patients with reported symptoms' : 'Sin pacientes con síntomas reportados'}</h2>
+          <p>{en
+            ? 'Clinical analyses are only enabled for patients who have submitted symptom reports to the medical officer.'
+            : 'Los análisis clínicos solo están habilitados para pacientes que hayan enviado su reporte de síntomas al médico.'}
+          </p>
         </section>
       )}
+      {chosen ? (
+        <QuironAnalysis
+          key={`${chosen.id}-${lang}`}
+          episodeId={chosen.id}
+          isDoctor={isDoctor}
+          patientHasSymptoms={episodeHasReportedSymptoms(state, chosen)}
+        />
+      ) : eligibleEpisodes.length > 0 ? (
+        <section className="an-card an-empty">
+          <h2>{en ? 'No patient case selected' : 'Sin caso de paciente seleccionado'}</h2>
+          <p>{en ? 'Select a patient case with reported symptoms to run an analysis.' : 'Elegí un caso de paciente con síntomas reportados para realizar el análisis.'}</p>
+        </section>
+      ) : null}
     </div>
   )
 }
 
-function QuironAnalysis({ episodeId }: { episodeId: string }) {
+function QuironAnalysis({
+  episodeId,
+  isDoctor,
+  patientHasSymptoms,
+}: {
+  episodeId: string
+  isDoctor: boolean
+  patientHasSymptoms: boolean
+}) {
   const { state, runActions } = useApp()
   const { lang } = useLocale()
   const en = lang === 'en'
@@ -86,6 +157,14 @@ function QuironAnalysis({ episodeId }: { episodeId: string }) {
 
   async function analyze() {
     if (request.current) return
+    if (!isDoctor) {
+      setFailure(en ? 'Only the medical officer can run clinical analyses.' : 'Solo el médico puede realizar análisis clínicos.')
+      return
+    }
+    if (!patientHasSymptoms) {
+      setFailure(en ? 'Analysis requires a symptom report submitted by the patient.' : 'El análisis requiere un reporte de síntomas enviado por el paciente.')
+      return
+    }
     const controller = new AbortController()
     request.current = controller
     setPending(true)
@@ -137,10 +216,26 @@ function QuironAnalysis({ episodeId }: { episodeId: string }) {
           <span className="badge">{en ? 'Quirón AI' : 'IA Quirón'}</span>
         </div>
         <div className="row an-run-actions">
-          <button className="btn btn-primary" type="button" data-testid="run-ai-analysis" disabled={pending} aria-busy={pending} onClick={() => void analyze()}>
-            {pending ? <LoaderCircle className="is-busy" size={20} aria-hidden="true" /> : report ? <RefreshCw size={20} aria-hidden="true" /> : <Brain size={20} aria-hidden="true" />}
-            {pending ? (en ? 'Quirón is analyzing…' : 'Quirón está analizando…') : report ? (en ? 'Run new analysis' : 'Realizar nuevo análisis') : (en ? 'Run analysis' : 'Realizar análisis')}
-          </button>
+          {isDoctor && patientHasSymptoms ? (
+            <button className="btn btn-primary" type="button" data-testid="run-ai-analysis" disabled={pending} aria-busy={pending} onClick={() => void analyze()}>
+              {pending ? <LoaderCircle className="is-busy" size={20} aria-hidden="true" /> : report ? <RefreshCw size={20} aria-hidden="true" /> : <Brain size={20} aria-hidden="true" />}
+              {pending ? (en ? 'Quirón is analyzing…' : 'Quirón está analizando…') : report ? (en ? 'Run new analysis' : 'Realizar nuevo análisis') : (en ? 'Run analysis' : 'Realizar análisis')}
+            </button>
+          ) : !isDoctor ? (
+            <div className="callout callout-amber" role="status" style={{ margin: 0 }}>
+              <p>{en
+                ? 'Restricted to medical officer. You can review saved analyses, but only the flight surgeon can request new analyses.'
+                : 'Acceso restringido al médico. Podés consultar análisis guardados, pero solo el médico de vuelo puede solicitar nuevos análisis.'}
+              </p>
+            </div>
+          ) : (
+            <div className="callout callout-amber" role="status" style={{ margin: 0 }}>
+              <p>{en
+                ? 'Patient symptoms required. The patient must submit a symptom report before clinical analysis can be executed.'
+                : 'Se requieren síntomas del paciente. El paciente debe enviar un reporte de síntomas antes de realizar el análisis.'}
+              </p>
+            </div>
+          )}
           {pending ? <button className="btn" type="button" onClick={cancel}>{en ? 'Cancel' : 'Cancelar'}</button> : null}
         </div>
         <dl className="an-context-counts">
@@ -153,7 +248,7 @@ function QuironAnalysis({ episodeId }: { episodeId: string }) {
         {failure ? <p className="field-error" role="alert">{failure}</p> : null}
         {!pending && health && !health.configured ? <p className="muted">{en ? 'The AI service is currently unavailable. You can retry using Run analysis.' : 'El servicio de IA no está disponible en este momento. Podés reintentar con Realizar análisis.'}</p> : null}
       </section>
-      {!report && !pending && !failure ? (
+      {!report && !pending && !failure && isDoctor && patientHasSymptoms ? (
         <section className="an-card an-ready">
           <Brain size={30} aria-hidden="true" />
           <h2>{en ? 'Ready to analyze' : 'Listo para analizar'}</h2>

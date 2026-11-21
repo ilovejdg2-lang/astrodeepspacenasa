@@ -3,9 +3,10 @@ import { Link, useNavigate } from 'react-router-dom'
 import { HeliosLogo } from '../../components/HeliosLogo'
 import { LocaleThemeSwitch } from '../../components/LocaleThemeSwitch'
 import { MissionProcessStrip } from '../../components/platform/MissionProcessStrip'
+import { ColdStartNotice, useColdStartTimer } from '../../components/ColdStartNotice'
 import { useLocale } from '../../i18n'
-import { platformApi, type MissionRow } from '../../platform/api'
-import { MISSION_PROCESS_STEPS, roleLabel, stageBlurb, stageLabel } from '../../platform/copy'
+import { getCachedMissions, platformApi, type MissionRow } from '../../platform/api'
+import { roleLabel, stageBlurb, stageLabel } from '../../platform/copy'
 import { clearSession, getSessionToken, getStoredProfile, setActiveMissionId } from '../../platform/session'
 import {
   clearRoleScopedUiState,
@@ -16,13 +17,20 @@ import {
 } from '../../platform/workspace'
 import '../../platform/platform.css'
 
-type StageFilter = 'all' | (typeof MISSION_PROCESS_STEPS)[number]
+const STAGE_DISPLAY_ORDER = ['aboard', 'preflight', 'draft', 'postmission'] as const
+type StageFilter = 'all' | (typeof STAGE_DISPLAY_ORDER)[number]
 
-/** Una sola misión por etapa: la última de la lista, que es la más reciente. */
-function onePerStage(rows: MissionRow[]): MissionRow[] {
+/** Una sola misión por etapa: In Flight primero, y solo el admin ve Draft y Preflight. */
+function onePerStage(rows: MissionRow[], isChief: boolean): MissionRow[] {
+  const allowed = isChief
+    ? rows
+    : rows.filter((row) => row.mission.stage !== 'draft' && row.mission.stage !== 'preflight')
+
   const latest = new Map<string, MissionRow>()
-  for (const row of rows) latest.set(row.mission.stage, row)
-  return MISSION_PROCESS_STEPS.flatMap((stage) => {
+  for (const row of allowed) latest.set(row.mission.stage, row)
+
+  const stageList = isChief ? STAGE_DISPLAY_ORDER : (['aboard', 'postmission'] as const)
+  return stageList.flatMap((stage) => {
     const row = latest.get(stage)
     return row ? [row] : []
   })
@@ -34,14 +42,23 @@ export function MissionsHubPage() {
   const en = lang === 'en'
   const profile = getStoredProfile()
   const isChief = profile?.demoRole === 'chief'
-  const [items, setItems] = useState<MissionRow[]>([])
+  const [items, setItems] = useState<MissionRow[]>(() => getCachedMissions())
   const [stageFilter, setStageFilter] = useState<StageFilter>('all')
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+
+  const { showNotice, elapsed } = useColdStartTimer(loading && items.length === 0, 2200)
+
+  const availableStages = useMemo(() => (
+    isChief
+      ? STAGE_DISPLAY_ORDER
+      : (['aboard', 'postmission'] as const)
+  ), [isChief])
+
   const visible = useMemo(() => {
-    const picked = onePerStage(items)
+    const picked = onePerStage(items, Boolean(isChief))
     return stageFilter === 'all' ? picked : picked.filter((row) => row.mission.stage === stageFilter)
-  }, [items, stageFilter])
+  }, [items, isChief, stageFilter])
 
   useEffect(() => {
     document.title = en ? 'HELIOS · Missions' : 'HELIOS · Misiones'
@@ -83,14 +100,16 @@ export function MissionsHubPage() {
         ? (en ? 'Ready to start' : 'Lista para empezar')
         : (en ? 'Complete the Preparation Checklist (80%+)' : 'Completá el checklist (80%+)')
     }
-    if (stage === 'aboard') return en ? 'In Flight' : 'A bordo'
+    if (stage === 'aboard') return en ? 'Active In Flight' : 'Activa en vuelo'
     if (stage === 'postmission') return en ? 'Mission Review' : 'Revisión de misión'
     return stageLabel(stage, en)
   }
 
   return (
     <div className="plat">
-      {loading ? (
+      {showNotice ? (
+        <ColdStartNotice en={en} elapsed={elapsed} variant="overlay" />
+      ) : (loading && items.length === 0) ? (
         <div className="plat-loader" role="status" aria-live="polite">
           <span className="plat-spinner" aria-hidden="true" />
           <p>{en ? 'Loading missions…' : 'Cargando misiones…'}</p>
@@ -139,7 +158,7 @@ export function MissionsHubPage() {
             <button type="button" aria-pressed={stageFilter === 'all'} onClick={() => setStageFilter('all')}>
               {en ? 'All' : 'Todas'}
             </button>
-            {MISSION_PROCESS_STEPS.map((stage) => (
+            {availableStages.map((stage) => (
               <button
                 key={stage}
                 type="button"
@@ -175,7 +194,13 @@ export function MissionsHubPage() {
                       <span>{roleLabel(row.membership.role, en)}</span>
                       <span>{nextAction(row.mission.stage, pct)}</span>
                     </div>
-                    {row.mission.stage === 'draft' ? (
+                    {row.mission.stage === 'aboard' ? (
+                      <div className="mission-hub-flight-live" style={{ margin: '8px 0' }}>
+                        <span className="plat-chip" style={{ background: 'color-mix(in srgb, #f5004f 22%, transparent)', color: '#ff4d79', fontWeight: 800 }}>
+                          ● {en ? 'Active Mission In Flight' : 'Misión activa en vuelo'}
+                        </span>
+                      </div>
+                    ) : row.mission.stage === 'draft' ? (
                       <p className="mission-hub-blurb">{en ? 'Preparation Checklist has not been created.' : 'El checklist de preparación todavía no existe.'}</p>
                     ) : (
                     <div className="mission-hub-prep">
@@ -191,7 +216,9 @@ export function MissionsHubPage() {
                     )}
                   </div>
                   <button type="button" className="plat-btn" onClick={() => enter(row.mission.id, row.membership.role)}>
-                    {en ? 'Enter dashboard' : 'Entrar al tablero'}
+                    {row.mission.stage === 'aboard'
+                      ? (en ? 'Enter in-flight mission' : 'Ingresar a misión en vuelo')
+                      : (en ? 'Enter dashboard' : 'Entrar al tablero')}
                   </button>
                 </article>
               )

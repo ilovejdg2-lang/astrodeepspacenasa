@@ -80,7 +80,7 @@ export function MissionDemoButton() {
         cursor.current = next
       }
       setStep(target)
-      navigate(target < 2 || target === 5 ? '/app' : target === 2 ? '/app/alertas' : target === 3 ? '/app/analisis' : '/app/medico')
+      navigate(target < 2 || target === 5 ? '/app' : target === 2 ? '/app/alertas' : target === 3 ? '/app/biomedical' : '/app/medico')
       if (target === 3) window.dispatchEvent(new CustomEvent('helios:quiron-demo', {
         detail: { question: 'Explain the change and measurement quality' },
       }))

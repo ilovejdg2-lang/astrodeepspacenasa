@@ -1,84 +1,184 @@
-import { useMemo, useState } from 'react'
-import { SharedCareSummaries } from '../../components/quiron/SharedCareSummaries'
+import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
+import { CalendarDays, Activity, Brain, BookOpen, ChevronRight, ShieldCheck, ShieldAlert, ArrowRight } from 'lucide-react'
+import { SharedCareSummaries } from '../../components/quiron/SharedCareSummaries'
+import { InfoHelp } from '../../components/InfoHelp'
 import { useLocale } from '../../i18n'
 import { profileDisplayName } from '../../platform/copy'
 import { grantToSubject } from '../../platform/grants'
 import { PsychArt } from '../../components/role/RoleArt'
-import { AppointmentDesk, type VisitRow } from '../../components/mission/AppointmentDesk'
 import { AboardCheckInBoard } from '../../components/role/AboardCheckInBoard'
+import { useApp } from '../../state/store'
+import { filterSymptomsByRole } from '../../domain/symptoms'
+import { CREW } from '../../domain/crew'
 import { RoleContextBar } from './RoleContextBar'
 import { useMissionWorkspace } from './useMissionWorkspace'
 import '../../platform/role-dash.css'
 
+type PersonRow = {
+  id: string
+  label: string
+  granted: boolean
+}
+
 export function PsychHome() {
   const { lang } = useLocale()
   const en = lang === 'en'
-  const { profile, detail, appointments, grants, loading, error, role, mode, missionId, refresh } = useMissionWorkspace()
-  const [selected, setSelected] = useState<string | null>(() => sessionStorage.getItem('helios-psych-case'))
+  const { state } = useApp()
+  const { profile, detail, grants, loading, error, role, mode, missionId } = useMissionWorkspace()
 
-  const people = useMemo(() => {
+  const mentalSymptoms = useMemo(() => {
+    return filterSymptomsByRole(state.symptoms, 'psychologist')
+  }, [state.symptoms])
+
+  const people: PersonRow[] = useMemo(() => {
     const members = detail?.members.filter((m) => m.status === 'active' && m.profileId !== profile?.id) ?? []
     return members.map((m) => {
-      // Active Nest grants use revokedAt (not status). Crew shares symptoms/sleep with psych.
       const granted = grantToSubject(grants, m.profileId, profile?.id)
-      return { id: m.profileId, label: profileDisplayName(m.profileId), granted }
+      return {
+        id: m.profileId,
+        label: profileDisplayName(m.profileId),
+        granted,
+      }
     })
   }, [detail?.members, grants, profile?.id])
-
-  const active = people.find((p) => p.id === selected) || null
-
-  function pick(id: string) {
-    setSelected(id)
-    sessionStorage.setItem('helios-psych-case', id)
-  }
 
   return (
     <div className="rd rd-psych">
       <div className="rd-bg" aria-hidden="true"><PsychArt /></div>
       <header className="rd-head">
-        <p className="rd-kicker">{en ? 'Wellbeing & support' : 'Bienestar y acompañamiento'}</p>
-        <h1>{en ? 'Wellbeing and support' : 'Bienestar y acompañamiento'}</h1>
+        <p className="rd-kicker">{en ? 'Crew wellbeing' : 'Bienestar de la tripulación'}</p>
+        <h1>
+          {en ? 'Psychological consultations' : 'Consultas psicológicas'}
+          <InfoHelp
+            title="Panel de Psicología y Bienestar"
+            enTitle="Psychology & Wellbeing Desk"
+            whatIs="Puesto de supervisión psicológica de la misión. Centraliza el acceso rápido a consultas de salud mental, telemetría de sueño y fatiga cognitiva de la tripulación autorizada."
+            enWhatIs="Psychological supervision workstation for the mission. Centralizes quick access to mental health consultations, sleep telemetry, and cognitive fatigue monitoring."
+            steps={[
+              'Navegá a "Consultas y Agenda" para gestionar horarios y turnos de acompañamiento.',
+              'Ingresá a "Perspectivas biomédicas" para revisar métricas de sueño, recuperación y descanso.',
+              'Ejecutá "Análisis con Quirón" para evaluaciones asistidas por IA de fatiga y estrés.',
+              'Consultá "Directrices de conducta NASA" para protocolos de soporte psicológico en aislamiento extremo.',
+            ]}
+            enSteps={[
+              'Navigate to "Consultations & Schedule" to manage slots and appointment requests.',
+              'Open "Biomedical Insights" to review sleep cycles, recovery telemetry, and cognitive rest.',
+              'Launch "Quirón AI Analysis" for fatigue, mood, and stress assessments.',
+              'Check "NASA Behavioral Guidelines" for operational psychological support in extreme ICE habitats.',
+            ]}
+          />
+        </h1>
         <RoleContextBar
           missionName={detail?.mission.name}
           stage={detail?.mission.stage}
           role={role}
           mode={mode}
-          subject={active?.label}
+          subject={people[0]?.label}
         />
         <p className="rd-muted">
           {en
-            ? 'This is not the medical dashboard with swapped labels. Focus on agenda, voluntary summaries, and authorized emotional follow-up.'
-            : 'Esto no es el dashboard médico con etiquetas cambiadas. Priorizá agenda, resúmenes voluntarios y seguimiento emocional autorizado.'}
+            ? 'Personal wellbeing check-ins live under “My Health”. Crew psychological evaluation requires active behavioral consent.'
+            : 'Tus chequeos personales están en “Mi salud”. La evaluación de la tripulación requiere consentimiento conductual activo.'}
         </p>
+
+        {/* 4 Psychological Quick Action Hub Cards */}
+        <div className="rd-actions-grid" role="navigation" aria-label={en ? 'Psychology workstation actions' : 'Acciones del puesto de psicología'}>
+          <Link to="/app/citas" className="rd-action-card">
+            <div className="rd-action-card-head">
+              <CalendarDays size={20} style={{ color: 'var(--rd-accent, #ec4899)' }} aria-hidden="true" />
+              <strong>{en ? 'Consultations & Schedule' : 'Consultas y Agenda'}</strong>
+            </div>
+            <p>
+              {en
+                ? 'Review assigned psychological consultations, accept requests, confirm open slots, and manage follow-ups.'
+                : 'Revisá consultas asignadas, aceptá solicitudes, confirmá turnos y gestioná seguimientos.'}
+            </p>
+            <span className="rd-action-card-arrow">
+              {en ? 'Open schedule' : 'Abrir agenda'} <ArrowRight size={14} aria-hidden="true" />
+            </span>
+          </Link>
+
+          <Link to="/app/biomedical" className="rd-action-card">
+            <div className="rd-action-card-head">
+              <Activity size={20} style={{ color: 'var(--rd-accent, #ec4899)' }} aria-hidden="true" />
+              <strong>{en ? 'Biomedical Insights (Sleep & Recovery)' : 'Perspectivas biomédicas (Sueño y Descanso)'}</strong>
+            </div>
+            <p>
+              {en
+                ? 'Monitor circadian rhythms, sleep debt, recovery indicators, and emotional wellbeing telemetries.'
+                : 'Monitoreá ciclos circadianos, deuda de sueño, recuperación y bienestar emocional.'}
+            </p>
+            <span className="rd-action-card-arrow">
+              {en ? 'Open sleep telemetry' : 'Ver telemetría de sueño'} <ArrowRight size={14} aria-hidden="true" />
+            </span>
+          </Link>
+
+          <Link to="/app/analisis" className="rd-action-card">
+            <div className="rd-action-card-head">
+              <Brain size={20} style={{ color: 'var(--rd-accent, #ec4899)' }} aria-hidden="true" />
+              <strong>{en ? 'Behavioral & AI Analysis' : 'Análisis Conductual e IA'}</strong>
+            </div>
+            <p>
+              {en
+                ? 'Quirón cognitive fatigue assessment, sensory deprivation detection, and NASA BHP mitigation.'
+                : 'Evaluación de fatiga cognitiva con Quirón, privación sensorial y contramedidas BHP de NASA.'}
+            </p>
+            <span className="rd-action-card-arrow">
+              {en ? 'Open analysis' : 'Abrir análisis'} <ArrowRight size={14} aria-hidden="true" />
+            </span>
+          </Link>
+
+          <Link to="/app/riesgos" className="rd-action-card">
+            <div className="rd-action-card-head">
+              <BookOpen size={20} style={{ color: 'var(--rd-accent, #ec4899)' }} aria-hidden="true" />
+              <strong>{en ? 'NASA Behavioral Guidelines' : 'Directrices de Conducta NASA'}</strong>
+            </div>
+            <p>
+              {en
+                ? 'NASA HRP Behavioral Health & Performance evidence, ICE habitat guidelines, and OCHMO standards.'
+                : 'Evidencia NASA HRP en salud conductual, guías para hábitats extremos y estándares OCHMO.'}
+            </p>
+            <span className="rd-action-card-arrow">
+              {en ? 'Review guidelines' : 'Ver directrices'} <ArrowRight size={14} aria-hidden="true" />
+            </span>
+          </Link>
+        </div>
       </header>
 
       {missionId && detail?.mission.stage === 'aboard' ? (
-        <AboardCheckInBoard missionId={missionId} en={en} />
+        <AboardCheckInBoard missionId={missionId} en={en} role="psychologist" />
       ) : null}
 
       {error ? <p className="plat-error">{error}</p> : null}
       {loading ? <p className="rd-muted">{en ? 'Loading…' : 'Cargando…'}</p> : null}
 
-      {missionId ? (
-        <AppointmentDesk
-          missionId={missionId}
-          stage={detail?.mission.stage}
-          profileId={profile?.id}
-          scope="assigned"
-          specialty="psychological"
-          members={detail?.members || []}
-          appointments={appointments as VisitRow[]}
-          onChanged={() => refresh({ silent: true })}
-        />
-      ) : null}
-      <div className="rd-actions" style={{ marginBottom: 12 }}>
-        <Link className="rd-btn ghost" to="/app/mi-salud">{en ? 'My Health' : 'Mi salud'}</Link>
-      </div>
-
       <div className="rd-layout">
         <section className="rd-card">
-          <h2>{en ? 'Authorized follow-ups' : 'Seguimientos autorizados'}</h2>
+          <h2>
+            {en ? 'Authorized patients' : 'Pacientes autorizados'}
+            <InfoHelp
+              title="Pacientes Autorizados en Psicología"
+              enTitle="Authorized Psychology Patients"
+              whatIs="Lista de astronautas con consentimiento activo para consulta y seguimiento de bienestar emocional y descanso con el psicólogo de la misión."
+              enWhatIs="Crew members with active consent for confidential psychological follow-up, emotional wellness, and sleep telemetry."
+              steps={[
+                'Verificá el estado de consentimiento conductual de cada astronauta.',
+                'Para pacientes autorizados, hacé clic en "Evaluar sueño" para inspeccionar métricas en Perspectivas biomédicas.',
+                'Hacé clic en "Análisis conductual" para ejecutar evaluaciones cognitivas en Quirón.',
+              ]}
+              enSteps={[
+                'Check behavioral consent status for each crew member.',
+                'For authorized patients, click "Evaluate sleep" to view telemetry in Biomedical Insights.',
+                'Click "Behavioral analysis" to launch cognitive assessments in Quirón Analysis.',
+              ]}
+            />
+          </h2>
+          <p className="rd-muted" style={{ fontSize: '0.88rem' }}>
+            {en
+              ? 'Crew members with active behavioral consent for psychology consultation and symptom review.'
+              : 'Tripulantes con consentimiento activo para consulta y revisión de síntomas en psicología.'}
+          </p>
           {people.length === 0 ? (
             <div className="rd-empty">
               <strong>{en ? 'No people listed' : 'Sin personas listadas'}</strong>
@@ -88,52 +188,139 @@ export function PsychHome() {
             <ul className="rd-list">
               {people.map((person) => (
                 <li key={person.id}>
-                  <button
-                    type="button"
-                    className={`rd-row${selected === person.id ? ' is-on' : ''}`}
-                    style={{ width: '100%', border: 0, cursor: 'pointer', textAlign: 'left' }}
-                    onClick={() => pick(person.id)}
+                  <div
+                    className="rd-row"
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      gap: 12,
+                      flexWrap: 'wrap',
+                      padding: '12px 14px',
+                    }}
                   >
                     <div>
-                      <strong>{person.label}</strong>
-                      <span>
-                        {person.granted
-                          ? (en ? 'Voluntary / granted summary' : 'Resumen voluntario / concedido')
-                          : (en ? 'No information' : 'Sin información')}
+                      <strong style={{ fontSize: '0.95rem' }}>{person.label}</strong>
+                      <span
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 5,
+                          fontSize: '0.84rem',
+                          marginTop: 3,
+                          color: person.granted ? '#4ade80' : '#f59e0b',
+                        }}
+                      >
+                        {person.granted ? (
+                          <>
+                            <ShieldCheck size={14} aria-hidden="true" />
+                            {en ? 'Consent granted (Behavioral scope)' : 'Consentimiento concedido (Alcance psicológico)'}
+                          </>
+                        ) : (
+                          <>
+                            <ShieldAlert size={14} aria-hidden="true" />
+                            {en ? 'Access not granted (Private)' : 'Sin consentimiento (Privado)'}
+                          </>
+                        )}
                       </span>
                     </div>
-                  </button>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      {person.granted ? (
+                        <>
+                          <Link
+                            to="/app/biomedical"
+                            className="rd-btn"
+                            style={{ fontSize: '0.82rem', padding: '6px 12px' }}
+                          >
+                            {en ? 'Evaluate sleep' : 'Evaluar descanso'}
+                            <ChevronRight size={14} aria-hidden="true" />
+                          </Link>
+                          <Link
+                            to="/app/analisis"
+                            className="rd-btn ghost"
+                            style={{ fontSize: '0.82rem', padding: '6px 12px' }}
+                          >
+                            {en ? 'Behavioral analysis' : 'Análisis conductual'}
+                          </Link>
+                        </>
+                      ) : (
+                        <Link
+                          to="/app/mi-salud"
+                          className="rd-btn ghost"
+                          style={{ fontSize: '0.82rem', padding: '6px 12px' }}
+                        >
+                          {en ? 'Request consent' : 'Solicitar consentimiento'}
+                        </Link>
+                      )}
+                    </div>
+                  </div>
                 </li>
               ))}
+            </ul>
+          )}
+        </section>
+
+        <section className="rd-card">
+          <h2>
+            {en ? 'Shared mental health symptoms' : 'Síntomas de bienestar compartidos'}
+            <InfoHelp
+              title="Síntomas de Bienestar Compartidos"
+              enTitle="Shared Wellbeing Symptoms"
+              whatIs="Reportes voluntarios de fatiga mental, estrés y descanso compartidos de forma estrictamente confidencial con psicología."
+              enWhatIs="Voluntary check-ins covering stress, mental fatigue, and sleep shared strictly in confidence with psychology."
+              steps={[
+                'Revisá los reportes compartidos por la tripulación para detectar fatiga o sobrecarga.',
+                'Utilizá "Análisis conductual" para correlacionar con cargas de trabajo de la misión.',
+              ]}
+              enSteps={[
+                'Review crew check-ins to monitor fatigue and emotional strain.',
+                'Use "Behavioral analysis" to correlate findings with mission workload.',
+              ]}
+            />
+          </h2>
+          <p className="rd-muted" style={{ fontSize: '0.88rem' }}>
+            {en
+              ? 'Fatigue, cognitive strain, and emotional check-ins shared by crew members.'
+              : 'Chequeos de fatiga, tensión cognitiva y descanso compartidos por los tripulantes.'}
+          </p>
+          {mentalSymptoms.length === 0 ? (
+            <div className="rd-empty">
+              <strong>{en ? 'No mental health symptoms reported' : 'Sin síntomas de bienestar reportados'}</strong>
+              <span className="rd-muted">{en ? 'Crew members can share sleep, fatigue, and mood check-ins from My space.' : 'Los tripulantes pueden compartir chequeos de sueño, fatiga y ánimo desde Mi espacio.'}</span>
+            </div>
+          ) : (
+            <ul className="rd-list">
+              {mentalSymptoms.map((sym) => {
+                const crewName = CREW.find((c) => c.id === sym.crewId)?.name || profileDisplayName(sym.crewId)
+                return (
+                  <li key={sym.id} className="rd-row" style={{ display: 'grid', gap: 6, padding: '12px 14px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <strong>{crewName}</strong>
+                      <span className="rd-muted" style={{ fontSize: '0.8rem' }}>{new Date(sym.reportedAt).toLocaleDateString()}</span>
+                    </div>
+                    <span style={{ color: '#d46a8e', fontWeight: 650, fontSize: '0.9rem' }}>
+                      {sym.symptoms.map((s) => s.replace('_', ' ')).join(', ')}
+                    </span>
+                    {sym.note ? <p style={{ margin: 0, fontSize: '0.86rem', opacity: 0.9 }}>{sym.note}</p> : null}
+                    <div style={{ marginTop: 4 }}>
+                      <Link
+                        to="/app/analisis"
+                        className="rd-btn ghost"
+                        style={{ fontSize: '0.82rem', padding: '5px 10px', width: 'fit-content' }}
+                      >
+                        {en ? 'Analyze in Quirón' : 'Analizar en Quirón'}
+                      </Link>
+                    </div>
+                  </li>
+                )
+              })}
             </ul>
           )}
         </section>
       </div>
 
       <SharedCareSummaries />
-      <section className="rd-card">
-        <h2>{en ? 'Shared summaries panel' : 'Panel de resúmenes compartidos'}</h2>
-        {!active || !active.granted ? (
-          <div className="rd-empty">
-            <strong>{en ? 'No information' : 'Sin información'}</strong>
-            <span className="rd-muted">
-              {en
-                ? 'Missing records must never look like confirmed wellbeing. Full private chats stay hidden.'
-                : 'La falta de registros nunca debe parecer bienestar confirmado. Los chats privados completos permanecen ocultos.'}
-            </span>
-          </div>
-        ) : (
-          <p className="rd-muted">
-            {en
-              ? `Authorized view for ${active.label}. Register a private follow-up without inventing emotional classifications.`
-              : `Vista autorizada de ${active.label}. Registrá un seguimiento privado sin inventar clasificaciones emocionales.`}
-          </p>
-        )}
-        <div className="rd-actions">
-          <Link className="rd-btn" to="/app/mi-salud">{en ? 'Review in my health' : 'Revisar en mi salud'}</Link>
-          <Link className="rd-btn ghost" to="/app/mi-salud">{en ? 'Request access' : 'Solicitar acceso'}</Link>
-        </div>
-      </section>
     </div>
   )
 }

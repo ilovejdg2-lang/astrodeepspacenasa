@@ -9,6 +9,8 @@
 
 /* Header */
 .biomed-main-header {
+  position: relative;
+  z-index: 40;
   display: flex;
   flex-wrap: wrap;
   align-items: flex-start;
@@ -79,7 +81,12 @@
   overflow-x: auto;
   gap: 10px;
   padding: 4px 2px 8px;
-  scrollbar-width: thin;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.biomed-systems-bar::-webkit-scrollbar {
+  display: none;
 }
 
 .biomed-system-tab {
@@ -150,6 +157,10 @@
 @media (min-width: 960px) {
   .biomed-split-layout {
     grid-template-columns: minmax(320px, 420px) minmax(0, 1fr);
+  }
+
+  .biomed-split-layout.is-single-column {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
@@ -348,27 +359,33 @@
 }
 
 .biomed-svg-part {
-  fill: color-mix(in srgb, var(--surface, #fff) 70%, #d9c4b4);
-  stroke: color-mix(in srgb, currentColor 40%, transparent);
-  stroke-width: 1.5px;
+  fill: #ffffff;
+  stroke: #475569;
+  stroke-width: 2px;
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
+:root[data-theme="dark"] .biomed-svg-part {
+  fill: #1e1b2e;
+  stroke: #94a3b8;
+}
+
 .biomed-svg-part:hover {
-  fill: #ffd1dc;
-  stroke: var(--rd-accent, #d46a8e);
+  fill: #ffe4ec;
+  stroke: var(--rd-accent, #f5004f);
 }
 
 .biomed-svg-part.is-active {
-  fill: #fcb3ca;
-  stroke: var(--rd-accent, #d46a8e);
-  stroke-width: 3px;
-  filter: drop-shadow(0 0 6px color-mix(in srgb, var(--rd-accent, #d46a8e) 45%, transparent));
+  fill: #ffd1dc;
+  stroke: var(--rd-accent, #f5004f);
+  stroke-width: 3.5px;
+  filter: drop-shadow(0 0 8px rgba(245, 0, 79, 0.4));
 }
 
 :root[data-theme="dark"] .biomed-svg-part.is-active {
-  fill: #8a2b4b;
+  fill: #5a1b32;
+  stroke: #ff4b82;
 }
 
 .biomed-list-canvas {
@@ -703,12 +720,13 @@
   border-top: 1px dashed color-mix(in srgb, currentColor 14%, transparent);
 }
 
-/* Next Steps */
+/* Next Steps - positioned above cards */
 .biomed-next-steps-section {
   display: grid;
   gap: 10px;
-  border-top: 1px solid color-mix(in srgb, currentColor 10%, transparent);
-  padding-top: 14px;
+  border-bottom: 1px solid color-mix(in srgb, currentColor 10%, transparent);
+  padding-bottom: 16px;
+  margin-bottom: 18px;
 }
 
 .biomed-next-buttons {
@@ -1212,3 +1230,478 @@
   line-height: 1.4;
   max-width: 680px;
 }
+
+/* Pain Reports & Patient Evaluation Styles */
+.badge-self {
+  background: color-mix(in srgb, #10b981 16%, transparent);
+  border-color: color-mix(in srgb, #10b981 35%, transparent);
+  color: #10b981;
+}
+
+:root[data-theme="dark"] .badge-self {
+  color: #34d399;
+}
+
+.badge-restricted {
+  background: color-mix(in srgb, #ef4444 16%, transparent);
+  border-color: color-mix(in srgb, #ef4444 35%, transparent);
+  color: #ef4444;
+}
+
+:root[data-theme="dark"] .badge-restricted {
+  color: #f87171;
+}
+
+.biomed-consent-locked {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 24px;
+  background: color-mix(in srgb, var(--surface, #1e131d) 92%, transparent);
+  border: 1.5px dashed color-mix(in srgb, #ef4444 40%, transparent);
+  border-radius: 18px;
+  margin: 20px 0;
+  text-align: center;
+}
+
+.biomed-locked-card {
+  max-width: 540px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+.biomed-locked-icon-wrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: color-mix(in srgb, #ef4444 18%, transparent);
+  border: 2px solid color-mix(in srgb, #ef4444 38%, transparent);
+  color: #f87171;
+}
+
+.biomed-locked-card h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: inherit;
+}
+
+.biomed-locked-desc {
+  margin: 0;
+  font-size: 0.92rem;
+  line-height: 1.55;
+  color: color-mix(in srgb, currentColor 80%, transparent);
+}
+
+.biomed-locked-actions {
+  margin-top: 10px;
+}
+
+/* Pain Reports Stack & Cards */
+.biomed-pain-reports-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin: 12px 0;
+}
+
+.biomed-pain-report-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 18px;
+  border-radius: 14px;
+  border: 1px solid color-mix(in srgb, currentColor 14%, transparent);
+  background: color-mix(in srgb, var(--surface, #fff) 60%, transparent);
+}
+
+:root[data-theme="dark"] .biomed-pain-report-card {
+  background: rgba(30, 16, 25, 0.7);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.biomed-pain-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  border-bottom: 1px solid color-mix(in srgb, currentColor 10%, transparent);
+  padding-bottom: 10px;
+}
+
+.biomed-pain-head-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.biomed-pain-head-left strong {
+  font-size: 0.95rem;
+  font-weight: 750;
+}
+
+.biomed-pain-head-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.biomed-report-date {
+  font-size: 0.8rem;
+  color: color-mix(in srgb, currentColor 68%, transparent);
+}
+
+.biomed-status-pill {
+  font-size: 0.74rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 999px;
+  text-transform: uppercase;
+  background: color-mix(in srgb, currentColor 10%, transparent);
+  border: 1px solid color-mix(in srgb, currentColor 16%, transparent);
+}
+
+.biomed-status-pill.status-open {
+  background: rgba(245, 158, 11, 0.16);
+  border-color: rgba(245, 158, 11, 0.35);
+  color: #f59e0b;
+}
+
+.biomed-pain-marks-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.biomed-pain-mark-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: color-mix(in srgb, currentColor 4%, transparent);
+  border-left: 4px solid #ec4899;
+}
+
+.biomed-mark-primary-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.biomed-mark-region-title {
+  font-size: 0.95rem;
+  font-weight: 750;
+  color: inherit;
+}
+
+.biomed-intensity-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 750;
+}
+
+.biomed-intensity-pill.mild,
+.biomed-intensity-pill.intensity-mild {
+  background: rgba(34, 197, 94, 0.16);
+  border: 1px solid rgba(34, 197, 94, 0.35);
+  color: #22c55e;
+}
+
+.biomed-intensity-pill.moderate,
+.biomed-intensity-pill.intensity-moderate {
+  background: rgba(245, 158, 11, 0.16);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  color: #f59e0b;
+}
+
+.biomed-intensity-pill.severe,
+.biomed-intensity-pill.intensity-severe {
+  background: rgba(239, 68, 68, 0.16);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  color: #ef4444;
+}
+
+.biomed-mark-meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  font-size: 0.82rem;
+  color: color-mix(in srgb, currentColor 75%, transparent);
+}
+
+.biomed-pain-desc {
+  margin: 2px 0 0;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: color-mix(in srgb, currentColor 4%, transparent);
+  font-size: 0.88rem;
+  line-height: 1.45;
+  font-style: italic;
+}
+
+.biomed-mark-tags-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.biomed-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 0.76rem;
+  font-weight: 600;
+  background: color-mix(in srgb, currentColor 8%, transparent);
+  color: color-mix(in srgb, currentColor 85%, transparent);
+}
+
+/* Clinical Notes & Observations */
+.biomed-clinical-notes-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+  padding-top: 12px;
+  border-top: 1px dashed color-mix(in srgb, currentColor 14%, transparent);
+}
+
+.biomed-notes-title {
+  margin: 0;
+  font-size: 0.88rem;
+  font-weight: 750;
+  color: #38bdf8;
+  letter-spacing: 0.02em;
+}
+
+.biomed-notes-count {
+  font-size: 0.82rem;
+  font-weight: 600;
+  margin-left: 6px;
+  opacity: 0.8;
+}
+
+.biomed-clinical-notes-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.biomed-clinical-note-entry {
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: rgba(56, 189, 248, 0.08);
+  border: 1px solid rgba(56, 189, 248, 0.22);
+}
+
+.biomed-note-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.8rem;
+  margin-bottom: 4px;
+}
+
+.biomed-note-body {
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+.biomed-add-obs-form {
+  margin-top: 8px;
+  padding: 12px;
+  border-radius: 10px;
+  background: color-mix(in srgb, currentColor 3%, transparent);
+  border: 1px solid color-mix(in srgb, currentColor 12%, transparent);
+}
+
+/* --------------------------------------------------------------------------
+   3D Body Viewer Pain Pins Quick Selector & Highlighting
+   -------------------------------------------------------------------------- */
+.biomed-pain-pins-bar {
+  position: absolute;
+  bottom: 12px;
+  top: auto;
+  left: 12px;
+  right: 12px;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  background: rgba(24, 16, 26, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 12px;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.35);
+}
+
+.biomed-pain-pins-bar::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+:root[data-theme="light"] .biomed-pain-pins-bar {
+  background: rgba(255, 245, 248, 0.94);
+  border-color: rgba(225, 29, 72, 0.2);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+
+.biomed-pins-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.76rem;
+  font-weight: 750;
+  color: #f43f5e;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+  padding-right: 6px;
+  border-right: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+:root[data-theme="light"] .biomed-pins-label {
+  border-right-color: rgba(0, 0, 0, 0.12);
+}
+
+.biomed-pin-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 650;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 160ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+:root[data-theme="light"] .biomed-pin-chip {
+  background: #ffffff;
+  border-color: rgba(0, 0, 0, 0.12);
+  color: #1e131d;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.biomed-pin-chip:hover {
+  background: rgba(244, 63, 94, 0.18);
+  border-color: #f43f5e;
+  transform: translateY(-1px);
+}
+
+.biomed-pin-chip.is-active {
+  background: linear-gradient(135deg, rgba(244, 63, 94, 0.35), rgba(225, 29, 72, 0.25));
+  border-color: #f43f5e;
+  color: #ffffff;
+  box-shadow: 0 0 12px rgba(244, 63, 94, 0.45);
+}
+
+:root[data-theme="light"] .biomed-pin-chip.is-active {
+  background: #ffe4e6;
+  border-color: #e11d48;
+  color: #9f1239;
+  box-shadow: 0 0 10px rgba(225, 29, 72, 0.25);
+}
+
+.biomed-pin-chip-badge {
+  font-weight: 800;
+  color: #fb7185;
+}
+
+.biomed-pin-chip.is-active .biomed-pin-chip-badge {
+  color: #ffffff;
+}
+
+:root[data-theme="light"] .biomed-pin-chip.is-active .biomed-pin-chip-badge {
+  color: #e11d48;
+}
+
+.biomed-pin-chip-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  box-shadow: 0 0 6px currentColor;
+}
+
+.biomed-pin-chip-text {
+  font-size: 0.8rem;
+}
+
+/* Eye inspect button inside Pain Report card */
+.biomed-focus-mark-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 9px;
+  border-radius: 6px;
+  font-size: 0.76rem;
+  font-weight: 650;
+  background: rgba(244, 63, 94, 0.12);
+  border: 1px solid rgba(244, 63, 94, 0.35);
+  color: #f43f5e;
+  cursor: pointer;
+  transition: all 140ms ease;
+  white-space: nowrap;
+}
+
+.biomed-focus-mark-btn:hover {
+  background: rgba(244, 63, 94, 0.25);
+  border-color: #f43f5e;
+  transform: translateY(-1px);
+}
+
+.biomed-focus-mark-btn.is-active {
+  background: #f43f5e;
+  border-color: #e11d48;
+  color: #ffffff;
+  box-shadow: 0 0 8px rgba(244, 63, 94, 0.45);
+}
+
+:root[data-theme="light"] .biomed-focus-mark-btn {
+  background: #fff1f2;
+  border-color: rgba(225, 29, 72, 0.3);
+  color: #e11d48;
+}
+
+:root[data-theme="light"] .biomed-focus-mark-btn:hover {
+  background: #ffe4e6;
+}
+
+:root[data-theme="light"] .biomed-focus-mark-btn.is-active {
+  background: #e11d48;
+  color: #ffffff;
+}
+
+/* Highlighted pain report item when inspected */
+.biomed-pain-mark-item.is-selected-mark {
+  border-color: #f43f5e !important;
+  box-shadow: 0 0 16px rgba(244, 63, 94, 0.35), inset 0 0 8px rgba(244, 63, 94, 0.12) !important;
+  background: rgba(244, 63, 94, 0.05);
+}
+

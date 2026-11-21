@@ -10,7 +10,15 @@ type WakeRow = {
 }
 
 /** Resumen del día a bordo: cómo amaneció cada integrante. */
-export function AboardCheckInBoard({ missionId, en }: { missionId: string; en: boolean }) {
+export function AboardCheckInBoard({
+  missionId,
+  en,
+  role,
+}: {
+  missionId: string
+  en: boolean
+  role?: 'medic' | 'psychologist' | string
+}) {
   const [items, setItems] = useState<WakeRow[]>([])
   const [error, setError] = useState('')
 
@@ -50,9 +58,17 @@ export function AboardCheckInBoard({ missionId, en }: { missionId: string; en: b
                 <strong>{row.displayName}</strong>
                 <span className="muted">
                   {done
-                    ? (en
-                      ? `Sleep ${String(p.sleepHours ?? '—')} h · quality ${String(p.sleepQuality ?? '—')}/5 · physical ${physicalLabel} · mood ${String(p.mood ?? '—')}/5 · symptoms ${p.symptoms ? 'yes' : 'no'}`
-                      : `Sueño ${String(p.sleepHours ?? '—')} h · calidad ${String(p.sleepQuality ?? '—')}/5 · físico ${physicalLabel} · ánimo ${String(p.mood ?? '—')}/5 · síntomas ${p.symptoms ? 'sí' : 'no'}`)
+                    ? role === 'medic'
+                      ? (en
+                        ? `Physical condition: ${physicalLabel} · Physical symptoms: ${p.symptoms ? 'reported' : 'none'}`
+                        : `Estado físico: ${physicalLabel} · Síntomas físicos: ${p.symptoms ? 'reportados' : 'ninguno'}`)
+                      : role === 'psychologist'
+                        ? (en
+                          ? `Mood: ${String(p.mood ?? '—')}/5 · Sleep: ${String(p.sleepHours ?? '—')} h (quality ${String(p.sleepQuality ?? '—')}/5)`
+                          : `Ánimo: ${String(p.mood ?? '—')}/5 · Descanso: ${String(p.sleepHours ?? '—')} h (calidad ${String(p.sleepQuality ?? '—')}/5)`)
+                        : (en
+                          ? `Sleep ${String(p.sleepHours ?? '—')} h · quality ${String(p.sleepQuality ?? '—')}/5 · physical ${physicalLabel} · mood ${String(p.mood ?? '—')}/5 · symptoms ${p.symptoms ? 'yes' : 'no'}`
+                          : `Sueño ${String(p.sleepHours ?? '—')} h · calidad ${String(p.sleepQuality ?? '—')}/5 · físico ${physicalLabel} · ánimo ${String(p.mood ?? '—')}/5 · síntomas ${p.symptoms ? 'sí' : 'no'}`)
                     : (en ? 'Check-in pending' : 'Chequeo pendiente')}
                 </span>
               </div>

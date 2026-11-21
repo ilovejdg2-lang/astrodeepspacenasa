@@ -7,7 +7,7 @@ import type {
   MovementType,
   SharedRequestLevel,
 } from '../../shared/types';
-import { uiLang } from '../locale';
+import { uiLang, type Lang } from '../locale';
 
 const missionEs = new Intl.DateTimeFormat('es', {
   timeZone: 'UTC',
@@ -37,14 +37,16 @@ const clockEn = new Intl.DateTimeFormat('en', {
   minute: '2-digit',
 });
 
-export function formatMission(ms: number): string {
-  return (uiLang() === 'en' ? missionEn : missionEs)
+export function formatMission(ms: number, lang?: Lang): string {
+  const isEn = lang ? lang === 'en' : uiLang() === 'en';
+  return (isEn ? missionEn : missionEs)
     .format(ms)
     .replace('.', '');
 }
 
-export function formatClock(ms: number): string {
-  return (uiLang() === 'en' ? clockEn : clockEs).format(ms);
+export function formatClock(ms: number, lang?: Lang): string {
+  const isEn = lang ? lang === 'en' : uiLang() === 'en';
+  return (isEn ? clockEn : clockEs).format(ms);
 }
 
 export function formatValue(kind: MeasurementKind, value: number): string {
@@ -76,8 +78,9 @@ const KIND_ES: Record<MeasurementKind, string> = {
   respiratory_rate: 'Frecuencia respiratoria',
 };
 
-export function kindLabel(kind: MeasurementKind): string {
-  return uiLang() === 'en' ? KIND_EN[kind] : KIND_ES[kind];
+export function kindLabel(kind: MeasurementKind, lang?: Lang): string {
+  const isEn = lang ? lang === 'en' : uiLang() === 'en';
+  return isEn ? KIND_EN[kind] : KIND_ES[kind];
 }
 
 export function ageLabel(now: number, then: number): string {
@@ -165,24 +168,29 @@ const REJECT_EN: Record<string, string> = {
   out_of_order: 'Out of order',
 };
 
-export function alertTypeLabel(type: AlertType): string {
-  return uiLang() === 'en' ? ALERT_TYPE_EN[type] : ALERT_TYPE_ES[type];
+export function alertTypeLabel(type: AlertType, lang?: Lang): string {
+  const isEn = lang ? lang === 'en' : uiLang() === 'en';
+  return isEn ? ALERT_TYPE_EN[type] : ALERT_TYPE_ES[type];
 }
 
-export function integrityLabel(value: Integrity): string {
-  return (uiLang() === 'en' ? INTEGRITY_EN : INTEGRITY_ES)[value];
+export function integrityLabel(value: Integrity, lang?: Lang): string {
+  const isEn = lang ? lang === 'en' : uiLang() === 'en';
+  return (isEn ? INTEGRITY_EN : INTEGRITY_ES)[value];
 }
 
-export function episodeStatusLabel(status: EpisodeStatus): string {
-  return (uiLang() === 'en' ? EPISODE_EN : EPISODE_ES)[status];
+export function episodeStatusLabel(status: EpisodeStatus, lang?: Lang): string {
+  const isEn = lang ? lang === 'en' : uiLang() === 'en';
+  return (isEn ? EPISODE_EN : EPISODE_ES)[status];
 }
 
-export function movementLabel(type: MovementType): string {
-  return (uiLang() === 'en' ? MOVEMENT_EN : MOVEMENT_ES)[type];
+export function movementLabel(type: MovementType, lang?: Lang): string {
+  const isEn = lang ? lang === 'en' : uiLang() === 'en';
+  return (isEn ? MOVEMENT_EN : MOVEMENT_ES)[type];
 }
 
-export function rejectLabel(reason: string): string {
-  const table = uiLang() === 'en' ? REJECT_EN : REJECT_ES;
+export function rejectLabel(reason: string, lang?: Lang): string {
+  const isEn = lang ? lang === 'en' : uiLang() === 'en';
+  const table = isEn ? REJECT_EN : REJECT_ES;
   return table[reason] ?? reason;
 }
 
@@ -248,8 +256,9 @@ const ROLE_EN: Record<string, string> = {
   ops: 'Operations',
 };
 
-export function auditActionLabel(action: string): string {
-  const table = uiLang() === 'en' ? AUDIT_EN : AUDIT_ES;
+export function auditActionLabel(action: string, lang?: Lang): string {
+  const isEn = lang ? lang === 'en' : uiLang() === 'en';
+  const table = isEn ? AUDIT_EN : AUDIT_ES;
   return table[action] ?? action;
 }
 
@@ -265,12 +274,14 @@ const SHARE_EN: Record<SharedRequestLevel, string> = {
   equipo: 'Team',
 };
 
-export function shareLevelLabel(level: SharedRequestLevel): string {
-  return (uiLang() === 'en' ? SHARE_EN : SHARE_ES)[level];
+export function shareLevelLabel(level: SharedRequestLevel, lang?: Lang): string {
+  const isEn = lang ? lang === 'en' : uiLang() === 'en';
+  return (isEn ? SHARE_EN : SHARE_ES)[level];
 }
 
-export function roleLabel(role: string): string {
-  const table = uiLang() === 'en' ? ROLE_EN : ROLE_ES;
+export function roleLabel(role: string, lang?: Lang): string {
+  const isEn = lang ? lang === 'en' : uiLang() === 'en';
+  const table = isEn ? ROLE_EN : ROLE_ES;
   return table[role] ?? role;
 }
 

@@ -3,7 +3,47 @@ import { canRegisterSymptom } from './access'
 import { addAudit, hasKey, rememberKey, withNotice } from './stateOps'
 import { ensureAlert } from './messages'
 
-const ALLOWED = new Set(['cansancio', 'mareo', 'cefalea', 'nausea', 'otro'])
+const ALLOWED = new Set(['cansancio', 'mareo', 'cefalea', 'nausea', 'otro', 'dolor_muscular', 'otro_fisico', 'estres', 'animo_bajo', 'insomnio', 'otro_mental'])
+
+export const PHYSICAL_SYMPTOM_KEYS = ['mareo', 'cefalea', 'nausea', 'dolor_muscular', 'otro_fisico'] as const
+export const MENTAL_SYMPTOM_KEYS = ['cansancio', 'estres', 'animo_bajo', 'insomnio', 'otro_mental'] as const
+
+export function isPhysicalSymptom(symptomId: string): boolean {
+  if (symptomId === 'mareo' || symptomId === 'cefalea' || symptomId === 'nausea' || symptomId === 'dolor_muscular' || symptomId === 'otro_fisico') return true
+  if (symptomId === 'cansancio' || symptomId === 'estres' || symptomId === 'animo_bajo' || symptomId === 'insomnio' || symptomId === 'otro_mental') return false
+  return /mareo|dizzy|cefalea|headache|cabeza|nausea|dolor|pain|muscular|back|espalda|vomit|presion|fever|tos|cough/i.test(symptomId)
+}
+
+export function isMentalSymptom(symptomId: string): boolean {
+  if (symptomId === 'cansancio' || symptomId === 'estres' || symptomId === 'animo_bajo' || symptomId === 'insomnio' || symptomId === 'otro_mental') return true
+  if (symptomId === 'mareo' || symptomId === 'cefalea' || symptomId === 'nausea' || symptomId === 'dolor_muscular' || symptomId === 'otro_fisico') return false
+  return /cansancio|fatiga|fatigue|sleep|sueño|animo|mood|estres|stress|ansiedad|anxiety|aislamiento|mental/i.test(symptomId)
+}
+
+export function reportHasPhysicalSymptoms(report: SymptomReport): boolean {
+  if (report.symptoms.some((s) => isPhysicalSymptom(s))) return true
+  if (report.note && /mareo|dizzy|cefalea|headache|cabeza|nausea|dolor|pain|muscular|espalda|back/i.test(report.note)) return true
+  return false
+}
+
+export function reportHasMentalSymptoms(report: SymptomReport): boolean {
+  if (report.symptoms.some((s) => isMentalSymptom(s))) return true
+  if (report.note && /cansancio|fatiga|fatigue|sleep|sueño|animo|mood|estres|stress|ansiedad|anxiety|aislamiento|mental/i.test(report.note)) return true
+  return false
+}
+
+export function filterSymptomsByRole(
+  symptoms: SymptomReport[],
+  role: 'medic' | 'medical' | 'psychologist' | string | null | undefined,
+): SymptomReport[] {
+  if (role === 'medic' || role === 'medical') {
+    return symptoms.filter((item) => reportHasPhysicalSymptoms(item))
+  }
+  if (role === 'psychologist') {
+    return symptoms.filter((item) => reportHasMentalSymptoms(item))
+  }
+  return symptoms
+}
 
 export interface SymptomDraft {
   crewId: CrewId
