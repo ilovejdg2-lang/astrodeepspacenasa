@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
-import { CalendarDays, Activity, Brain, BookOpen, ChevronRight, ShieldCheck, ShieldAlert, ArrowRight } from 'lucide-react'
+import { CalendarDays, Activity, BookOpen, ChevronRight, ShieldCheck, ShieldAlert, ArrowRight } from 'lucide-react'
 import { SharedCareSummaries } from '../../components/quiron/SharedCareSummaries'
 import { InfoHelp } from '../../components/InfoHelp'
 import { useLocale } from '../../i18n'
@@ -114,21 +114,6 @@ export function PsychHome() {
             </span>
           </Link>
 
-          <Link to="/app/analisis" className="rd-action-card">
-            <div className="rd-action-card-head">
-              <Brain size={20} style={{ color: 'var(--rd-accent, #ec4899)' }} aria-hidden="true" />
-              <strong>{en ? 'Behavioral & AI Analysis' : 'Análisis Conductual e IA'}</strong>
-            </div>
-            <p>
-              {en
-                ? 'Quirón cognitive fatigue assessment, sensory deprivation detection, and NASA BHP mitigation.'
-                : 'Evaluación de fatiga cognitiva con Quirón, privación sensorial y contramedidas BHP de NASA.'}
-            </p>
-            <span className="rd-action-card-arrow">
-              {en ? 'Open analysis' : 'Abrir análisis'} <ArrowRight size={14} aria-hidden="true" />
-            </span>
-          </Link>
-
           <Link to="/app/riesgos" className="rd-action-card">
             <div className="rd-action-card-head">
               <BookOpen size={20} style={{ color: 'var(--rd-accent, #ec4899)' }} aria-hidden="true" />
@@ -227,23 +212,14 @@ export function PsychHome() {
 
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       {person.granted ? (
-                        <>
-                          <Link
-                            to="/app/biomedical"
-                            className="rd-btn"
-                            style={{ fontSize: '0.82rem', padding: '6px 12px' }}
-                          >
-                            {en ? 'Evaluate sleep' : 'Evaluar descanso'}
-                            <ChevronRight size={14} aria-hidden="true" />
-                          </Link>
-                          <Link
-                            to="/app/analisis"
-                            className="rd-btn ghost"
-                            style={{ fontSize: '0.82rem', padding: '6px 12px' }}
-                          >
-                            {en ? 'Behavioral analysis' : 'Análisis conductual'}
-                          </Link>
-                        </>
+                        <Link
+                          to="/app/biomedical"
+                          className="rd-btn"
+                          style={{ fontSize: '0.82rem', padding: '6px 12px' }}
+                        >
+                          {en ? 'Evaluate sleep' : 'Evaluar descanso'}
+                          <ChevronRight size={14} aria-hidden="true" />
+                        </Link>
                       ) : (
                         <Link
                           to="/app/mi-salud"
@@ -299,19 +275,10 @@ export function PsychHome() {
                       <strong>{crewName}</strong>
                       <span className="rd-muted" style={{ fontSize: '0.8rem' }}>{new Date(sym.reportedAt).toLocaleDateString()}</span>
                     </div>
-                    <span style={{ color: '#d46a8e', fontWeight: 650, fontSize: '0.9rem' }}>
+                    <span style={{ color: 'var(--accent, #7c3aed)', fontWeight: 650, fontSize: '0.9rem' }}>
                       {sym.symptoms.map((s) => s.replace('_', ' ')).join(', ')}
                     </span>
                     {sym.note ? <p style={{ margin: 0, fontSize: '0.86rem', opacity: 0.9 }}>{sym.note}</p> : null}
-                    <div style={{ marginTop: 4 }}>
-                      <Link
-                        to="/app/analisis"
-                        className="rd-btn ghost"
-                        style={{ fontSize: '0.82rem', padding: '5px 10px', width: 'fit-content' }}
-                      >
-                        {en ? 'Analyze in Quirón' : 'Analizar en Quirón'}
-                      </Link>
-                    </div>
                   </li>
                 )
               })}

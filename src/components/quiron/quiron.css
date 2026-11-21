@@ -1,6 +1,6 @@
 /* Quirón — asistente conversacional HELIOS */
 .quiron-root {
-  --quiron-fucsia: #f5004f;
+  --quiron-fucsia: var(--accent, #f5004f);
   --quiron-fucsia-soft: color-mix(in srgb, var(--quiron-fucsia) 14%, transparent);
   --quiron-panel: linear-gradient(165deg, #fff8fb 0%, #f7f0ff 48%, #ffe8f2 100%);
   --quiron-surface: #ffffffcc;
@@ -10,7 +10,7 @@
   --quiron-user-ink: #fff;
   --quiron-bot: #fff;
   --quiron-bot-line: color-mix(in srgb, var(--quiron-fucsia) 28%, #e8d0da);
-  --quiron-shadow: 0 18px 48px color-mix(in srgb, #f5004f 18%, transparent), 0 4px 16px rgba(10, 10, 10, 0.08);
+  --quiron-shadow: 0 18px 48px color-mix(in srgb, var(--quiron-fucsia) 25%, transparent), 0 4px 16px rgba(10, 10, 10, 0.08);
   --quiron-fab-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
   --quiron-fab-right: calc(20px + env(safe-area-inset-right, 0px));
   position: fixed;
@@ -26,7 +26,7 @@
   --quiron-muted: #cbb6be;
   --quiron-bot: #2c1820;
   --quiron-bot-line: #5a3040;
-  --quiron-user: #ff2d6a;
+  --quiron-user: var(--accent, #ff2d6a);
   --quiron-shadow: 0 18px 48px rgba(0, 0, 0, 0.45), 0 4px 16px rgba(255, 45, 106, 0.12);
 }
 

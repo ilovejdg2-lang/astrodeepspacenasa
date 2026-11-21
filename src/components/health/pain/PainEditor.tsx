@@ -28,6 +28,7 @@ import {
 } from '../../../domain/painMap'
 import { BodyMap2D } from './BodyMap2D'
 import { BodyViewport, PainCameraControls, type BodyViewportHandle } from './BodyViewport'
+import { getStoredProfile } from '../../../platform/session'
 import './pain-map.css'
 
 type Visit = { id: string; scheduledAt?: number | null; reason?: string }
@@ -59,6 +60,7 @@ export function PainEditor({
   stage,
   appointments,
   seed,
+  readOnly,
   onClose,
   onSaved,
 }: {
@@ -68,9 +70,12 @@ export function PainEditor({
   stage?: string
   appointments: Visit[]
   seed: PainDraft | null
+  readOnly?: boolean
   onClose: () => void
   onSaved: () => void
 }) {
+  const currentProfile = getStoredProfile()
+  const isOwner = readOnly !== undefined ? !readOnly : (!currentProfile?.id || currentProfile.id === profileId)
   const stored = seed ?? readPainDraft(missionId, profileId)
   const initialMarks = useMemo(() => (stored?.marks ?? []).map((m) => normalizePainMark(m)), [stored])
   const [marks, setMarks] = useState<PainDraftMark[]>(initialMarks)
@@ -274,7 +279,13 @@ export function PainEditor({
         </div>
       </div>
 
-      <p className="pain-help">{painHelp(en)}</p>
+      <p className="pain-help">
+        {isOwner
+          ? painHelp(en)
+          : (en
+            ? 'Viewing patient marked pain spots and anatomical locations (read-only).'
+            : 'Visualizando puntos de dolor y localizaciones anatómicas del paciente (modo lectura).')}
+      </p>
       <p className="sr-only" aria-live="polite">{liveText}</p>
       {restored ? <p className="rd-muted">{en ? 'Unsaved text from this screen was restored.' : 'Se restauró el texto que todavía estaba en esta pantalla.'}</p> : null}
       {followsReportId ? <p className="rd-muted">{en ? 'This update is saved as a new report. The earlier one stays in the history.' : 'Esta actualización se guarda como un reporte nuevo. El anterior permanece en el historial.'}</p> : null}
@@ -296,7 +307,7 @@ export function PainEditor({
                   en={en}
                   marks={shown}
                   selectedId={selectedId}
-                  placeEnabled={placeMode && step !== 'preview'}
+                  placeEnabled={isOwner && placeMode && step !== 'preview'}
                   loadingLabel={en ? 'Loading body model…' : 'Cargando el modelo corporal…'}
                   onPlace={place}
                   onSelect={selectMark}
@@ -310,40 +321,42 @@ export function PainEditor({
               </p>
             </>
           ) : (
-            <BodyMap2D marks={shown} selectedId={selectedId} placeEnabled={placeMode && step !== 'preview'} onPlace={place} onSelect={setSelectedId} en={en} />
+            <BodyMap2D marks={shown} selectedId={selectedId} placeEnabled={isOwner && placeMode && step !== 'preview'} onPlace={place} onSelect={setSelectedId} en={en} />
           )}
 
           {/* Collapsible manual region picker */}
-          <details className="pain-manual-picker">
-            <summary className="pain-manual-summary">
-              {en ? '+ Manual region selector (without 3D tap)' : '+ Selector manual de región (sin tocar el 3D)'}
-            </summary>
-            <div className="pain-manual-content">
-              <div className="rd-form-grid">
-                <div className="rd-field">
-                  <label htmlFor="pain-region">{en ? 'Region' : 'Región'}</label>
-                  <select id="pain-region" value={regionChoice} onChange={(event) => setRegionChoice(event.target.value)}>
-                    {BODY_REGIONS.map((region) => <option key={region.id} value={region.id}>{en ? region.en : region.es}</option>)}
-                  </select>
+          {isOwner ? (
+            <details className="pain-manual-picker">
+              <summary className="pain-manual-summary">
+                {en ? '+ Manual region selector (without 3D tap)' : '+ Selector manual de región (sin tocar el 3D)'}
+              </summary>
+              <div className="pain-manual-content">
+                <div className="rd-form-grid">
+                  <div className="rd-field">
+                    <label htmlFor="pain-region">{en ? 'Region' : 'Región'}</label>
+                    <select id="pain-region" value={regionChoice} onChange={(event) => setRegionChoice(event.target.value)}>
+                      {BODY_REGIONS.map((region) => <option key={region.id} value={region.id}>{en ? region.en : region.es}</option>)}
+                    </select>
+                  </div>
+                  <div className="rd-field">
+                    <label htmlFor="pain-side">{en ? 'Side of the body' : 'Lado del cuerpo'}</label>
+                    <select id="pain-side" value={sideChoice} onChange={(event) => setSideChoice(event.target.value as PainLaterality)}>
+                      {sidesFor(regionChoice).map((side) => <option key={side} value={side}>{sideLabel(side, en)}</option>)}
+                    </select>
+                  </div>
+                  <div className="rd-field">
+                    <label htmlFor="pain-aspect">{en ? 'Facing' : 'Orientación'}</label>
+                    <select id="pain-aspect" value={aspectChoice} onChange={(event) => setAspectChoice(event.target.value as PainAspect)}>
+                      {(['anterior', 'posterior', 'lateral'] as const).map((aspect) => <option key={aspect} value={aspect}>{aspectLabel(aspect, en)}</option>)}
+                    </select>
+                  </div>
                 </div>
-                <div className="rd-field">
-                  <label htmlFor="pain-side">{en ? 'Side of the body' : 'Lado del cuerpo'}</label>
-                  <select id="pain-side" value={sideChoice} onChange={(event) => setSideChoice(event.target.value as PainLaterality)}>
-                    {sidesFor(regionChoice).map((side) => <option key={side} value={side}>{sideLabel(side, en)}</option>)}
-                  </select>
-                </div>
-                <div className="rd-field">
-                  <label htmlFor="pain-aspect">{en ? 'Facing' : 'Orientación'}</label>
-                  <select id="pain-aspect" value={aspectChoice} onChange={(event) => setAspectChoice(event.target.value as PainAspect)}>
-                    {(['anterior', 'posterior', 'lateral'] as const).map((aspect) => <option key={aspect} value={aspect}>{aspectLabel(aspect, en)}</option>)}
-                  </select>
-                </div>
+                <button type="button" className="rd-btn" disabled={!placeMode || step !== 'locate'} onClick={addRegion}>
+                  {en ? 'Add this region' : 'Agregar esta región'}
+                </button>
               </div>
-              <button type="button" className="rd-btn" disabled={!placeMode || step !== 'locate'} onClick={addRegion}>
-                {en ? 'Add this region' : 'Agregar esta región'}
-              </button>
-            </div>
-          </details>
+            </details>
+          ) : null}
         </div>
 
         {/* Right Column: Pain Details & Wizard Actions */}
@@ -385,22 +398,29 @@ export function PainEditor({
                           </span>
                         </div>
                       </button>
-                      <div className="pain-toolbar">
-                        <button
-                          type="button"
-                          className="rd-btn ghost"
-                          onClick={() => { setSelectedId(mark.id); setMovingId(mark.id); setPlaceMode(true); setStep('locate') }}
-                        >
-                          {movingId === mark.id ? (en ? 'Tap new spot' : 'Tocá nuevo punto') : (en ? 'Move' : 'Mover')}
-                        </button>
-                        <button
-                          type="button"
-                          className="rd-btn ghost"
-                          onClick={() => setMarks((current) => current.filter((item) => item.id !== mark.id))}
-                        >
-                          {en ? 'Remove' : 'Quitar'}
-                        </button>
-                      </div>
+                      {isOwner ? (
+                        <div className="pain-toolbar">
+                          <button
+                            type="button"
+                            className="rd-btn ghost"
+                            onClick={() => { setSelectedId(mark.id); setMovingId(mark.id); setPlaceMode(true); setStep('locate') }}
+                          >
+                            {movingId === mark.id ? (en ? 'Tap new spot' : 'Tocá nuevo punto') : (en ? 'Move' : 'Mover')}
+                          </button>
+                          <button
+                            type="button"
+                            className="rd-btn ghost"
+                            onClick={() => setMarks((current) => current.filter((item) => item.id !== mark.id))}
+                          >
+                            {en ? 'Remove' : 'Quitar'}
+                          </button>
+                        </div>
+                      ) : (
+                        <div style={{ marginTop: 6, fontSize: '0.84rem', opacity: 0.9 }}>
+                          <span><strong>{en ? 'Intensity: ' : 'Intensidad: '}</strong>{mark.intensity != null ? `${mark.intensity}/10 (${mark.intensity <= 3 ? (en ? 'Mild' : 'Leve') : mark.intensity <= 6 ? (en ? 'Moderate' : 'Moderado') : (en ? 'Severe' : 'Severo')})` : '—'}</span>
+                          {mark.pattern ? <div style={{ marginTop: 2 }}><strong>{en ? 'Pattern: ' : 'Patrón: '}</strong>{mark.pattern === 'constant' ? (en ? 'Constant' : 'Constante') : (en ? 'Intermittent' : 'Intermitente')}</div> : null}
+                        </div>
+                      )}
                     </li>
                   ))}
                 </ul>
@@ -557,7 +577,7 @@ export function PainEditor({
                 {en ? 'Close' : 'Cerrar'}
               </button>
 
-              {step === 'locate' ? (
+              {isOwner && step === 'locate' ? (
                 <button
                   type="button"
                   className="rd-btn is-primary"
@@ -568,7 +588,7 @@ export function PainEditor({
                 </button>
               ) : null}
 
-              {step === 'details' ? (
+              {isOwner && step === 'details' ? (
                 <button
                   type="button"
                   className="rd-btn is-primary"
@@ -579,7 +599,7 @@ export function PainEditor({
                 </button>
               ) : null}
 
-              {step === 'preview' ? (
+              {isOwner && step === 'preview' ? (
                 <button
                   type="button"
                   className="rd-btn is-primary"
