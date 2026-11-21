@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
+import { UserCheck, ChevronDown } from 'lucide-react'
 import { useLocale } from '../../i18n'
 import { platformApi } from '../../platform/api'
 import { ROLE_CARDS } from '../../platform/roleCatalog'
@@ -130,6 +131,15 @@ export function RoleSwitcher() {
         )
       : null
 
+  const shortRoleName =
+    current === 'chief'
+      ? (en ? 'Cmdr' : 'Comandante')
+      : current === 'medic'
+        ? (en ? 'Doctor' : 'Médico')
+        : current === 'psychologist'
+          ? (en ? 'Psych' : 'Psicólogo')
+          : (en ? 'Crew' : 'Tripulante')
+
   return (
     <div className={`role-switch${open ? ' is-open' : ''}`}>
       <button
@@ -139,17 +149,23 @@ export function RoleSwitcher() {
         aria-controls="role-switch-panel"
         disabled={busy}
         onClick={() => setOpen((value) => !value)}
+        title={en ? 'Switch active role' : 'Cambiar rol activo'}
       >
         {busy ? (
           en ? 'Switching…' : 'Cambiando…'
         ) : (
           <>
+            <UserCheck size={14} aria-hidden="true" style={{ flexShrink: 0 }} />
             <span className="role-switch-long">
               {en
                 ? `Change role${currentLabel ? ` · ${currentLabel.name.en}` : ''}`
                 : `Cambiar rol${currentLabel ? ` · ${currentLabel.name.es}` : ''}`}
             </span>
-            <span className="role-switch-short">{en ? 'Role' : 'Rol'}</span>
+            <span className="role-switch-short" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {en ? 'Role: ' : 'Rol: '}
+              <strong>{shortRoleName}</strong>
+            </span>
+            <ChevronDown size={13} aria-hidden="true" style={{ flexShrink: 0, opacity: 0.8 }} />
           </>
         )}
       </button>

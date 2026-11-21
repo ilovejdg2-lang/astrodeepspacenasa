@@ -5,7 +5,7 @@ import { LocaleThemeSwitch } from '../../components/LocaleThemeSwitch'
 import { MissionProcessStrip } from '../../components/platform/MissionProcessStrip'
 import { ColdStartNotice, useColdStartTimer } from '../../components/ColdStartNotice'
 import { useLocale } from '../../i18n'
-import { getCachedMissions, platformApi, type MissionRow } from '../../platform/api'
+import { getCachedMissions, platformApi, DEFAULT_DEMO_MISSIONS, type MissionRow } from '../../platform/api'
 import { roleLabel, stageBlurb, stageLabel } from '../../platform/copy'
 import { clearSession, getSessionToken, getStoredProfile, setActiveMissionId } from '../../platform/session'
 import {
@@ -47,7 +47,7 @@ export function MissionsHubPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
-  const { showNotice, elapsed } = useColdStartTimer(loading && items.length === 0, 2200)
+  const { showNotice, elapsed, countdown, progress } = useColdStartTimer(loading && items.length === 0, 800)
 
   const availableStages = useMemo(() => (
     isChief
@@ -108,11 +108,21 @@ export function MissionsHubPage() {
   return (
     <div className="plat">
       {showNotice ? (
-        <ColdStartNotice en={en} elapsed={elapsed} variant="overlay" />
+        <ColdStartNotice
+          en={en}
+          elapsed={elapsed}
+          countdown={countdown}
+          progress={progress}
+          variant="overlay"
+          onBypass={() => {
+            setItems(DEFAULT_DEMO_MISSIONS)
+            setLoading(false)
+          }}
+        />
       ) : (loading && items.length === 0) ? (
         <div className="plat-loader" role="status" aria-live="polite">
           <span className="plat-spinner" aria-hidden="true" />
-          <p>{en ? 'Loading missions…' : 'Cargando misiones…'}</p>
+          <p>Loading missions…</p>
         </div>
       ) : null}
       <div className="plat-shell">

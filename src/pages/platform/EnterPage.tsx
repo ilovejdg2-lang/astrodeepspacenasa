@@ -6,7 +6,7 @@ import { OrbitalBackdrop } from '../../components/role/RoleArt'
 import { QuironFigure } from '../../components/quiron/QuironFigure'
 import { ColdStartNotice, useColdStartTimer } from '../../components/ColdStartNotice'
 import { useLocale } from '../../i18n'
-import { getCachedProfiles, platformApi, type Profile } from '../../platform/api'
+import { DEFAULT_DEMO_PROFILES, getCachedProfiles, platformApi, type Profile } from '../../platform/api'
 import { ROLE_CARDS } from '../../platform/roleCatalog'
 import { setActiveMissionId, setSession } from '../../platform/session'
 import {
@@ -30,7 +30,27 @@ export function EnterPage() {
   const [busy, setBusy] = useState<string | null>(null)
   const [selected, setSelected] = useState<WorkspaceRole | null>(null)
 
-  const { showNotice, elapsed } = useColdStartTimer(Boolean(busy || (loading && profiles.length === 0)), 2200)
+  const { showNotice, elapsed, countdown, progress } = useColdStartTimer(Boolean(busy || (loading && profiles.length === 0)), 800)
+
+  function bypassToDemo() {
+    const role: WorkspaceRole = selected || 'chief'
+    const profileId = DEMO_ROLE_PROFILES[role]
+    const profile = profiles.find((item: Profile) => item.id === profileId)
+      || profiles.find((item: Profile) => item.demoRole === role)
+      || DEFAULT_DEMO_PROFILES.find((item: Profile) => item.id === profileId)!
+    setSession(`demo-session-${profileId}-${Date.now()}`, {
+      id: profile.id,
+      displayName: profile.displayName,
+      title: profile.title,
+      demoRole: profile.demoRole,
+    })
+    clearWorkspace()
+    setActiveMissionId('mission-demo-horizon')
+    setWorkspaceRole(role)
+    setWorkspaceMode('demo')
+    setDemoExplore(true)
+    navigate('/misiones')
+  }
 
   useEffect(() => {
     document.title = en ? 'HELIOS · Explore' : 'HELIOS · Explorar'
@@ -91,11 +111,18 @@ export function EnterPage() {
         <OrbitalBackdrop className="enter-orbit" />
       </div>
       {showNotice ? (
-        <ColdStartNotice en={en} elapsed={elapsed} variant="overlay" />
+        <ColdStartNotice
+          en={en}
+          elapsed={elapsed}
+          countdown={countdown}
+          progress={progress}
+          variant="overlay"
+          onBypass={bypassToDemo}
+        />
       ) : (busy || (loading && profiles.length === 0)) ? (
         <div className="plat-loader" role="status" aria-live="polite">
           <span className="plat-spinner" aria-hidden="true" />
-          <p>{busy ? (en ? 'Opening experience…' : 'Abriendo experiencia…') : (en ? 'Loading…' : 'Cargando…')}</p>
+          <p>{busy ? 'Opening experience…' : 'Initializing HELIOS system…'}</p>
         </div>
       ) : null}
 

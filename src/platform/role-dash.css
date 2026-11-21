@@ -83,7 +83,7 @@
 .crew-pick.is-critical .crew-helmet {
   box-shadow: 0 0 0 3px #f5004f, 0 0 0 7px color-mix(in srgb, #f5004f 18%, transparent);
 }
-.role-switch { position: relative; display: grid; gap: 8px; justify-items: start; z-index: 40; }
+.role-switch { position: relative; display: inline-flex; z-index: 40; }
 .mission-switch { position: relative; display: inline-flex; z-index: 40; }
 .mission-switch-trigger {
   display: inline-flex; align-items: center; justify-content: center; gap: 8px;
@@ -120,7 +120,7 @@
 .mission-stage-dot.is-draft { background: #3b82f6; box-shadow: 0 0 8px #3b82f6; }
 .mission-stage-dot.is-postmission { background: #a855f7; box-shadow: 0 0 8px #a855f7; }
 .role-switch-trigger {
-  display: inline-flex; align-items: center; justify-content: center;
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
   box-sizing: border-box;
   min-height: 44px; height: 44px;
   padding: 0 16px;
@@ -184,11 +184,11 @@
 }
 @media (max-width: 1023px) {
   .role-switch-long { display: none; }
-  .role-switch-short { display: inline; }
-  .role-switch-trigger { padding: 0 14px; min-width: 64px; min-height: 44px; height: 44px; }
+  .role-switch-short { display: inline-flex; align-items: center; gap: 4px; }
+  .role-switch-trigger { padding: 0 12px; min-width: 0; min-height: 38px; height: 38px; font-size: 0.82rem; }
   .mission-switch-long { display: none; }
-  .mission-switch-short { display: inline; }
-  .mission-switch-trigger { padding: 0 10px; max-width: 110px; min-height: 44px; height: 44px; font-size: 0.8rem; }
+  .mission-switch-short { display: inline-flex; align-items: center; gap: 4px; }
+  .mission-switch-trigger { padding: 0 10px; min-width: 0; max-width: 100%; min-height: 38px; height: 38px; font-size: 0.82rem; }
   .role-switch-layer {
     align-items: end;
     padding: 12px 12px calc(12px + env(safe-area-inset-bottom, 0px));
@@ -197,6 +197,27 @@
     width: 100%;
     max-height: min(72dvh, 560px);
     border-radius: 20px;
+  }
+}
+
+@media (max-width: 768px) {
+  .role-switch,
+  .mission-switch {
+    width: 100%;
+    display: flex;
+    min-width: 0;
+  }
+  .role-switch-trigger,
+  .mission-switch-trigger {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0;
+    min-height: 38px;
+    height: 38px;
+    padding: 0 8px;
+    font-size: 0.8rem;
+    justify-content: center;
+    gap: 4px;
   }
 }
 .role-switch-lead {

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { Rocket, RefreshCw, ExternalLink } from 'lucide-react'
+import { Rocket, RefreshCw, ExternalLink, ChevronDown } from 'lucide-react'
 import { useLocale } from '../../i18n'
 import { platformApi } from '../../platform/api'
 import { stageLabel } from '../../platform/copy'
@@ -354,7 +354,7 @@ export function MissionSwitcher() {
         ) : (
           <>
             <span className={`mission-stage-dot ${dotClass}`} aria-hidden="true" />
-            <Rocket size={14} aria-hidden="true" />
+            <Rocket size={14} aria-hidden="true" style={{ flexShrink: 0 }} />
             <span className="mission-switch-long">
               {en ? 'Mission: ' : 'Misión: '}
               <strong>{missionName.replace('HELIOS ', '')}</strong>
@@ -364,6 +364,7 @@ export function MissionSwitcher() {
             <span className="mission-switch-short" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {missionName.replace(/^HELIOS\s+/i, '').replace(/\s*—.*$/, '').trim()}
             </span>
+            <ChevronDown size={13} aria-hidden="true" style={{ flexShrink: 0, opacity: 0.8 }} />
           </>
         )}
       </button>
