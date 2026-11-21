@@ -10,6 +10,7 @@ import { useApp } from '../state/store'
 import { TrendChart } from '../components/Charts'
 import { PlatformIndicatorCharts } from '../components/health/PlatformIndicatorCharts'
 import { Empty } from '../components/ui'
+import { InfoHelp } from '../components/InfoHelp'
 import type { CrewId } from '../../shared/types'
 
 const TIMELINE_PAGE_SIZE = 8
@@ -24,7 +25,14 @@ export function HistoryPage() {
   const [exporting, setExporting] = useState(false)
   const [exportError, setExportError] = useState<string | null>(null)
   const [timelinePage, setTimelinePage] = useState(0)
-  const rows = useMemo(() => filterHistory(historyRows(state, lang), { crewId, type }), [state, crewId, type, lang])
+  const rows = useMemo(() => {
+    const all = historyRows(state, lang)
+    const filtered = filterHistory(all, { crewId, type })
+    if (type === 'all') {
+      return filtered.filter((r) => r.type !== 'measurement')
+    }
+    return filtered
+  }, [state, crewId, type, lang])
   const timelinePages = Math.max(1, Math.ceil(rows.length / TIMELINE_PAGE_SIZE))
   const safeTimelinePage = Math.min(timelinePage, timelinePages - 1)
   const timelineRows = useMemo(
@@ -43,7 +51,7 @@ export function HistoryPage() {
   )
   const episode = state.episodes.find((item) => item.id === selected) ?? state.episodes[0]
   const personLabel = crewId === 'all' ? (en ? 'Whole crew' : 'Toda la tripulación') : CREW.find((crew) => crew.id === crewId)?.name ?? crewId
-  const typeLabel = type === 'all' ? (en ? 'All' : 'Todos') : label(type)
+  const typeLabel = type === 'all' ? (en ? 'All' : 'Todos') : label(type, en)
   const period = periodLabel(trends.pulse, trends.sleep, en)
   const pulseScale = pulseAxis(trends.pulse)
   const sleepScale = sleepAxis(trends.sleep)
@@ -84,7 +92,27 @@ export function HistoryPage() {
       <header className="hist-head">
         <div>
           <p className="kicker">{en ? 'History' : 'Historial'}</p>
-          <h1>{en ? 'Period follow-up' : 'Seguimiento del periodo'}</h1>
+          <h1>
+            {en ? 'Period follow-up' : 'Seguimiento del periodo'}
+            <InfoHelp
+              title="Historial de la Misión"
+              enTitle="Mission Historical Log"
+              whatIs="Bitácora cronológica completa de la misión espacial. Registra y grafica la evolución en el tiempo de signos vitales (frecuencia cardíaca, SpO2, temperatura), síntomas reportados, consultas médicas y alertas."
+              enWhatIs="Complete chronological log of the spaceflight mission. Tracks and graphs trends over time for vital signs (heart rate, SpO2, temperature), symptom reports, consultations, and alerts."
+              steps={[
+                'Elegí el tripulante y el tipo de dato que querés consultar (ritmo cardíaco, descanso, alertas o todo el historial).',
+                'Seleccioná el rango temporal (últimas 24 horas, 7 días o toda la misión) para actualizar las gráficas.',
+                'Explorá los gráficos independientes de pulso y descanso, diseñados para no mezclar escalas diferentes.',
+                'Hacé clic en "Exportar CSV" para descargar los datos brutos o "Vista imprimible" para generar un informe oficial.',
+              ]}
+              enSteps={[
+                'Choose the crew member and data category to inspect (heart rate, sleep, alerts, or full event history).',
+                'Select the time period (last 24 hours, 7 days, or whole mission) to update the trend charts.',
+                'Examine the dedicated pulse and sleep graphs, intentionally separated to maintain accurate medical scales.',
+                'Click "Export CSV" to download raw telemetry data or "Print view" to generate an official mission report.',
+              ]}
+            />
+          </h1>
           <p className="lede">
             {en
               ? 'Pulse and sleep use separate charts: they do not share an axis because the units are not comparable.'
@@ -198,8 +226,8 @@ export function HistoryPage() {
                   <li key={row.id}>
                     <span className="dot" aria-hidden="true" />
                     <button type="button" className="btn btn-ghost" onClick={() => row.type === 'symptom' || row.type === 'alert' ? setSelected(state.episodes.find((item) => item.crewId === row.crewId)?.id ?? selected) : undefined}>
-                      <strong>{formatMission(row.at)} · {label(row.type)}</strong>
-                      <span className="muted"> {systemText(row.detail)}</span>
+                      <strong>{formatMission(row.at, lang)} · {label(row.type, en)}</strong>
+                      <span className="muted"> {systemText(row.detail, lang)}</span>
                     </button>
                   </li>
                 ))}
@@ -244,8 +272,8 @@ export function HistoryPage() {
           <h2>{en ? 'Episode' : 'Episodio'}</h2>
           {episode ? (
             <>
-              <p>{systemText(episode.title)}</p>
-              <p className="muted">{CREW.find((crew) => crew.id === episode.crewId)?.name} · {episodeStatusLabel(episode.status)} · {formatMission(episode.openedAt)}</p>
+              <p>{systemText(episode.title, lang)}</p>
+              <p className="muted">{CREW.find((crew) => crew.id === episode.crewId)?.name} · {episodeStatusLabel(episode.status, lang)} · {formatMission(episode.openedAt, lang)}</p>
             </>
           ) : <p>{en ? 'No episode is selected.' : 'No hay un episodio seleccionado.'}</p>}
         </aside>
@@ -254,9 +282,16 @@ export function HistoryPage() {
   )
 }
 
-function label(type: HistoryRow['type']): string {
-  const names = { measurement: 'Medición', symptom: 'Síntoma', alert: 'Alerta', inventory: 'Inventario', communication: 'Comunicación', analysis: 'Análisis' }
-  return systemText(names[type])
+function label(type: HistoryRow['type'], en: boolean): string {
+  const names = {
+    measurement: en ? 'Measurement' : 'Medición',
+    symptom: en ? 'Symptom' : 'Síntoma',
+    alert: en ? 'Alert' : 'Alerta',
+    inventory: en ? 'Inventory' : 'Inventario',
+    communication: en ? 'Communication' : 'Comunicación',
+    analysis: en ? 'Analysis' : 'Análisis',
+  }
+  return names[type]
 }
 
 /** Ventana corta de números para no saturar el pager. */

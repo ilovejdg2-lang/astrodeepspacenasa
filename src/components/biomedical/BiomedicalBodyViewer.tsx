@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import type * as THREE from 'three'
 import {
   RotateCcw,
   ZoomIn,
@@ -7,11 +8,13 @@ import {
   List,
   Box as CubeIcon,
   Info,
+  MapPin,
+  Maximize2,
 } from 'lucide-react'
 import type { BiomedicalSystemId } from '../../domain/biomedical'
 import { BIOMEDICAL_SYSTEMS, getSystemById } from '../../domain/biomedical'
 import { buildMannequin, type MannequinPalette } from '../health/pain/mannequin'
-import type { PainMapReport } from '../../domain/painMap'
+import { normalizePainMark, type PainMapReport, type PainMark } from '../../domain/painMap'
 
 type ViewMode = '3d' | '2d' | 'list'
 type CameraDirection = 'front' | 'back' | 'left' | 'right' | 'reset'
@@ -23,12 +26,36 @@ function palette(dark: boolean): MannequinPalette & { bg: number; ground: number
 }
 
 const SYSTEM_COLORS: Record<BiomedicalSystemId, number> = {
-  cardiovascular: 0xe63946, // Vibrant crimson
-  respiratory: 0x2a9d8f,    // Soft teal
-  sleep: 0x7b2cbf,          // Deep purple
+  cardiovascular: 0xe63946, // Crimson
+  respiratory: 0x2a9d8f,    // Teal
+  sleep: 0x7b2cbf,          // Purple
   musculoskeletal: 0xf77f00,// Amber/Orange
-  nutrition: 0x43aa8b,      // Fresh green
+  nutrition: 0x43aa8b,      // Green
   emotional: 0xf15bb5,      // Rose pink
+}
+
+function intensityColor(intensity: number) {
+  if (intensity <= 3) return 0x22c55e
+  if (intensity <= 6) return 0xf59e0b
+  return 0xef4444
+}
+
+function intensityHex(intensity: number) {
+  if (intensity <= 3) return '#22c55e'
+  if (intensity <= 6) return '#f59e0b'
+  return '#ef4444'
+}
+
+function intensityClass(val: number) {
+  if (val <= 3) return 'mild'
+  if (val <= 6) return 'moderate'
+  return 'severe'
+}
+
+function intensityLabel(val: number, en: boolean) {
+  if (val <= 3) return en ? 'Mild' : 'Leve'
+  if (val <= 6) return en ? 'Moderate' : 'Moderado'
+  return en ? 'Severe' : 'Severo'
 }
 
 export function BiomedicalBodyViewer({
@@ -36,11 +63,17 @@ export function BiomedicalBodyViewer({
   activeSystemId,
   onSelectSystem,
   painReports = [],
+  selectedMarkId = null,
+  onSelectMark,
+  onOpenModal,
 }: {
   en: boolean
   activeSystemId: BiomedicalSystemId
   onSelectSystem: (id: BiomedicalSystemId) => void
   painReports?: PainMapReport[]
+  selectedMarkId?: string | null
+  onSelectMark?: (markId: string) => void
+  onOpenModal?: () => void
 }) {
   const [viewMode, setViewMode] = useState<ViewMode>('3d')
   const [webglError, setWebglError] = useState(false)
@@ -49,22 +82,68 @@ export function BiomedicalBodyViewer({
     heading: 0,
     tilt: 0,
   })
+
   const rootRef = useRef<HTMLDivElement>(null)
   const apiRef = useRef<{
     setDirection: (dir: CameraDirection) => void
     zoom: (delta: number) => void
+    focusMark?: (mark: PainMark) => void
+  } | null>(null)
+
+  // Internal Three.js persistent references
+  const threeRef = useRef<{
+    THREE: typeof import('three')
+    scene: THREE.Scene
+    camera: THREE.PerspectiveCamera
+    renderer: THREE.WebGLRenderer
+    controls: any
+    mannequin: ReturnType<typeof buildMannequin>
+    markerGroup: THREE.Group
+    beaconRings: Array<{ mesh: THREE.Mesh; isSelected: boolean }>
+    animateCameraTo: (destCam: THREE.Vector3, destTarget: THREE.Vector3, duration?: number) => void
+    focusMark: (mark: PainMark) => void
   } | null>(null)
 
   const activeSystem = getSystemById(activeSystemId)
 
-  // 3D Canvas setup
+  // Normalize all marks to prevent invalid coordinates
+  const allPainMarks = useMemo(() => {
+    const list: Array<{ mark: PainMark; index: number }> = []
+    painReports.forEach((report) => {
+      report.marks.forEach((rawMark) => {
+        const mark = normalizePainMark(rawMark)
+        list.push({ mark, index: list.length })
+      })
+    })
+    return list
+  }, [painReports])
+
+  // Track initial auto-focus on first mark
+  const initialFocusDone = useRef(false)
+
+  // 1. Mount 3D Scene and Renderer ONCE when viewMode === '3d'
   useEffect(() => {
-    if (viewMode !== '3d' || webglError) return
+    if (viewMode !== '3d' || webglError) {
+      if (threeRef.current) {
+        try {
+          threeRef.current.renderer.dispose()
+          threeRef.current.renderer.forceContextLoss()
+          const dom = threeRef.current.renderer.domElement
+          if (dom?.parentNode) dom.parentNode.removeChild(dom)
+        } catch { }
+        threeRef.current.mannequin.dispose()
+        threeRef.current = null
+        apiRef.current = null
+      }
+      return
+    }
+
     const container = rootRef.current
     if (!container) return
 
     let disposed = false
-    let cleanup = () => {}
+    let reqId = 0
+    let cleanup = () => { }
 
     const mount = async () => {
       try {
@@ -79,25 +158,32 @@ export function BiomedicalBodyViewer({
         scene.background = new THREE.Color(pal.bg)
 
         const width = container.clientWidth || 320
-        const height = container.clientHeight || 420
+        const height = container.clientHeight || 440
         const camera = new THREE.PerspectiveCamera(34, width / height, 0.1, 20)
         camera.position.set(0, 1.15, 2.8)
 
-        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true })
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' })
         renderer.setSize(width, height)
         renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2))
         container.innerHTML = ''
         container.appendChild(renderer.domElement)
 
+        // WebGL Context loss listeners
+        const handleContextLost = (e: Event) => {
+          e.preventDefault()
+          setWebglError(true)
+        }
+        renderer.domElement.addEventListener('webglcontextlost', handleContextLost)
+
         // Lighting
-        const ambient = new THREE.AmbientLight(0xffffff, dark ? 0.9 : 1.1)
+        const ambient = new THREE.AmbientLight(0xffffff, dark ? 0.95 : 1.15)
         scene.add(ambient)
 
-        const dirLight = new THREE.DirectionalLight(0xffffff, dark ? 1.0 : 1.3)
+        const dirLight = new THREE.DirectionalLight(0xffffff, dark ? 1.1 : 1.35)
         dirLight.position.set(1.5, 3.5, 2.5)
         scene.add(dirLight)
 
-        const fillLight = new THREE.DirectionalLight(0xd46a8e, dark ? 0.5 : 0.4)
+        const fillLight = new THREE.DirectionalLight(0xd46a8e, dark ? 0.55 : 0.45)
         fillLight.position.set(-1.5, 1.2, -1.8)
         scene.add(fillLight)
 
@@ -113,72 +199,94 @@ export function BiomedicalBodyViewer({
         const mannequin = buildMannequin(THREE, pal)
         scene.add(mannequin.group)
 
-        // Highlight active system surfaces
-        const highlightColor = SYSTEM_COLORS[activeSystemId]
-        mannequin.group.traverse((child) => {
-          if (child instanceof THREE.Mesh && child.userData?.surfaceId) {
-            const surf = String(child.userData.surfaceId)
-            const isMatch =
-              (activeSystemId === 'cardiovascular' && (surf === 'torso' || surf === 'upper-arm-l')) ||
-              (activeSystemId === 'respiratory' && (surf === 'torso' || surf === 'neck')) ||
-              ((activeSystemId === 'sleep' || activeSystemId === 'emotional') && (surf === 'head')) ||
-              (activeSystemId === 'nutrition' && (surf === 'torso' || surf === 'pelvis-cover')) ||
-              (activeSystemId === 'musculoskeletal')
+        // Group for pain markers
+        const markerGroup = new THREE.Group()
+        scene.add(markerGroup)
 
-            if (isMatch && child.material instanceof THREE.MeshStandardMaterial) {
-              child.material.emissive = new THREE.Color(highlightColor)
-              child.material.emissiveIntensity = activeSystemId === 'musculoskeletal' ? 0.22 : 0.42
-            }
-          }
-        })
-
-        // Add pain markers if musculoskeletal
-        if (activeSystemId === 'musculoskeletal') {
-          painReports.forEach((report) => {
-            report.marks.forEach((mark) => {
-              const markerGeo = new THREE.SphereGeometry(0.024, 16, 12)
-              const markerMat = new THREE.MeshStandardMaterial({
-                color: 0xf5004f,
-                emissive: 0xff0040,
-                emissiveIntensity: 0.8,
-              })
-              const pin = new THREE.Mesh(markerGeo, markerMat)
-              pin.position.set(mark.localPosition.x, mark.localPosition.y, mark.localPosition.z)
-              scene.add(pin)
-            })
-          })
-        }
+        const beaconRings: Array<{ mesh: THREE.Mesh; isSelected: boolean }> = []
 
         // OrbitControls
         const controls = new OrbitControls(camera, renderer.domElement)
         controls.enableDamping = true
         controls.dampingFactor = 0.08
         controls.target.set(0, 0.95, 0)
-        controls.minDistance = 1.0
+        controls.minDistance = 0.8
         controls.maxDistance = 4.2
-        controls.maxPolarAngle = Math.PI * 0.85
-        controls.minPolarAngle = Math.PI * 0.15
+        controls.maxPolarAngle = Math.PI * 0.88
+        controls.minPolarAngle = Math.PI * 0.12
+
+        // Smooth camera transition state
+        let transition: {
+          startCamera: THREE.Vector3
+          endCamera: THREE.Vector3
+          startTarget: THREE.Vector3
+          endTarget: THREE.Vector3
+          startTime: number
+          duration: number
+        } | null = null
+
+        const animateCameraTo = (destCam: THREE.Vector3, destTarget: THREE.Vector3, duration = 480) => {
+          transition = {
+            startCamera: camera.position.clone(),
+            endCamera: destCam,
+            startTarget: controls.target.clone(),
+            endTarget: destTarget,
+            startTime: performance.now(),
+            duration,
+          }
+        }
+
+        const focusMark = (mark: PainMark) => {
+          const target = new THREE.Vector3(mark.localPosition.x, mark.localPosition.y, mark.localPosition.z)
+          const normal = mark.normal || { x: 0, y: 0, z: -1 }
+          const outward = new THREE.Vector3(normal.x, normal.y, normal.z)
+          if (outward.lengthSq() < 0.0001) {
+            outward.set(mark.localPosition.x, 0, mark.localPosition.z)
+            if (outward.lengthSq() < 0.0001) outward.set(0, 0, -1)
+          }
+          outward.normalize()
+
+          // Position camera at 1.85 units along outward normal, slightly elevated for full torso framing
+          const destination = target.clone().addScaledVector(outward, 1.85)
+          destination.y += 0.08
+          animateCameraTo(destination, target, 480)
+        }
+
+        // Store three state in ref
+        threeRef.current = {
+          THREE,
+          scene,
+          camera,
+          renderer,
+          controls,
+          mannequin,
+          markerGroup,
+          beaconRings,
+          animateCameraTo,
+          focusMark,
+        }
 
         // Camera control API
         apiRef.current = {
           setDirection: (dir) => {
             const dist = 2.8
-            if (dir === 'front') camera.position.set(0, 1.15, dist)
-            if (dir === 'back') camera.position.set(0, 1.15, -dist)
-            if (dir === 'left') camera.position.set(dist, 1.15, 0)
-            if (dir === 'right') camera.position.set(-dist, 1.15, 0)
-            if (dir === 'reset') camera.position.set(0, 1.15, dist)
-            controls.target.set(0, 0.95, 0)
-            controls.update()
+            let destCam = new THREE.Vector3(0, 1.15, dist)
+            if (dir === 'front') destCam = new THREE.Vector3(0, 1.15, dist)
+            if (dir === 'back') destCam = new THREE.Vector3(0, 1.15, -dist)
+            if (dir === 'left') destCam = new THREE.Vector3(dist, 1.15, 0)
+            if (dir === 'right') destCam = new THREE.Vector3(-dist, 1.15, 0)
+            if (dir === 'reset') destCam = new THREE.Vector3(0, 1.15, dist)
+            animateCameraTo(destCam, new THREE.Vector3(0, 0.95, 0), 380)
           },
           zoom: (delta) => {
             const dir = camera.position.clone().sub(controls.target).normalize()
             const newPos = camera.position.clone().addScaledVector(dir, delta * 0.35)
-            if (newPos.distanceTo(controls.target) >= 1.0 && newPos.distanceTo(controls.target) <= 4.2) {
+            if (newPos.distanceTo(controls.target) >= 0.8 && newPos.distanceTo(controls.target) <= 4.2) {
               camera.position.copy(newPos)
               controls.update()
             }
           },
+          focusMark,
         }
 
         const updateOrientation = () => {
@@ -196,7 +304,7 @@ export function BiomedicalBodyViewer({
         controls.addEventListener('change', updateOrientation)
         updateOrientation()
 
-        // Raycasting for clicking body parts
+        // Raycasting for clicking body parts or markers
         const raycaster = new THREE.Raycaster()
         const mouse = new THREE.Vector2()
         let pointerDownTime = 0
@@ -206,7 +314,6 @@ export function BiomedicalBodyViewer({
         }
 
         const handlePointerUp = (event: MouseEvent) => {
-          // Only trigger on a quick click, not a drag orbit
           if (Date.now() - pointerDownTime > 250) return
 
           const rect = renderer.domElement.getBoundingClientRect()
@@ -214,6 +321,20 @@ export function BiomedicalBodyViewer({
           mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1
           raycaster.setFromCamera(mouse, camera)
 
+          // First check pain markers
+          const pinIntersects = raycaster.intersectObjects(markerGroup.children, true)
+          if (pinIntersects.length > 0) {
+            const hitPin = pinIntersects[0]
+            const markerId = hitPin?.object.userData?.markerId as string | undefined
+            const mark = hitPin?.object.userData?.mark as PainMark | undefined
+            if (markerId && mark) {
+              onSelectMark?.(markerId)
+              focusMark(mark)
+              return
+            }
+          }
+
+          // Then check body parts
           const intersects = raycaster.intersectObjects(mannequin.group.children, true)
           const hit = intersects[0]
           if (hit && hit.object instanceof THREE.Mesh) {
@@ -231,10 +352,27 @@ export function BiomedicalBodyViewer({
         renderer.domElement.addEventListener('mouseup', handlePointerUp)
 
         // Render loop
-        let reqId = 0
         const animate = () => {
           reqId = requestAnimationFrame(animate)
-          controls.update()
+
+          if (transition) {
+            const elapsed = performance.now() - transition.startTime
+            const t = Math.min(1, elapsed / transition.duration)
+            const ease = 1 - Math.pow(1 - t, 3)
+            camera.position.lerpVectors(transition.startCamera, transition.endCamera, ease)
+            controls.target.lerpVectors(transition.startTarget, transition.endTarget, ease)
+            controls.update()
+            if (t >= 1) transition = null
+          } else {
+            controls.update()
+          }
+
+          // Pulse beacon rings
+          const pulse = 1.0 + Math.sin(performance.now() * 0.0055) * 0.16
+          beaconRings.forEach(({ mesh, isSelected }) => {
+            mesh.scale.set(isSelected ? pulse * 1.25 : pulse, isSelected ? pulse * 1.25 : pulse, 1)
+          })
+
           renderer.render(scene, camera)
         }
         animate()
@@ -243,7 +381,7 @@ export function BiomedicalBodyViewer({
         const handleResize = () => {
           if (!container) return
           const w = container.clientWidth || 320
-          const h = container.clientHeight || 420
+          const h = container.clientHeight || 440
           camera.aspect = w / h
           camera.updateProjectionMatrix()
           renderer.setSize(w, h)
@@ -253,16 +391,22 @@ export function BiomedicalBodyViewer({
         cleanup = () => {
           cancelAnimationFrame(reqId)
           window.removeEventListener('resize', handleResize)
+          renderer.domElement.removeEventListener('webglcontextlost', handleContextLost)
           controls.removeEventListener('change', updateOrientation)
           renderer.domElement.removeEventListener('mousedown', handlePointerDown)
           renderer.domElement.removeEventListener('mouseup', handlePointerUp)
           mannequin.dispose()
+          floorGeo.dispose()
+          floorMat.dispose()
           renderer.dispose()
+          renderer.forceContextLoss()
           if (container && renderer.domElement.parentNode === container) {
             container.removeChild(renderer.domElement)
           }
+          threeRef.current = null
         }
-      } catch {
+      } catch (err) {
+        console.warn('WebGL init error:', err)
         setWebglError(true)
         setViewMode('2d')
       }
@@ -274,7 +418,156 @@ export function BiomedicalBodyViewer({
       disposed = true
       cleanup()
     }
-  }, [viewMode, webglError, activeSystemId, painReports, onSelectSystem])
+  }, [viewMode, webglError, onSelectSystem, onSelectMark])
+
+  // 2. Update mannequin emissive highlights whenever activeSystemId changes (without recreating scene)
+  useEffect(() => {
+    const inst = threeRef.current
+    if (!inst) return
+    const highlightColor = SYSTEM_COLORS[activeSystemId]
+    inst.mannequin.group.traverse((child) => {
+      if (child instanceof inst.THREE.Mesh && child.userData?.surfaceId) {
+        const surf = String(child.userData.surfaceId)
+        const isMatch =
+          (activeSystemId === 'cardiovascular' && (surf === 'torso' || surf === 'upper-arm-l')) ||
+          (activeSystemId === 'respiratory' && (surf === 'torso' || surf === 'neck')) ||
+          ((activeSystemId === 'sleep' || activeSystemId === 'emotional') && (surf === 'head')) ||
+          (activeSystemId === 'nutrition' && (surf === 'torso' || surf === 'pelvis-cover')) ||
+          (activeSystemId === 'musculoskeletal')
+
+        if (isMatch && child.material instanceof inst.THREE.MeshStandardMaterial) {
+          child.material.emissive = new inst.THREE.Color(highlightColor)
+          child.material.emissiveIntensity = activeSystemId === 'musculoskeletal' ? 0.18 : 0.4
+        } else if (child.material instanceof inst.THREE.MeshStandardMaterial) {
+          child.material.emissive = new inst.THREE.Color(0x000000)
+          child.material.emissiveIntensity = 0
+        }
+      }
+    })
+  }, [activeSystemId])
+
+  // 3. Update Markers & Badges whenever allPainMarks or selectedMarkId updates
+  useEffect(() => {
+    const inst = threeRef.current
+    if (!inst) return
+
+    const { THREE, markerGroup, beaconRings, focusMark } = inst
+
+    // Clean up existing markers
+    while (markerGroup.children.length > 0) {
+      const child = markerGroup.children[0]
+      if (!child) break
+      if (child instanceof THREE.Mesh) {
+        child.geometry.dispose()
+        if (Array.isArray(child.material)) child.material.forEach((m) => m.dispose())
+        else child.material.dispose()
+      } else if (child instanceof THREE.Sprite) {
+        child.material.map?.dispose()
+        child.material.dispose()
+      }
+      markerGroup.remove(child)
+    }
+    beaconRings.length = 0
+
+    if (activeSystemId === 'musculoskeletal') {
+      allPainMarks.forEach(({ mark, index }) => {
+        const isSelected = mark.id === selectedMarkId
+        const color = intensityColor(mark.intensity)
+        const hex = intensityHex(mark.intensity)
+
+        const normal = mark.normal || { x: 0, y: 0, z: -1 }
+        const normLen = Math.hypot(normal.x, normal.y, normal.z) || 1
+        const nx = normal.x / normLen
+        const ny = normal.y / normLen
+        const nz = normal.z / normLen
+
+        const pinPos = new THREE.Vector3(
+          mark.localPosition.x + nx * 0.024,
+          mark.localPosition.y + ny * 0.024,
+          mark.localPosition.z + nz * 0.024,
+        )
+
+        // Sphere pin
+        const sphereGeo = new THREE.SphereGeometry(isSelected ? 0.042 : 0.032, 24, 18)
+        const sphereMat = new THREE.MeshStandardMaterial({
+          color,
+          roughness: 0.25,
+          metalness: 0.35,
+          emissive: isSelected ? new THREE.Color(0xffffff) : new THREE.Color(color),
+          emissiveIntensity: isSelected ? 0.65 : 0.3,
+        })
+        const pinMesh = new THREE.Mesh(sphereGeo, sphereMat)
+        pinMesh.position.copy(pinPos)
+        pinMesh.userData = { markerId: mark.id, mark }
+        markerGroup.add(pinMesh)
+
+        // Halo ring
+        const ringGeo = new THREE.RingGeometry(0.046, 0.062, 32)
+        const ringMat = new THREE.MeshBasicMaterial({
+          color: isSelected ? 0xff0055 : color,
+          side: THREE.DoubleSide,
+          transparent: true,
+          opacity: isSelected ? 0.95 : 0.6,
+        })
+        const ringMesh = new THREE.Mesh(ringGeo, ringMat)
+        ringMesh.position.copy(pinPos)
+        ringMesh.lookAt(pinPos.clone().add(new THREE.Vector3(nx, ny, nz)))
+        ringMesh.userData = { markerId: mark.id, mark }
+        markerGroup.add(ringMesh)
+        beaconRings.push({ mesh: ringMesh, isSelected })
+
+        // Badge sprite
+        const canvas = document.createElement('canvas')
+        canvas.width = 256
+        canvas.height = 72
+        const ctx = canvas.getContext('2d')
+        if (ctx) {
+          ctx.beginPath()
+          if (typeof ctx.roundRect === 'function') {
+            ctx.roundRect(4, 4, 248, 64, 32)
+          } else {
+            ctx.rect(4, 4, 248, 64)
+          }
+          ctx.fillStyle = isSelected ? '#ec4899' : '#1e131d'
+          ctx.fill()
+          ctx.lineWidth = 4
+          ctx.strokeStyle = isSelected ? '#ffffff' : hex
+          ctx.stroke()
+          ctx.fillStyle = '#ffffff'
+          ctx.font = 'bold 24px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+          ctx.textAlign = 'center'
+          ctx.textBaseline = 'middle'
+          const label = `#${index + 1} · ${intensityLabel(mark.intensity, en)} (${mark.intensity}/10)`
+          ctx.fillText(label, 128, 37)
+        }
+        const spriteTex = new THREE.CanvasTexture(canvas)
+        spriteTex.colorSpace = THREE.SRGBColorSpace
+        const spriteMat = new THREE.SpriteMaterial({ map: spriteTex, depthTest: false })
+        const sprite = new THREE.Sprite(spriteMat)
+        sprite.scale.set(isSelected ? 0.24 : 0.19, isSelected ? 0.068 : 0.054, 1)
+        sprite.position.copy(pinPos)
+        sprite.position.y += 0.06
+        sprite.userData = { markerId: mark.id, mark }
+        markerGroup.add(sprite)
+      })
+    }
+
+    // Initial camera auto-focus or when selected mark changes
+    if (!initialFocusDone.current && allPainMarks.length > 0) {
+      initialFocusDone.current = true
+      const targetMark = selectedMarkId
+        ? allPainMarks.find((item) => item.mark.id === selectedMarkId)?.mark
+        : allPainMarks[0]?.mark
+      if (targetMark) {
+        setTimeout(() => focusMark(targetMark), 80)
+      }
+    } else if (selectedMarkId) {
+      const targetMark = allPainMarks.find((item) => item.mark.id === selectedMarkId)?.mark
+      if (targetMark) {
+        focusMark(targetMark)
+      }
+    }
+  }, [allPainMarks, selectedMarkId, activeSystemId, en])
 
   return (
     <div className="biomed-viewer-card">
@@ -283,8 +576,10 @@ export function BiomedicalBodyViewer({
           <button
             type="button"
             className={`rd-btn-xs${viewMode === '3d' ? ' is-active' : ' ghost'}`}
-            onClick={() => setViewMode('3d')}
-            disabled={webglError}
+            onClick={() => {
+              setWebglError(false)
+              setViewMode('3d')
+            }}
             title={en ? 'Interactive 3D model' : 'Modelo interactivo 3D'}
           >
             <CubeIcon size={14} aria-hidden="true" />
@@ -360,6 +655,16 @@ export function BiomedicalBodyViewer({
             >
               <RotateCcw size={15} aria-hidden="true" />
             </button>
+            {onOpenModal ? (
+              <button
+                type="button"
+                className="rd-btn-icon icon-only"
+                title={en ? 'Open full-screen 3D Body Map' : 'Abrir visor 3D en pantalla completa'}
+                onClick={onOpenModal}
+              >
+                <Maximize2 size={15} aria-hidden="true" />
+              </button>
+            ) : null}
           </div>
         ) : null}
       </div>
@@ -369,6 +674,8 @@ export function BiomedicalBodyViewer({
         {viewMode === '3d' && !webglError ? (
           <>
             <div ref={rootRef} className="biomed-three-canvas" />
+
+            {/* 3D Mannequin Compass Pill */}
             <div className="pain-orientation" aria-live="polite">
               <span className="pain-orientation-compass" aria-hidden="true">
                 <span className="north">{en ? 'F' : 'F'}</span>
@@ -382,6 +689,32 @@ export function BiomedicalBodyViewer({
                 {orientation.tilt ? ` · ${en ? 'Tilt' : 'Inclinación'} ${orientation.tilt}°` : ''}
               </span>
             </div>
+
+            {/* Quick Pain Pin Selector Strip over 3D Canvas */}
+            {activeSystemId === 'musculoskeletal' && allPainMarks.length > 0 ? (
+              <div className="biomed-pain-pins-bar" role="toolbar" aria-label={en ? 'Reported pain spots' : 'Puntos de dolor reportados'}>
+                <span className="biomed-pins-label">
+                  <MapPin size={12} aria-hidden="true" style={{ verticalAlign: 'middle', marginRight: 3 }} />
+                  {en ? 'Patient spots:' : 'Puntos del paciente:'}
+                </span>
+                {allPainMarks.map(({ mark, index }) => (
+                  <button
+                    key={mark.id || index}
+                    type="button"
+                    className={`biomed-pin-chip ${selectedMarkId === mark.id ? 'is-active' : ''}`}
+                    onClick={() => {
+                      onSelectMark?.(mark.id)
+                      apiRef.current?.focusMark?.(mark)
+                    }}
+                    title={en ? `Focus #${index + 1} ${mark.regionLabel || mark.regionId}` : `Enfocar #${index + 1} ${mark.regionLabel || mark.regionId}`}
+                  >
+                    <span className={`biomed-pin-chip-dot ${intensityClass(mark.intensity)}`} />
+                    <span>#{index + 1} {mark.regionLabel || mark.regionId}</span>
+                    <span className="biomed-pin-chip-intensity">({mark.intensity}/10)</span>
+                  </button>
+                ))}
+              </div>
+            ) : null}
           </>
         ) : viewMode === '2d' || webglError ? (
           <div className="biomed-2d-canvas">
@@ -477,6 +810,40 @@ export function BiomedicalBodyViewer({
                   <circle cx="152" cy="128" r="5" fill="#2a9d8f" stroke="#fff" strokeWidth="1.5" />
                 </g>
               ) : null}
+
+              {/* Pain markers on 2D figure */}
+              {activeSystemId === 'musculoskeletal' && allPainMarks.map(({ mark, index }) => {
+                const isSelected = mark.id === selectedMarkId
+                let pinX = 140
+                let pinY = 190
+                if (mark.regionId === 'head' || mark.regionId === 'face') { pinX = 140; pinY = 44 }
+                else if (mark.regionId === 'neck') { pinX = 140; pinY = 85 }
+                else if (mark.regionId === 'chest' || mark.regionId === 'upper_back') { pinX = 140; pinY = 130 }
+                else if (mark.regionId === 'abdomen' || mark.regionId === 'lower_back') { pinX = 140; pinY = 190 }
+                else if (mark.regionId === 'pelvis') { pinX = 140; pinY = 234 }
+                else if (mark.regionId === 'upper_arm' || mark.regionId === 'elbow' || mark.regionId === 'forearm' || mark.regionId === 'hand') {
+                  pinX = mark.laterality === 'left' ? 192 : 88
+                  pinY = mark.regionId === 'upper_arm' ? 140 : mark.regionId === 'elbow' ? 180 : mark.regionId === 'forearm' ? 210 : 250
+                } else if (mark.regionId === 'thigh' || mark.regionId === 'knee' || mark.regionId === 'lower_leg' || mark.regionId === 'foot') {
+                  pinX = mark.laterality === 'left' ? 160 : 120
+                  pinY = mark.regionId === 'thigh' ? 280 : mark.regionId === 'knee' ? 330 : mark.regionId === 'lower_leg' ? 370 : 410
+                }
+                return (
+                  <g
+                    key={mark.id || index}
+                    style={{ cursor: 'pointer' }}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      onSelectMark?.(mark.id)
+                    }}
+                  >
+                    <circle cx={pinX} cy={pinY} r={isSelected ? 18 : 14} fill={isSelected ? '#ec4899' : '#f5004f'} stroke="#ffffff" strokeWidth="3" />
+                    <text x={pinX} y={pinY + 4} textAnchor="middle" fill="#ffffff" fontSize="12" fontWeight="bold">
+                      {index + 1}
+                    </text>
+                  </g>
+                )
+              })}
             </svg>
           </div>
         ) : (
@@ -504,13 +871,24 @@ export function BiomedicalBodyViewer({
         )}
       </div>
 
-      <div className="biomed-viewer-caption">
-        <p className="rd-muted">
+      <div className="biomed-viewer-caption" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+        <p className="rd-muted" style={{ margin: 0 }}>
           <Info size={13} aria-hidden="true" style={{ verticalAlign: 'middle', marginRight: 4 }} />
           {en
-            ? `Active focus: ${activeSystem.name.en} · Drag to rotate, tap parts to explore systems.`
-            : `Foco activo: ${activeSystem.name.es} · Arrastrá para girar, tocá partes para explorar sistemas.`}
+            ? `Active focus: ${activeSystem.name.en} · Drag to rotate, tap body pins to inspect exact reported spots.`
+            : `Foco activo: ${activeSystem.name.es} · Arrastrá para rotar, tocá los puntos corporales para inspeccionar zonas reportadas.`}
         </p>
+        {onOpenModal ? (
+          <button
+            type="button"
+            className="rd-btn-xs"
+            onClick={onOpenModal}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '4px 10px' }}
+          >
+            <Maximize2 size={12} aria-hidden="true" />
+            <span>{en ? 'Open 3D Model' : 'Abrir en 3D'}</span>
+          </button>
+        ) : null}
       </div>
     </div>
   )

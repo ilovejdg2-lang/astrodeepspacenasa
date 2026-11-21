@@ -21,6 +21,7 @@ import {
   deleteLocalMemoryImage,
 } from '../persistence/memories'
 import { QuironFigure } from '../components/quiron/QuironFigure'
+import { InfoHelp } from '../components/InfoHelp'
 import { Field, Modal } from '../components/ui'
 import { systemText } from '../systemText'
 import '../platform/role-dash.css'
@@ -539,7 +540,27 @@ export function MemoriesPage() {
         <div className="memories-header-row">
           <div>
             <p className="rd-kicker">{en ? 'Personal collection' : 'Colección personal'}</p>
-            <h1>{en ? 'Memories' : 'Recuerdos'}</h1>
+            <h1>
+              {en ? 'Memories' : 'Recuerdos'}
+              <InfoHelp
+                title="Recuerdos y Soporte Emocional"
+                enTitle="Memories & Emotional Support"
+                whatIs="Rincón de bienestar emocional y salud mental para la tripulación. Permite almacenar fotos de la Tierra, audios familiares, cartas y momentos especiales para combatir la soledad, el confinamiento y el estrés del espacio profundo."
+                enWhatIs="Emotional wellbeing and mental health sanctuary for the crew. Store Earth photos, family audio clips, letters, and special moments to counter sensory isolation, confinement, and deep space stress."
+                steps={[
+                  'Hacé clic en "+ Agregar recuerdo" para subir una foto personal, escribir una memoria o guardar un mensaje de tus seres queridos.',
+                  'Navegá tu galería de recuerdos cuando sientas nostalgia, sobrecarga de trabajo o estrés.',
+                  'Tus recuerdos son 100% privados: nadie de la tripulación ni los médicos pueden verlos a menos que vos decidas compartirlos.',
+                  'Si sentís que el aislamiento te está afectando, podés solicitar una consulta confidencial con el psicólogo de vuelo desde el botón de ayuda.',
+                ]}
+                enSteps={[
+                  'Click "+ Add a memory" to upload a personal photo, write a reflection, or save a note from loved ones.',
+                  'Browse your gallery whenever you experience homesickness, mission strain, or isolation.',
+                  'All memories are 100% private: no crew member or flight surgeon can view them unless explicitly shared.',
+                  'If confinement is weighing on you, request a private consultation with the mission psychologist using the quick link.',
+                ]}
+              />
+            </h1>
             <p className="rd-muted">
               {en
                 ? 'A little closer to the people and places you love.'

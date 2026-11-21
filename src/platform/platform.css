@@ -302,3 +302,145 @@
   .mission-process-label { font-size: 0.8rem; }
   .mission-process-hint { font-size: 0.74rem; }
 }
+
+/* Cold Start Render Notice */
+.plat-coldstart-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: grid;
+  place-content: center;
+  place-items: center;
+  padding: 20px;
+  background: rgba(10, 14, 24, 0.72);
+  backdrop-filter: blur(8px);
+  animation: plat-fade-in 240ms ease forwards;
+}
+
+.plat-coldstart-box {
+  width: min(520px, calc(100vw - 32px));
+  box-sizing: border-box;
+  padding: 24px;
+  border-radius: 20px;
+  background: var(--surface-1, #1e141c);
+  border: 1px solid color-mix(in srgb, #f5004f 35%, transparent);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5), 0 0 24px rgba(245, 0, 79, 0.15);
+  color: #f4f2f8;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  animation: plat-scale-in 280ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.plat-coldstart-box.is-card {
+  margin: 16px 0;
+  width: 100%;
+}
+
+.plat-coldstart-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.plat-coldstart-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: color-mix(in srgb, #f5004f 16%, transparent);
+  color: #f5004f;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+.plat-coldstart-title-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.plat-coldstart-title {
+  margin: 0;
+  font-size: 1.12rem;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  color: #f4f2f8;
+}
+
+.plat-coldstart-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #ff8bad;
+}
+
+.plat-coldstart-pulse {
+  animation: plat-pulse-glow 1.5s ease-in-out infinite;
+}
+
+.plat-coldstart-desc {
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.5;
+  color: rgba(244, 242, 248, 0.78);
+}
+
+.plat-coldstart-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 4px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.plat-coldstart-timer {
+  font-size: 0.8rem;
+  font-weight: 650;
+  color: #ffb4ca;
+}
+
+.plat-coldstart-bar {
+  width: 100%;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+  position: relative;
+}
+
+.plat-coldstart-bar-fill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 38%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #f5004f, #ff8bad);
+  animation: plat-bar-slide 1.8s ease-in-out infinite;
+}
+
+@keyframes plat-bar-slide {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(350%); }
+}
+
+@keyframes plat-pulse-glow {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
+}
+
+@keyframes plat-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes plat-scale-in {
+  from { opacity: 0; transform: scale(0.96) translateY(6px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}

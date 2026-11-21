@@ -3,6 +3,137 @@ import { systemText } from '../systemText'
 import { uiLang } from '../locale'
 import { apiUrl } from '../api/baseUrl'
 
+export const DEFAULT_DEMO_PROFILES: Profile[] = [
+  { id: 'elena-torres', displayName: 'Elena Torres', title: 'Jefa de misión (demo)', demoRole: 'chief', avatarKey: 'elena' },
+  { id: 'mateo-ruiz', displayName: 'Mateo Ruiz', title: 'Tripulante (demo)', demoRole: 'crew', avatarKey: 'mateo' },
+  { id: 'sofia-chen', displayName: 'Sofía Chen', title: 'Médica simulada (demo)', demoRole: 'medic', avatarKey: 'sofia' },
+  { id: 'alex-morgan', displayName: 'Alex Morgan', title: 'Psicólogo simulado (demo)', demoRole: 'psychologist', avatarKey: 'alex' },
+]
+
+export function getCachedProfiles(): Profile[] {
+  try {
+    const raw = localStorage.getItem('helios-cached-profiles')
+    if (raw) {
+      const parsed = JSON.parse(raw)
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed
+    }
+  } catch {
+    /* ignore */
+  }
+  return DEFAULT_DEMO_PROFILES
+}
+
+export function saveCachedProfiles(profiles: Profile[]) {
+  try {
+    if (Array.isArray(profiles) && profiles.length > 0) {
+      localStorage.setItem('helios-cached-profiles', JSON.stringify(profiles))
+    }
+  } catch {
+    /* ignore */
+  }
+}
+
+export const DEFAULT_DEMO_MISSIONS: MissionRow[] = [
+  {
+    mission: {
+      id: 'mission-demo-horizon',
+      code: 'HELIOS-HORIZON',
+      name: 'HELIOS Horizon — In Flight',
+      demoKey: 'horizon',
+      stage: 'aboard',
+      destination: 'Low Earth orbit (simulated)',
+      durationDays: 14,
+      plannedCrewCount: 6,
+      timezone: 'UTC',
+      activities: ['Daily operations', 'Exercise', 'Science'],
+      commsNotes: '',
+      storageNotes: '',
+      prepPercent: 100,
+      plannedStart: '2026-11-10',
+      actualStart: '2026-11-10T00:00:00.000Z',
+      createdBy: 'elena-torres',
+    },
+    membership: { id: 'm-horizon', role: 'crew', status: 'active' },
+  },
+  {
+    mission: {
+      id: 'mission-demo-pathfinder',
+      code: 'HELIOS-PATHFINDER',
+      name: 'HELIOS Pathfinder — Preflight',
+      demoKey: 'pathfinder',
+      stage: 'preflight',
+      destination: 'Low Earth orbit (simulated)',
+      durationDays: 21,
+      plannedCrewCount: 6,
+      timezone: 'UTC',
+      activities: ['Habitat setup', 'Checklist drills'],
+      commsNotes: '',
+      storageNotes: '',
+      prepPercent: 65,
+      plannedStart: '2026-12-01',
+      actualStart: null,
+      createdBy: 'elena-torres',
+    },
+    membership: { id: 'm-pathfinder', role: 'chief', status: 'active' },
+  },
+  {
+    mission: {
+      id: 'mission-demo-genesis',
+      code: 'HELIOS-GENESIS',
+      name: 'HELIOS Genesis — Draft',
+      demoKey: 'genesis',
+      stage: 'draft',
+      destination: '',
+      durationDays: 30,
+      plannedCrewCount: 4,
+      timezone: 'UTC',
+      activities: [],
+      commsNotes: '',
+      storageNotes: '',
+      prepPercent: 0,
+      plannedStart: null,
+      actualStart: null,
+      createdBy: 'elena-torres',
+    },
+    membership: { id: 'm-genesis', role: 'chief', status: 'active' },
+  },
+  {
+    mission: {
+      id: 'mission-demo-aurora',
+      code: 'HELIOS-AURORA',
+      name: 'HELIOS Aurora — Completed Mission',
+      demoKey: 'aurora',
+      stage: 'postmission',
+      destination: 'Low Earth orbit (simulated)',
+      durationDays: 12,
+      plannedCrewCount: 6,
+      timezone: 'UTC',
+      activities: ['Transit', 'Science', 'Return'],
+      commsNotes: '',
+      storageNotes: '',
+      prepPercent: 100,
+      plannedStart: '2026-10-15',
+      actualStart: '2026-10-15T00:00:00.000Z',
+      closedAt: 1731196800000,
+      createdBy: 'elena-torres',
+    },
+    membership: { id: 'm-aurora', role: 'crew', status: 'active' },
+  },
+]
+
+export function getCachedMissions(): MissionRow[] {
+  try {
+    const raw = localStorage.getItem('helios-cached-missions')
+    if (raw) {
+      const parsed = JSON.parse(raw) as MissionRow[]
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed
+    }
+  } catch {
+    /* ignore */
+  }
+  return DEFAULT_DEMO_MISSIONS
+}
+
 function connectionMessage() {
   return uiLang() === 'en'
     ? "This couldn't load right now. Try again in a moment."
@@ -24,7 +155,7 @@ function errorMessage(status: number, data: unknown) {
 import { getActiveMissionId, getSessionToken } from './session'
 import { careConversationSchema, careDraftSchema, type CareAiOptions } from '../../shared/careSchema'
 
-async function platformFetch<T>(path: string, init?: RequestInit): Promise<T> {
+async function platformFetch<T>(path: string, init?: RequestInit, retries = 2): Promise<T> {
   const headers = new Headers(init?.headers)
   headers.set('Accept', 'application/json')
   headers.set('Accept-Language', uiLang())
@@ -33,26 +164,96 @@ async function platformFetch<T>(path: string, init?: RequestInit): Promise<T> {
   if (token) headers.set('X-Helios-Session', token)
   const missionId = getActiveMissionId()
   if (missionId) headers.set('X-Helios-Mission', missionId)
-  let response: Response
-  try {
-    response = await fetch(apiUrl(path), { ...init, headers })
-  } catch {
-    throw new Error(connectionMessage())
+
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    let response: Response
+    try {
+      response = await fetch(apiUrl(path), { ...init, headers })
+    } catch {
+      if (attempt < retries) {
+        await new Promise((r) => setTimeout(r, 2000))
+        continue
+      }
+      throw new Error(connectionMessage())
+    }
+
+    if (!response.ok) {
+      // When Render is waking up from cold-start, reverse proxies return 502/503/504
+      if ((response.status === 502 || response.status === 503 || response.status === 504) && attempt < retries) {
+        await new Promise((r) => setTimeout(r, 2000))
+        continue
+      }
+      const data = await response.json().catch(() => ({}))
+      throw new Error(errorMessage(response.status, data))
+    }
+
+    const data = await response.json().catch(() => ({}))
+    return data as T
   }
-  const data = await response.json().catch(() => ({}))
-  if (!response.ok) throw new Error(errorMessage(response.status, data))
-  return data as T
+  throw new Error(connectionMessage())
 }
 
 export const platformApi = {
-  profiles: () => platformFetch<{ profiles: Profile[] }>('/api/platform/profiles'),
-  select: (profileId: string) =>
-    platformFetch<{ token: string; profile: Profile; expiresAt: number }>('/api/platform/auth/select', {
-      method: 'POST',
-      body: JSON.stringify({ profileId }),
-    }),
+  profiles: async () => {
+    try {
+      const res = await platformFetch<{ profiles: Profile[] }>('/api/platform/profiles')
+      if (res?.profiles?.length) saveCachedProfiles(res.profiles)
+      return res
+    } catch (err) {
+      const cached = getCachedProfiles()
+      if (cached.length) return { profiles: cached }
+      throw err
+    }
+  },
+  select: async (profileId: string) => {
+    try {
+      return await platformFetch<{ token: string; profile: Profile; expiresAt: number }>(
+        '/api/platform/auth/select',
+        {
+          method: 'POST',
+          body: JSON.stringify({ profileId }),
+        },
+        3,
+      )
+    } catch (err) {
+      const cached = getCachedProfiles()
+      const fallback = cached.find((p) => p.id === profileId) || DEFAULT_DEMO_PROFILES.find((p) => p.id === profileId)
+      if (fallback) {
+        return {
+          token: `demo-session-${profileId}-${Date.now()}`,
+          profile: fallback,
+          expiresAt: Date.now() + 86400000,
+        }
+      }
+      throw err
+    }
+  },
   me: () => platformFetch<{ profile: Profile }>('/api/platform/me'),
-  missions: () => platformFetch<{ items: MissionRow[] }>('/api/platform/missions'),
+  missions: async () => {
+    try {
+      const res = await platformFetch<{ items: MissionRow[] }>('/api/platform/missions')
+      if (res?.items) {
+        const stageWeight = (stage: string) => {
+          if (stage === 'aboard') return 0
+          if (stage === 'preflight') return 1
+          if (stage === 'draft') return 2
+          if (stage === 'postmission') return 3
+          return 4
+        }
+        res.items.sort((a, b) => stageWeight(a.mission.stage) - stageWeight(b.mission.stage))
+        try {
+          localStorage.setItem('helios-cached-missions', JSON.stringify(res.items))
+        } catch {
+          /* ignore */
+        }
+      }
+      return res
+    } catch (err) {
+      const cached = getCachedMissions()
+      if (cached.length) return { items: cached }
+      throw err
+    }
+  },
   mission: (id: string) => platformFetch<MissionDetail>(`/api/platform/missions/${id}`),
   createMission: (body: Record<string, unknown>) =>
     platformFetch<MissionDetail>('/api/platform/missions', { method: 'POST', body: JSON.stringify(body) }),
@@ -228,6 +429,11 @@ export const platformApi = {
     platformFetch(`/api/platform/appointments/${appointmentId}/reschedule`, {
       method: 'POST',
       body: JSON.stringify({ scheduledAt }),
+    }),
+  requestPatientReschedule: (appointmentId: string, note?: string) =>
+    platformFetch(`/api/platform/appointments/${appointmentId}/request-reschedule`, {
+      method: 'POST',
+      body: JSON.stringify({ note }),
     }),
   cancelAppointment: (appointmentId: string, reason: string) =>
     platformFetch(`/api/platform/appointments/${appointmentId}/cancel`, {

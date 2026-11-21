@@ -11,6 +11,7 @@ import {
   draftComplete,
   intensityNote,
   newDraftMark,
+  normalizePainMark,
   painHelp,
   readPainDraft,
   regionName,
@@ -71,8 +72,9 @@ export function PainEditor({
   onSaved: () => void
 }) {
   const stored = seed ?? readPainDraft(missionId, profileId)
-  const [marks, setMarks] = useState<PainDraftMark[]>(stored?.marks ?? [])
-  const [selectedId, setSelectedId] = useState<string | null>(stored?.marks[0]?.id ?? null)
+  const initialMarks = useMemo(() => (stored?.marks ?? []).map((m) => normalizePainMark(m)), [stored])
+  const [marks, setMarks] = useState<PainDraftMark[]>(initialMarks)
+  const [selectedId, setSelectedId] = useState<string | null>(initialMarks[0]?.id ?? null)
   const [movingId, setMovingId] = useState<string | null>(null)
   const [step, setStep] = useState<'locate' | 'details' | 'preview'>('locate')
   const [flat, setFlat] = useState(() => {
@@ -464,10 +466,32 @@ export function PainEditor({
                 <input id={`start-${mark.id}`} type="datetime-local" value={stamp(mark.startedAt)} onChange={(event) => update(mark.id, { startedAt: fromStamp(event.target.value) })} />
               </div>
               <div className="rd-field">
-                <label>{en ? 'Pattern' : 'Patrón'}</label>
-                <div style={{ display: 'flex', gap: 16 }}>
-                  <label className="rd-check"><input type="radio" name={`pattern-${mark.id}`} checked={mark.pattern === 'constant'} onChange={() => update(mark.id, { pattern: 'constant' })} /> {en ? 'Constant' : 'Constante'}</label>
-                  <label className="rd-check"><input type="radio" name={`pattern-${mark.id}`} checked={mark.pattern === 'intermittent'} onChange={() => update(mark.id, { pattern: 'intermittent' })} /> {en ? 'Intermittent' : 'Intermitente'}</label>
+                <label id={`pattern-label-${mark.id}`}>{en ? 'Pattern' : 'Patrón'}</label>
+                <div
+                  className="pain-pattern-group"
+                  role="radiogroup"
+                  aria-labelledby={`pattern-label-${mark.id}`}
+                >
+                  <button
+                    type="button"
+                    role="radio"
+                    aria-checked={mark.pattern === 'constant'}
+                    className={`pain-pattern-toggle-btn ${mark.pattern === 'constant' ? 'is-active' : ''}`}
+                    onClick={() => update(mark.id, { pattern: 'constant' })}
+                  >
+                    <span className="pain-pattern-dot" aria-hidden="true" />
+                    <span>{en ? 'Constant' : 'Constante'}</span>
+                  </button>
+                  <button
+                    type="button"
+                    role="radio"
+                    aria-checked={mark.pattern === 'intermittent'}
+                    className={`pain-pattern-toggle-btn ${mark.pattern === 'intermittent' ? 'is-active' : ''}`}
+                    onClick={() => update(mark.id, { pattern: 'intermittent' })}
+                  >
+                    <span className="pain-pattern-dot" aria-hidden="true" />
+                    <span>{en ? 'Intermittent' : 'Intermitente'}</span>
+                  </button>
                 </div>
               </div>
               <div className="rd-field">

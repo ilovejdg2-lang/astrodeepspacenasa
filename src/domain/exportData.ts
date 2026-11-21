@@ -3,7 +3,7 @@ import { systemText } from '../systemText'
 import { alertReasonLabel, alertKindLabel } from './alertCopy'
 import { crewById } from './crew'
 import type { AlertStatus, AppState, CommStatus, CrewId } from '../../shared/types'
-import { formatMission, integrityLabel, kindLabel, movementLabel } from './format'
+import { formatMission, kindLabel, movementLabel } from './format'
 
 export interface HistoryRow {
   id: string
@@ -17,14 +17,23 @@ export interface HistoryRow {
 export function historyRows(state: AppState, lang: Lang = uiLang()): HistoryRow[] {
   const en = lang === 'en'
   const rows: HistoryRow[] = [
-    ...state.measurements.map((item) => ({
-      id: item.id,
-      at: item.measuredAt,
-      crewId: item.crewId,
-      type: 'measurement' as const,
-      title: kindLabel(item.kind),
-      detail: `${item.value} ${en && item.unit === 'lpm' ? 'bpm' : item.unit}. ${en ? 'Integrity' : 'Integridad'} ${integrityLabel(item.integrity).toLowerCase()}. ${en ? 'Measured' : 'Medida'} ${formatMission(item.measuredAt)}. ${en ? 'Received' : 'Recibida'} ${formatMission(item.receivedAt)}.`,
-    })),
+    ...state.measurements.map((item) => {
+      const integrityStr = en
+        ? (item.integrity === 'valid' ? 'Valid' : item.integrity === 'stale' ? 'Stale' : 'Pending validation')
+        : (item.integrity === 'valid' ? 'Válida' : item.integrity === 'stale' ? 'Antigua' : 'Validación pendiente')
+      const sameTime = item.measuredAt === item.receivedAt
+      const timing = sameTime
+        ? `${en ? 'Measured' : 'Medida'} ${formatMission(item.measuredAt)}`
+        : `${en ? 'Measured' : 'Medida'} ${formatMission(item.measuredAt)} (${en ? 'Received' : 'Recibida'} ${formatMission(item.receivedAt)})`
+      return {
+        id: item.id,
+        at: item.measuredAt,
+        crewId: item.crewId,
+        type: 'measurement' as const,
+        title: kindLabel(item.kind),
+        detail: `${item.value} ${en && item.unit === 'lpm' ? 'bpm' : item.unit} · ${integrityStr} · ${timing}`,
+      }
+    }),
     ...state.symptoms.map((item) => ({
       id: item.id,
       at: item.reportedAt,

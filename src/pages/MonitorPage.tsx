@@ -1,4 +1,4 @@
-import { AlertTriangle, Brain, ClipboardPlus, Heart, Package, RefreshCw } from 'lucide-react'
+import { AlertTriangle, ClipboardPlus, Heart, Package, RefreshCw } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import type { MeasurementKind } from '../../shared/types'
@@ -8,15 +8,18 @@ import { ageLabel, formatValue, kindLabel } from '../domain/format'
 import { crewPosture, isReliable, latestMeasurement, measurementQuality, vitalTrends } from '../domain/selectors'
 import { CarouselStrip } from '../components/CarouselStrip'
 import { CrewHelmet } from '../components/CrewHelmet'
+import { InfoHelp } from '../components/InfoHelp'
 import { useLocale } from '../i18n'
 import { HeartWave } from '../components/HeartWave'
 import { Badge, Field, Modal } from '../components/ui'
 import { roleLabel } from '../platform/copy'
 import { useWorkspaceRole, getWorkspaceMode } from '../platform/workspace'
+import { filterSymptomsByRole } from '../domain/symptoms'
 import { useApp } from '../state/store'
 import { systemText } from '../systemText'
 
-const SYMPTOMS = ['cansancio', 'mareo', 'cefalea', 'nausea', 'otro'] as const
+const PHYSICAL_SYMPTOMS = ['mareo', 'cefalea', 'nausea'] as const
+const MENTAL_SYMPTOMS = ['cansancio'] as const
 
 const SYMPTOM_LABEL = {
   en: { cansancio: 'Fatigue', mareo: 'Dizziness', cefalea: 'Headache', nausea: 'Nausea', otro: 'Other' },
@@ -37,11 +40,18 @@ export function MonitorPage({
   const workspaceRole = useWorkspaceRole()
   const mode = getWorkspaceMode()
   const en = lang === 'en'
+  const isMedic = workspaceRole === 'medic' || state.role === 'medical'
+  const isPsych = workspaceRole === 'psychologist'
   const crew = CREW.find((item) => item.id === (crewId ?? state.selectedCrewId)) ?? CREW[0]
   const posture = crew ? crewPosture(state, crew.id) : null
   const hr = crew ? latestMeasurement(state, crew.id, 'heart_rate') : null
   const trusted = hr ? isReliable(hr, state.clock.simulatedAt) : false
-  const symptoms = useMemo(() => crew ? state.symptoms.filter((item) => item.crewId === crew.id) : [], [crew, state.symptoms])
+  const allSymptoms = useMemo(() => crew ? state.symptoms.filter((item) => item.crewId === crew.id) : [], [crew, state.symptoms])
+  const symptoms = useMemo(() => {
+    if (isMedic) return filterSymptomsByRole(allSymptoms, 'medic')
+    if (isPsych) return filterSymptomsByRole(allSymptoms, 'psychologist')
+    return allSymptoms
+  }, [allSymptoms, isMedic, isPsych])
   const alerts = crew ? state.alerts.filter((item) => item.crewId === crew.id && item.status !== 'closed') : []
   const unit = en ? 'bpm' : 'lpm'
   const baseline = crew ? `${crew.baseline.hrMin}-${crew.baseline.hrMax} ${unit}` : ''
@@ -155,7 +165,27 @@ export function MonitorPage({
               <CrewHelmet id={crew.id} name={crew.name} selected />
             </div>
             <p className="monitor-kicker">{en ? 'Crew monitoring' : 'Monitoreo del tripulante'}</p>
-            <h1 className="monitor-name">{crew.name}</h1>
+            <h1 className="monitor-name">
+              {crew.name}
+              <InfoHelp
+                title="Monitor de Telemetría en Vivo"
+                enTitle="Live Telemetry Monitor"
+                whatIs="Pantalla de monitoreo en tiempo real del astronauta seleccionado. Muestra el pulso instantáneo, saturación de oxígeno, temperatura corporal, calidad de conexión del biosensor y nivel de alerta fisiológica."
+                enWhatIs="Real-time telemetry monitor for the selected astronaut. Displays instant pulse rate, blood oxygen (SpO2), body temperature, sensor signal quality, and clinical posture."
+                steps={[
+                  'En el carrusel superior con cascos espaciales, seleccioná el astronauta cuyos signos querés monitorear.',
+                  'Revisá el valor principal de pulso cardíaco (BPM) y verás si se encuentra dentro de su línea base normal o elevado.',
+                  'Consultá las tarjetas de telemetría: SpO2, temperatura y el indicador de estabilidad de la señal inalámbrica.',
+                  'Usá "Registrar medición manual" si realizaste un control clínico en reposo para agregarlo al expediente.',
+                ]}
+                enSteps={[
+                  'Use the top astronaut helmet carousel to switch between crew members.',
+                  'Check the live heart rate hero card (BPM) to see if it is within their normal baseline or elevated.',
+                  'Inspect secondary telemetry cards: blood oxygen (SpO2), skin temperature, and wireless signal quality.',
+                  'Click "Record a measurement" if you took a manual resting check to log it into the mission record.',
+                ]}
+              />
+            </h1>
             <p className="monitor-meta">{crewDuty(crew, lang)} · {crewPlace(crew, lang)}</p>
             <p className="monitor-summary">
               {hrAbove && hrText
@@ -170,108 +200,106 @@ export function MonitorPage({
 
       {content !== 'actions' ? (
         <section className="monitor-card" aria-label={en ? 'Current reading' : 'Lectura actual'}>
-        <div className="monitor-card-hr">
-          <div className="hr-hero">
-            <Heart aria-hidden="true" size={36} strokeWidth={2.25} fill="currentColor" />
-            <p className="hr-value" aria-live="off">
-              {hr ? formatValue('heart_rate', hr.value) : '—'}
-              <span>{unit}</span>
-            </p>
+          <div className="monitor-card-hr">
+            <div className="hr-hero">
+              <Heart aria-hidden="true" size={36} strokeWidth={2.25} fill="currentColor" />
+              <p className="hr-value" aria-live="off">
+                {hr ? formatValue('heart_rate', hr.value) : '—'}
+                <span>{unit}</span>
+              </p>
+            </div>
+            <HeartWave />
+            <div className="hr-foot">
+              <p>{trusted ? (en ? 'Use this reading.' : 'Usá esta lectura.') : (en ? 'Do not treat this number as current.' : 'No tomes esta cifra como actual.')}</p>
+              {hr ? <p className="muted">{en ? `Signal ${hr.signalQuality}/100 · ${ageLabel(state.clock.simulatedAt, hr.measuredAt)}` : `Señal ${hr.signalQuality}/100 · ${ageLabel(state.clock.simulatedAt, hr.measuredAt)}`}</p> : null}
+            </div>
           </div>
-          <HeartWave />
-          <div className="hr-foot">
-            <p>{trusted ? (en ? 'Use this reading.' : 'Usá esta lectura.') : (en ? 'Do not treat this number as current.' : 'No tomes esta cifra como actual.')}</p>
-            {hr ? <p className="muted">{en ? `Signal ${hr.signalQuality}/100 · ${ageLabel(state.clock.simulatedAt, hr.measuredAt)}` : `Señal ${hr.signalQuality}/100 · ${ageLabel(state.clock.simulatedAt, hr.measuredAt)}`}</p> : null}
+          <div className="monitor-card-trust">
+            <h2>{en ? 'Other vitals' : 'Otros signos'}</h2>
+            <dl className="trust-metrics">
+              <Vital stateNow={state.clock.simulatedAt} crewId={crew.id} kind="spo2" />
+              <Vital stateNow={state.clock.simulatedAt} crewId={crew.id} kind="temperature" />
+              <Vital stateNow={state.clock.simulatedAt} crewId={crew.id} kind="sleep_hours" />
+            </dl>
           </div>
-        </div>
-        <div className="monitor-card-trust">
-          <h2>{en ? 'Other vitals' : 'Otros signos'}</h2>
-          <dl className="trust-metrics">
-            <Vital stateNow={state.clock.simulatedAt} crewId={crew.id} kind="spo2" />
-            <Vital stateNow={state.clock.simulatedAt} crewId={crew.id} kind="temperature" />
-            <Vital stateNow={state.clock.simulatedAt} crewId={crew.id} kind="sleep_hours" />
-          </dl>
-        </div>
         </section>
       ) : null}
 
       {content !== 'vitals' ? (
         <section className="monitor-actions panel" aria-label={en ? 'Monitor actions' : 'Acciones del monitor'}>
-        <div className="monitor-actions-head">
-          <div>
-            <h2>{en ? 'What you can do now' : 'Qué puedes hacer ahora'}</h2>
-            <p className="monitor-actions-role">
-              {en ? 'Role access' : 'Acceso por rol'}:{' '}
-              <strong>{workspaceRole ? roleLabel(workspaceRole, en) : roleLabel(state.role === 'medical' ? 'medic' : state.role === 'astronaut' ? 'crew' : 'chief', en)}</strong>
-              {' · '}
-              {mode === 'authorized' ? (en ? 'authorized' : 'autorizado') : (en ? 'demo explore' : 'demo exploración')}
-            </p>
-          </div>
-          <Badge tone={posture.observed === 'change' ? 'amber' : posture.observed === 'stable' ? 'ok' : 'bad'}>
-            {posture.observed === 'change' ? (en ? 'Observed change' : 'Cambio observado') : posture.observed === 'stable' ? (en ? 'Within baseline' : 'Dentro de línea base') : (en ? 'No recent evaluation' : 'Sin evaluación reciente')}
-          </Badge>
-        </div>
-
-        <ol className="monitor-next-steps">
-          {nextSteps.map((step) => (
-            <li key={step}>{step}</li>
-          ))}
-        </ol>
-
-        {caps.psychOnly ? (
-          <p className="muted">
-            {en
-              ? 'Psychologist view: use Wellbeing for granted emotional follow-up. Clinical vitals actions stay with medic / chief.'
-              : 'Vista psicología: usá Bienestar para seguimiento emocional concedido. Las acciones clínicas quedan en médica / jefatura.'}
-          </p>
-        ) : null}
-
-        <div className="monitor-action-grid">
-          {caps.alerts && alerts.length > 0 ? (
-            <Link className="btn btn-primary" to="/app/alertas">
-              <AlertTriangle aria-hidden="true" size={18} strokeWidth={1.75} />
-              {en ? `Open alerts (${alerts.length})` : `Ver alertas (${alerts.length})`}
-            </Link>
-          ) : null}
-          {caps.symptoms ? <SymptomButton /> : null}
-          {caps.repeat ? <RepeatButton /> : null}
-          {caps.analysis ? (
-            <Link className="btn btn-primary" to="/app/analisis">
-              <Brain aria-hidden="true" size={18} strokeWidth={1.75} />
-              {en ? 'Open analysis' : 'Abrir análisis'}
-            </Link>
-          ) : null}
-          {caps.inventory ? (
-            <Link className="btn" to="/app/recursos">
-              <Package aria-hidden="true" size={18} strokeWidth={1.75} />
-              {en ? 'Inventory' : 'Inventario'}
-            </Link>
-          ) : null}
-          {caps.psychOnly ? (
-            <Link className="btn btn-primary" to="/app/analisis">
-              {en ? 'Open analysis' : 'Abrir análisis'}
-            </Link>
-          ) : null}
-          <Link className="btn" to="/app/mi-salud">
-            {en ? 'My Health' : 'Mi salud'}
-          </Link>
-        </div>
-
-        {symptoms.length > 0 ? (
-          <ul className="monitor-symptom-list">
-            {symptoms.map((item) => (
-              <li key={item.id}>
-                {item.symptoms.map((id) => SYMPTOM_LABEL[lang][id as keyof typeof SYMPTOM_LABEL.en] ?? id).join(', ') || (en ? 'Note' : 'Nota')}
-                {' — '}
-                {item.id === 'sym-elena-seed' && item.note
-                  ? systemText(item.note, lang)
-                  : item.note || (en ? 'no note' : 'sin nota')}
+          <div className="monitor-actions-head">
+            <div>
+              <h2>{en ? 'What you can do now' : 'Qué puedes hacer ahora'}</h2>
+              <p className="monitor-actions-role">
+                {en ? 'Role access' : 'Acceso por rol'}:{' '}
+                <strong>{workspaceRole ? roleLabel(workspaceRole, en) : roleLabel(state.role === 'medical' ? 'medic' : state.role === 'astronaut' ? 'crew' : 'chief', en)}</strong>
                 {' · '}
-                {ageLabel(state.clock.simulatedAt, item.reportedAt)}
-              </li>
+                {mode === 'authorized' ? (en ? 'authorized' : 'autorizado') : (en ? 'demo explore' : 'demo exploración')}
+              </p>
+            </div>
+            <Badge tone={posture.observed === 'change' ? 'amber' : posture.observed === 'stable' ? 'ok' : 'bad'}>
+              {posture.observed === 'change' ? (en ? 'Observed change' : 'Cambio observado') : posture.observed === 'stable' ? (en ? 'Within baseline' : 'Dentro de línea base') : (en ? 'No recent evaluation' : 'Sin evaluación reciente')}
+            </Badge>
+          </div>
+
+          <ol className="monitor-next-steps">
+            {nextSteps.map((step) => (
+              <li key={step}>{step}</li>
             ))}
-          </ul>
-        ) : null}
+          </ol>
+
+          {caps.psychOnly ? (
+            <p className="muted">
+              {en
+                ? 'Psychologist view: use Wellbeing for granted emotional follow-up. Clinical vitals actions stay with medic / chief.'
+                : 'Vista psicología: usá Bienestar para seguimiento emocional concedido. Las acciones clínicas quedan en médica / jefatura.'}
+            </p>
+          ) : null}
+
+          <div className="monitor-action-grid">
+            {caps.alerts && alerts.length > 0 ? (
+              <Link className="btn btn-primary" to="/app/alertas">
+                <AlertTriangle aria-hidden="true" size={18} strokeWidth={1.75} />
+                {en ? `Open alerts (${alerts.length})` : `Ver alertas (${alerts.length})`}
+              </Link>
+            ) : null}
+            {caps.symptoms ? <SymptomButton /> : null}
+            {caps.repeat ? <RepeatButton /> : null}
+            {caps.inventory ? (
+              <Link className="btn" to="/app/recursos">
+                <Package aria-hidden="true" size={18} strokeWidth={1.75} />
+                {en ? 'Inventory' : 'Inventario'}
+              </Link>
+            ) : null}
+            <Link className="btn" to="/app/mi-salud">
+              {en ? 'My Health' : 'Mi salud'}
+            </Link>
+          </div>
+
+          {symptoms.length > 0 ? (
+            <div>
+              <h3 style={{ fontSize: '0.85rem', color: isMedic ? '#67e8f9' : isPsych ? '#f472b6' : 'inherit', margin: '14px 0 6px 0' }}>
+                {isMedic
+                  ? (en ? 'Reported physical symptoms (Medical scope)' : 'Síntomas físicos reportados (Alcance médico)')
+                  : isPsych
+                    ? (en ? 'Reported mental health & wellbeing symptoms (Psychology scope)' : 'Salud mental y bienestar reportados (Alcance psicológico)')
+                    : (en ? 'Reported symptoms' : 'Síntomas reportados')}
+              </h3>
+              <ul className="monitor-symptom-list">
+                {symptoms.map((item) => (
+                  <li key={item.id}>
+                    {item.symptoms.map((id) => SYMPTOM_LABEL[lang][id as keyof typeof SYMPTOM_LABEL.en] ?? id).join(', ') || (en ? 'Note' : 'Nota')}
+                    {' — '}
+                    {item.id === 'sym-elena-seed' && item.note
+                      ? systemText(item.note, lang)
+                      : item.note || (en ? 'no note' : 'sin nota')}
+                    {' · '}
+                    {ageLabel(state.clock.simulatedAt, item.reportedAt)}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
         </section>
       ) : null}
     </div>
@@ -321,12 +349,28 @@ function SymptomButton() {
         <ClipboardPlus aria-hidden="true" size={18} strokeWidth={1.75} /> {en ? 'Record symptoms' : 'Registrar síntomas'}
       </button>
       <Modal open={open} title={en ? 'Record how they feel' : 'Registrar cómo se siente'} description={en ? 'The text is simulated clinical data. It is not an order for the system.' : 'El texto es un dato clínico simulado. No es una orden para el sistema.'} onClose={() => setOpen(false)}>
-        {SYMPTOMS.map((id) => (
+        <p className="muted" style={{ fontWeight: 600, fontSize: '0.78rem', textTransform: 'uppercase', marginBottom: 4, color: '#67e8f9' }}>
+          {en ? 'Physical symptoms (Medical attention)' : 'Síntomas físicos (Atención médica)'}
+        </p>
+        {PHYSICAL_SYMPTOMS.map((id) => (
           <label key={id} className="check">
             <input data-testid={`symptom-${id}`} type="checkbox" checked={picked.includes(id)} onChange={() => setPicked((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current, id])} />
             {labels[id]}
           </label>
         ))}
+        <p className="muted" style={{ fontWeight: 600, fontSize: '0.78rem', textTransform: 'uppercase', marginTop: 10, marginBottom: 4, color: '#f472b6' }}>
+          {en ? 'Mental health & wellbeing (Psychological attention)' : 'Salud mental y bienestar (Atención psicológica)'}
+        </p>
+        {MENTAL_SYMPTOMS.map((id) => (
+          <label key={id} className="check">
+            <input data-testid={`symptom-${id}`} type="checkbox" checked={picked.includes(id)} onChange={() => setPicked((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current, id])} />
+            {labels[id]}
+          </label>
+        ))}
+        <label className="check" style={{ marginTop: 8 }}>
+          <input data-testid="symptom-otro" type="checkbox" checked={picked.includes('otro')} onChange={() => setPicked((current) => current.includes('otro') ? current.filter((item) => item !== 'otro') : [...current, 'otro'])} />
+          {labels.otro}
+        </label>
         <Field id="symptom-note" label={en ? 'Note' : 'Nota'} error={error}>
           <textarea id="symptom-note" data-testid="symptom-note" maxLength={2000} value={note} aria-invalid={Boolean(error)} aria-describedby={error ? 'symptom-note-error' : undefined} onChange={(event) => setNote(event.target.value)} />
         </Field>

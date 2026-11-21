@@ -1,9 +1,9 @@
-import { Link, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { Heart } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { CarouselStrip } from '../components/CarouselStrip'
 import { CrewHelmet } from '../components/CrewHelmet'
-import { SpaceRequests } from '../components/SpaceRequests'
+import { InfoHelp } from '../components/InfoHelp'
 import { Field } from '../components/ui'
 import { canReadPrivateWellbeing } from '../domain/access'
 import { CREW, crewById, crewDuty, crewPlace } from '../domain/crew'
@@ -86,7 +86,27 @@ export function CrewPage() {
       <div className="crew-top">
         <header className="crew-heading">
           <p className="crew-kicker">{en ? 'Crew' : 'Tripulación'}</p>
-          <h1>{en ? 'Four people, one record' : 'Cuatro personas, un mismo registro'}</h1>
+          <h1>
+            {en ? 'Four people, one record' : 'Cuatro personas, un mismo registro'}
+            <InfoHelp
+              title="Resumen de la Tripulación"
+              enTitle="Crew Overview"
+              whatIs="Panel general de los 4 integrantes de la misión espacial. Permite conocer rápidamente el estado de salud, pulso, horas de sueño y módulo en el que se encuentra cada astronauta dentro del hábitat."
+              enWhatIs="Consolidated dashboard of all 4 space mission crew members. View current health posture, heart rate, sleep hours, and habitat module location at a glance."
+              steps={[
+                'Usá los filtros superiores para ver "Todos" o solo aquellos con "Requiere atención" o "Dentro de lo esperado".',
+                'Revisá cada tarjeta: verás su rol (comandante, especialista, médico), su pulso actual y sus horas de descanso.',
+                'Hacé clic en un tripulante para abrir su monitor de signos vitales en vivo con gráficos detallados.',
+                'Si necesitás coordinar una consulta con él o ella, hacé clic en "Pedir cita".',
+              ]}
+              enSteps={[
+                'Use the top filters to view "All" or filter by "Needs review" and "Within baseline".',
+                'Review each astronaut card: see their mission role, habitat module, current heart rate, and sleep duration.',
+                'Click on any crew member to open their live vital signs monitor and detailed telemetry graphs.',
+                'Click "Request consultation" to schedule a medical or psychological check-in with them.',
+              ]}
+            />
+          </h1>
         </header>
       </div>
 
@@ -148,7 +168,7 @@ export function CrewPage() {
       <div className="crew-extra">
         {state.role === 'astronaut' ? (
           <section className="callout">
-          <strong>{en ? 'Simulated access to My space' : 'Acceso simulado a Mi espacio'}</strong>
+            <strong>{en ? 'Simulated access to My space' : 'Acceso simulado a Mi espacio'}</strong>
             {spaceOpen ? (
               <p>{en ? `Simulated session open for ${sessionCrew.name}. Enter the PIN again after reloading.` : `Sesión simulada abierta para ${sessionCrew.name}. Al recargar la página hay que repetir el PIN.`}</p>
             ) : (
@@ -185,18 +205,11 @@ export function CrewPage() {
             )}
           </section>
         ) : null}
-        <SpaceRequests />
-        {selected ? (
+        {selected && allowed ? (
           <section className="detail">
-            <div className="spread">
-              <h2>{selected.name}</h2>
-              <Link className="btn btn-primary" to={`/app/tripulacion/${selected.id}`}>{en ? 'View monitoring' : 'Ver monitoreo'}</Link>
-            </div>
-            <p>{crewPlace(selected, lang)}</p>
-            <p>{crewPosture(state, selected.id).summary}</p>
             <div className="callout">
               <strong>{en ? 'Private wellbeing' : 'Bienestar privado'}</strong>
-              {allowed && loaded ? (
+              {loaded ? (
                 <form onSubmit={(event) => { event.preventDefault(); void writePrivate(selected.id, note) }}>
                   <Field id="private-note" label={en ? 'Note visible only to this person in this browser' : 'Nota visible solo para esta persona en este navegador'}>
                     <textarea id="private-note" value={note} maxLength={2000} onChange={(event) => setNote(event.target.value)} />
@@ -204,9 +217,7 @@ export function CrewPage() {
                   <button className="btn" type="submit">{en ? 'Save private note' : 'Guardar nota privada'}</button>
                   <p className="muted">{en ? 'This note stays on this device and is not shared with the medical team. Anyone who can use this browser may be able to see it, so avoid sensitive details.' : 'Esta nota queda en este dispositivo y no se comparte con el equipo médico. Otras personas que usen este navegador podrían verla, así que evita incluir información delicada.'}</p>
                 </form>
-              ) : (
-                <p>{en ? 'This simulated role does not open this module. Hiding the card would not be enough, so the read is not even requested.' : 'Con el rol simulado actual este módulo no se consulta. Ocultar la tarjeta no sería suficiente, así que la lectura ni siquiera se pide.'}</p>
-              )}
+              ) : null}
             </div>
           </section>
         ) : null}

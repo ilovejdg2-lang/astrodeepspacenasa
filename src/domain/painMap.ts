@@ -249,6 +249,25 @@ function torsoAnchor(regionId: string, laterality: PainLaterality, aspect: PainA
   }
 }
 
+export function normalizePainMark<T extends { regionId: string; laterality?: PainLaterality; aspect?: PainAspect; localPosition: Vec3; normal?: Vec3; surfaceId?: string }>(mark: T): T {
+  if (
+    mark.localPosition &&
+    (mark.localPosition.y < 0.5 || mark.surfaceId === 'trunk_post') &&
+    mark.regionId &&
+    mark.regionId !== 'foot' &&
+    mark.regionId !== 'lower_leg'
+  ) {
+    const anchor = anchorFor(mark.regionId, mark.laterality || 'midline', mark.aspect || 'posterior')
+    return {
+      ...mark,
+      localPosition: anchor.localPosition,
+      normal: anchor.normal,
+      surfaceId: anchor.surfaceId,
+    }
+  }
+  return mark
+}
+
 export function anchorFor(regionId: string, laterality: PainLaterality, aspect: PainAspect): { localPosition: Vec3; normal: Vec3; surfaceId: string } {
   const side = laterality === 'right' ? 'right' : 'left'
   const limbPart = LIMB_PARTS.find((part) => part.regionId === regionId && part.laterality === side)
@@ -321,12 +340,13 @@ export function draftComplete(mark: PainDraftMark): mark is PainDraftMark & { in
 
 export function toPainMark(mark: PainDraftMark): PainMark | null {
   if (!draftComplete(mark)) return null
+  const norm = normalizePainMark(mark)
   return {
-    ...mark,
-    intensity: mark.intensity,
-    pattern: mark.pattern,
-    description: mark.description.trim(),
-    regionLabel: mark.labelSource === 'user' ? mark.regionLabel.trim() : regionName(mark.regionId, true),
+    ...norm,
+    intensity: norm.intensity,
+    pattern: norm.pattern,
+    description: norm.description.trim(),
+    regionLabel: norm.labelSource === 'user' ? norm.regionLabel.trim() : regionName(norm.regionId, true),
   }
 }
 
@@ -348,7 +368,10 @@ export function readPainDraft(missionId: string, profileId: string): PainDraft |
     if (!raw) return null
     const parsed = JSON.parse(raw) as PainDraft
     if (parsed?.v !== 1 || !Array.isArray(parsed.marks)) return null
-    return parsed
+    return {
+      ...parsed,
+      marks: parsed.marks.map((m) => normalizePainMark(m)),
+    }
   } catch {
     return null
   }

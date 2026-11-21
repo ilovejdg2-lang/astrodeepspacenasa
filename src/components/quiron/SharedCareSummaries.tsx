@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react'
 import { platformApi } from '../../platform/api'
 import { getActiveMissionId } from '../../platform/session'
+import { getWorkspaceRole } from '../../platform/workspace'
 import { useLocale } from '../../i18n'
 
 export function SharedCareSummaries() {
   const { lang } = useLocale()
   const en = lang === 'en'
   const missionId = getActiveMissionId()
+  const role = getWorkspaceRole()
   const [items, setItems] = useState<Awaited<ReturnType<typeof platformApi.quironSummaries>>['items']>([])
   const [error, setError] = useState('')
   useEffect(() => {
@@ -16,10 +18,25 @@ export function SharedCareSummaries() {
       .catch(() => { if (active) setError(en ? 'Could not load approved summaries.' : 'No se pudieron cargar los resúmenes aprobados.') })
     return () => { active = false }
   }, [missionId, en])
+
+  const visible = items.filter((item) => {
+    if (role === 'medic') return item.mode === 'physical'
+    if (role === 'psychologist') return item.mode === 'emotional' || item.mode === 'mental'
+    return true
+  })
+
   return <section className="rd-card" aria-label={en ? 'Approved Quirón summaries' : 'Resúmenes aprobados de Quirón'}>
     <h2>{en ? 'Summaries approved for you' : 'Resúmenes aprobados para ti'}</h2>
     {error ? <p role="alert">{error}</p> : null}
-    {!items.length && !error ? <p>{en ? 'No summaries have been shared with you. Private conversations remain hidden.' : 'No se han compartido resúmenes contigo. Las conversaciones privadas permanecen ocultas.'}</p> : null}
-    {items.map(item => <article key={item.id}><p>{item.profileId} · {item.mode === 'physical' ? (en ? 'Physical health' : 'Salud física') : (en ? 'Wellbeing' : 'Bienestar')}</p><p style={{ whiteSpace: 'pre-wrap' }}>{item.body}</p></article>)}
+    {!visible.length && !error ? (
+      <p>
+        {role === 'medic'
+          ? (en ? 'No physical health summaries have been shared with you.' : 'No se han compartido resúmenes de salud física contigo.')
+          : role === 'psychologist'
+            ? (en ? 'No mental health or emotional wellbeing summaries have been shared with you.' : 'No se han compartido resúmenes de salud mental o bienestar emocional contigo.')
+            : (en ? 'No summaries have been shared with you. Private conversations remain hidden.' : 'No se han compartido resúmenes contigo. Las conversaciones privadas permanecen ocultas.')}
+      </p>
+    ) : null}
+    {visible.map(item => <article key={item.id}><p>{item.profileId} · {item.mode === 'physical' ? (en ? 'Physical health' : 'Salud física') : (en ? 'Wellbeing' : 'Bienestar')}</p><p style={{ whiteSpace: 'pre-wrap' }}>{item.body}</p></article>)}
   </section>
 }

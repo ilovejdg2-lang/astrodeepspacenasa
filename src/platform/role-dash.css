@@ -84,6 +84,38 @@
   box-shadow: 0 0 0 3px #f5004f, 0 0 0 7px color-mix(in srgb, #f5004f 18%, transparent);
 }
 .role-switch { position: relative; display: grid; gap: 8px; justify-items: start; z-index: 40; }
+.mission-switch { position: relative; display: inline-flex; z-index: 40; }
+.mission-switch-trigger {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  box-sizing: border-box;
+  min-height: 44px; height: 44px;
+  padding: 0 16px;
+  border: 1px solid rgba(56, 189, 248, 0.4);
+  border-radius: 999px;
+  background: rgba(56, 189, 248, 0.1);
+  color: #38bdf8;
+  font: inherit; font-weight: 750; font-size: 0.86rem;
+  letter-spacing: -0.01em;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(56, 189, 248, 0.12);
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+}
+.mission-switch-trigger:hover {
+  background: rgba(56, 189, 248, 0.2);
+  border-color: rgba(56, 189, 248, 0.65);
+  filter: brightness(1.08);
+}
+.mission-switch-trigger:disabled { opacity: 0.6; cursor: wait; }
+.mission-switch-short { display: none; }
+.mission-stage-dot {
+  width: 8px; height: 8px; border-radius: 50%; display: inline-block; flex-shrink: 0;
+}
+.mission-stage-dot.is-aboard { background: #10b981; box-shadow: 0 0 8px #10b981; }
+.mission-stage-dot.is-preflight { background: #f59e0b; box-shadow: 0 0 8px #f59e0b; }
+.mission-stage-dot.is-draft { background: #3b82f6; box-shadow: 0 0 8px #3b82f6; }
+.mission-stage-dot.is-postmission { background: #a855f7; box-shadow: 0 0 8px #a855f7; }
 .role-switch-trigger {
   display: inline-flex; align-items: center; justify-content: center;
   box-sizing: border-box;
@@ -132,6 +164,8 @@
   border: 1px solid color-mix(in srgb, currentColor 12%, transparent);
   background: #fff;
   color: #182026;
+  --rd-text: #0f172a;
+  --rd-muted: #475569;
   box-shadow: 0 24px 64px rgba(8, 10, 18, 0.35);
   display: grid; gap: 12px;
   pointer-events: auto;
@@ -139,6 +173,8 @@
 :root[data-theme="dark"] .role-switch-panel {
   background: #161822;
   color: #f4f2f8;
+  --rd-text: #f8fafc;
+  --rd-muted: #cbd5e1;
   border-color: rgba(255,255,255,0.12);
   box-shadow: 0 24px 64px rgba(0, 0, 0, 0.55);
 }
@@ -146,6 +182,9 @@
   .role-switch-long { display: none; }
   .role-switch-short { display: inline; }
   .role-switch-trigger { padding: 0 14px; min-width: 64px; min-height: 44px; height: 44px; }
+  .mission-switch-long { display: none; }
+  .mission-switch-short { display: inline; }
+  .mission-switch-trigger { padding: 0 12px; min-height: 44px; height: 44px; }
   .role-switch-layer {
     align-items: end;
     padding: 12px 12px calc(12px + env(safe-area-inset-bottom, 0px));
@@ -158,7 +197,7 @@
 }
 .role-switch-lead {
   margin: 0; font-size: 0.84rem;
-  color: color-mix(in srgb, currentColor 68%, transparent);
+  color: var(--rd-muted, #475569);
 }
 .role-switch-grid {
   display: grid; gap: 10px;
@@ -174,10 +213,13 @@
   background: color-mix(in srgb, currentColor 5%, transparent);
   color: inherit; font: inherit;
 }
-.role-switch-card strong { font-size: 0.95rem; letter-spacing: -0.02em; }
+.role-switch-card strong {
+  font-size: 0.95rem; letter-spacing: -0.02em;
+  color: var(--rd-text, #0f172a);
+}
 .role-switch-card > span:last-child {
   font-size: 0.78rem; line-height: 1.35;
-  color: color-mix(in srgb, currentColor 68%, transparent);
+  color: var(--rd-muted, #475569);
 }
 .role-switch-card.is-on {
   border-color: #f5004f;
@@ -277,7 +319,7 @@
 }
 .rd-field { display: grid; gap: 6px; }
 .rd-field label { font-size: 0.8rem; font-weight: 700; }
-.rd-field input,
+.rd-field input:not([type="checkbox"]):not([type="radio"]),
 .rd-field select,
 .rd-field textarea {
   box-sizing: border-box;
@@ -291,20 +333,31 @@
   font: inherit;
   font-size: 0.92rem;
 }
-:root[data-theme="dark"] .rd-field input,
+:root[data-theme="dark"] .rd-field input:not([type="checkbox"]):not([type="radio"]),
 :root[data-theme="dark"] .rd-field select,
 :root[data-theme="dark"] .rd-field textarea {
   background: var(--surface-2, #311820);
   color-scheme: dark;
   color: #f7f2f4;
 }
-.rd-field select option {
-  background-color: #ffffff;
-  color: #1a0f14;
+.rd-field input[type="radio"],
+.rd-field input[type="checkbox"] {
+  width: 18px !important;
+  min-width: 18px !important;
+  max-width: 18px !important;
+  height: 18px !important;
+  min-height: 18px !important;
+  max-height: 18px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  flex: 0 0 18px !important;
+  accent-color: var(--rd-accent, #ec4899);
+  cursor: pointer;
 }
+.rd-field select option,
 :root[data-theme="dark"] .rd-field select option {
-  background-color: #24141c;
-  color: #f7f2f4;
+  background-color: #ffffff;
+  color: #111111;
 }
 .rd-field input:focus,
 .rd-field select:focus,
@@ -843,4 +896,63 @@
 .care-feel-modal .rd-btn:focus-visible {
   outline: 3px solid color-mix(in srgb, #f5004f 55%, transparent);
   outline-offset: 2px;
+}
+
+/* --------------------------------------------------------------------------
+   Clinical Quick Action Hub Cards
+   -------------------------------------------------------------------------- */
+.rd-actions-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.rd-action-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  border: 1px solid color-mix(in srgb, currentColor 14%, transparent);
+  background: color-mix(in srgb, var(--surface, #1e131d) 70%, transparent);
+  text-decoration: none;
+  color: inherit;
+  transition: all 160ms ease;
+}
+
+.rd-action-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--rd-accent, #ec4899);
+  background: color-mix(in srgb, var(--rd-accent, #ec4899) 12%, transparent);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
+}
+
+.rd-action-card-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.rd-action-card-head strong {
+  font-size: 0.95rem;
+  letter-spacing: -0.01em;
+}
+
+.rd-action-card p {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.4;
+  opacity: 0.8;
+}
+
+.rd-action-card-arrow {
+  margin-top: auto;
+  padding-top: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--rd-accent, #ec4899);
 }

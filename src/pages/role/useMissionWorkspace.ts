@@ -12,9 +12,17 @@ import {
 } from '../../platform/workspace'
 
 export function useMissionWorkspace() {
-  const missionId = getActiveMissionId()
+  const missionId = getActiveMissionId() || 'mission-demo-horizon'
   const profile = getStoredProfile()
-  const [detail, setDetail] = useState<MissionDetail | null>(null)
+  const [detail, setDetail] = useState<MissionDetail | null>(() => {
+    if (!missionId) return null
+    try {
+      const raw = localStorage.getItem(`helios-mission-detail-${missionId}`)
+      return raw ? (JSON.parse(raw) as MissionDetail) : null
+    } catch {
+      return null
+    }
+  })
   const [prep, setPrep] = useState<PrepItem[]>([])
   const [percent, setPercent] = useState(0)
   const [appointments, setAppointments] = useState<unknown[]>([])
@@ -53,6 +61,11 @@ export function useMissionWorkspace() {
         platformApi.grants(missionId).catch(() => ({ items: [] as unknown[], chief: { sharesWithChief: [], neverAutoShared: [], note: '' } })),
       ])
       setDetail(mission)
+      try {
+        localStorage.setItem(`helios-mission-detail-${missionId}`, JSON.stringify(mission))
+      } catch {
+        /* ignore */
+      }
       setPrep(prepData.items)
       setPercent(prepData.percent)
       setWakeNote(wake.note || '')

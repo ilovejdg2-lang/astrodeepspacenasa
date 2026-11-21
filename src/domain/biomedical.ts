@@ -590,10 +590,14 @@ export function isSystemAuthorizedForRole(
   role: WorkspaceRole | null,
 ): boolean {
   if (role === 'psychologist') {
-    // Psychologists access only authorized categories: Sleep & Recovery, and Emotional Well-being
+    // Psychologists access authorized mental health / behavioral categories: Sleep & Recovery, and Emotional Well-being
     return systemId === 'sleep' || systemId === 'emotional'
   }
-  // Crew, medic, chief can browse systems within their patient permissions
+  if (role === 'medic') {
+    // Medics access authorized physical systems: Musculoskeletal (Body Pain), Cardiovascular, Respiratory, and Nutrition & Metabolism
+    return systemId === 'musculoskeletal' || systemId === 'cardiovascular' || systemId === 'respiratory' || systemId === 'nutrition'
+  }
+  // Crew, chief can browse systems within their patient permissions
   return true
 }
 

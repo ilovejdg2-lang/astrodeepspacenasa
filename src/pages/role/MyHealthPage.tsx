@@ -1,9 +1,10 @@
 import { systemText } from '../../systemText'
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Activity, ArrowRight } from 'lucide-react'
+import { Activity, ArrowRight, CalendarDays, ShieldCheck } from 'lucide-react'
+import { InfoHelp } from '../../components/InfoHelp'
 import { OfflineSyncBar } from '../../components/health/OfflineSyncBar'
-import { AppointmentDesk, type VisitRow } from '../../components/mission/AppointmentDesk'
+import { PainMapSection } from '../../components/health/pain/PainMapSection'
 import { DailyCarePanel } from '../../components/role/DailyCarePanel'
 import { CrewArt } from '../../components/role/RoleArt'
 import { useLocale } from '../../i18n'
@@ -28,9 +29,6 @@ export function MyHealthPage() {
     wakeNote,
     symptoms,
     appointments,
-    appointmentsLoading,
-    appointmentsError,
-    error,
     grants,
     loading,
     refresh,
@@ -42,55 +40,142 @@ export function MyHealthPage() {
   const medicId = detail?.members.find((m) => m.role === 'medic' && m.status === 'active')?.profileId
   const psychId = detail?.members.find((m) => m.role === 'psychologist' && m.status === 'active')?.profileId
   const activeGrants = (grants as GrantRow[]).filter(isActiveGrant)
+  const upcomingCount = (appointments as Array<{ scheduledAt?: number; status?: string }> || [])
+    .filter((a) => a.scheduledAt && a.status !== 'cancelled' && a.status !== 'completed').length
+
+  const userDisplayName = profile?.displayName || profileDisplayName(profile?.id || 'crew')
 
   return (
     <div className="rd rd-crew">
       <div className="rd-bg" aria-hidden="true"><CrewArt /></div>
       <header className="rd-head">
-        <p className="rd-kicker">{en ? 'Personal space' : 'Espacio personal'}</p>
-        <h1>{en ? 'My Health' : 'Mi salud'}</h1>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
+          <p className="rd-kicker" style={{ margin: 0 }}>{en ? 'Confidential personal space' : 'Espacio personal confidencial'}</p>
+          <span className="badge" style={{ background: 'rgba(236, 72, 153, 0.15)', color: '#f472b6', border: '1px solid rgba(236, 72, 153, 0.35)', padding: '4px 10px', borderRadius: 999 }}>
+            {userDisplayName}
+          </span>
+        </div>
+        <h1>
+          {en ? 'My Health & Body Map' : 'Mi salud y mapa corporal'}
+          <InfoHelp
+            title="Mi Salud Confidencial"
+            enTitle="Personal Health Space"
+            whatIs="Tu espacio médico y clínico personal como tripulante. Aquí gestionás tus citas médicas y de psicología, reportás dolores físicos en el mapa corporal y decidís qué datos compartís con los profesionales de la salud."
+            enWhatIs="Your personal medical and clinical dashboard as a crew member. Book visits with doctors and psychologists, report pain points on your body map, and control what data you share."
+            steps={[
+              'Hacé clic en "Ir a Citas" para solicitar una consulta médica o psicológica en los horarios disponibles.',
+              'En "Registrar dolor", marcá en el mapa 3D las zonas del cuerpo donde sentís molestias y su intensidad para revisión del médico.',
+              'Completá tu chequeo diario de descanso y estado anímico en "Chequeo del día".',
+              'En "Privacidad de datos y consentimiento", autorizá o revocá qué profesionales pueden acceder a tu información.',
+            ]}
+            enSteps={[
+              'Click "Go to Appointments" to book a medical or psychological consultation in open time slots.',
+              'Under "Record pain", mark anatomical pain points on the 3D body editor for your flight surgeon.',
+              'Submit your daily rest and wellbeing log in "Daily Check-in".',
+              'Under "Data Privacy & Clinical Consent", manage and revoke which clinicians can access your records.',
+            ]}
+          />
+        </h1>
+        <p className="rd-muted">
+          {en
+            ? 'Private clinical records, body pain editor, and secure access permissions for your spaceflight mission.'
+            : 'Registro clínico privado, editor de dolor corporal y control de permisos de acceso para tu misión espacial.'}
+        </p>
       </header>
 
       {loading ? <p className="rd-muted">{en ? 'Loading…' : 'Cargando…'}</p> : null}
 
       <OfflineSyncBar />
 
-      {missionId ? (
-        <AppointmentDesk
-          missionId={missionId}
-          stage={detail?.mission.stage}
-          profileId={profile?.id}
-          scope="mine"
-          members={detail?.members || []}
-          appointments={appointments as VisitRow[]}
-          appointmentsLoading={appointmentsLoading}
-          loadError={appointmentsError || error}
-          onChanged={() => refresh({ silent: true })}
-        />
-      ) : null}
-
-      <section className="rd-card" style={{ display: 'flex', flexDirection: 'column', gap: 12, border: '1px solid rgba(255, 77, 106, 0.28)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 14 }}>
-          <div style={{ maxWidth: 620 }}>
-            <p className="rd-kicker" style={{ margin: 0 }}>{en ? 'Biomedical Telemetry & Body Systems' : 'Telemetría biomédica y sistemas corporales'}</p>
-            <h2 style={{ margin: '4px 0 6px' }}>{en ? 'Biomedical Insights' : 'Perspectivas biomédicas'}</h2>
-            <p className="rd-muted" style={{ margin: 0 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 16 }}>
+        <section className="rd-card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: 12, border: '1px solid rgba(236, 72, 153, 0.35)', background: 'linear-gradient(180deg, rgba(236, 72, 153, 0.08) 0%, rgba(20, 20, 30, 0.6) 100%)' }}>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+              <CalendarDays size={20} strokeWidth={2} style={{ color: '#ec4899' }} aria-hidden="true" />
+              <p className="rd-kicker" style={{ margin: 0 }}>
+                {en ? 'Medical & Psychological Care' : 'Atención médica y psicológica'}
+              </p>
+            </div>
+            <h2 style={{ margin: '4px 0 6px' }}>{en ? 'Appointments & Consultations' : 'Citas y Consultas'}</h2>
+            <p className="rd-muted" style={{ margin: 0, fontSize: '0.9rem' }}>
               {en
-                ? 'Explore your 3D interactive body map, physiological indicators (cardiovascular, respiratory, sleep, musculoskeletal, metabolism), NASA spaceflight hazard context, and trends in the dedicated module.'
-                : 'Explorá tu mapa corporal interactivo 3D, indicadores fisiológicos (cardiovascular, respiratorio, sueño, musculoesquelético, metabolismo), riesgos espaciales de la NASA y tendencias en el módulo dedicado.'}
+                ? 'Check available open UTC slots, book visits with the flight surgeon or mission psychologist, or review your schedule.'
+                : 'Revisá los horarios UTC libres, agendá consultas con el médico de vuelo o psicólogo y consultá tu agenda programada.'}
             </p>
           </div>
-          <Link
-            to="/app/biomedical"
-            className="rd-btn"
-            style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '10px 18px', textDecoration: 'none' }}
-          >
-            <Activity size={16} aria-hidden="true" />
-            <span>{en ? 'Open Biomedical Insights' : 'Abrir perspectivas biomédicas'}</span>
-            <ArrowRight size={14} aria-hidden="true" />
-          </Link>
-        </div>
-      </section>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 8 }}>
+            <Link
+              to="/app/citas"
+              className="rd-btn"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 8,
+                padding: '10px 18px',
+                textDecoration: 'none',
+                background: '#ec4899',
+                color: '#ffffff',
+                fontWeight: 600,
+                borderRadius: 10,
+              }}
+            >
+              <CalendarDays size={16} aria-hidden="true" />
+              <span>{en ? 'Go to Appointments' : 'Ir a Citas'}</span>
+              <ArrowRight size={14} aria-hidden="true" />
+            </Link>
+            {upcomingCount > 0 ? (
+              <span style={{ fontSize: '0.82rem', color: '#67e8f9', textAlign: 'center' }}>
+                {en ? `● ${upcomingCount} upcoming appointment(s)` : `● ${upcomingCount} cita(s) próxima(s) agendada(s)`}
+              </span>
+            ) : null}
+          </div>
+        </section>
+
+        <section className="rd-card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: 12, border: '1px solid rgba(255, 77, 106, 0.35)', background: 'linear-gradient(180deg, rgba(255, 77, 106, 0.08) 0%, rgba(20, 20, 30, 0.6) 100%)' }}>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+              <Activity size={20} strokeWidth={2} style={{ color: '#ff4d6a' }} aria-hidden="true" />
+              <p className="rd-kicker" style={{ margin: 0 }}>{en ? 'Physiological Telemetry' : 'Telemetría fisiológica'}</p>
+            </div>
+            <h2 style={{ margin: '4px 0 6px' }}>{en ? 'Biomedical Insights' : 'Perspectivas biomédicas'}</h2>
+            <p className="rd-muted" style={{ margin: 0, fontSize: '0.9rem' }}>
+              {en
+                ? 'Explore your 3D interactive anatomical systems, heart rate, sleep quality, respiration, and NASA spaceflight hazards.'
+                : 'Explorá tus sistemas anatómicos interactivos 3D, pulso cardíaco, calidad del descanso, respiración y riesgos de la NASA.'}
+            </p>
+          </div>
+          <div style={{ marginTop: 8 }}>
+            <Link
+              to="/app/biomedical"
+              className="rd-btn"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 8,
+                padding: '10px 18px',
+                textDecoration: 'none',
+                width: '100%',
+                borderRadius: 10,
+              }}
+            >
+              <Activity size={16} aria-hidden="true" />
+              <span>{en ? 'Open Biomedical Insights' : 'Abrir perspectivas biomédicas'}</span>
+              <ArrowRight size={14} aria-hidden="true" />
+            </Link>
+          </div>
+        </section>
+      </div>
+
+      <PainMapSection
+        en={en}
+        missionId={missionId || 'mission-primary'}
+        profileId={profile?.id || 'mateo-ruiz'}
+        stage={detail?.mission.stage}
+        appointments={appointments as any}
+        onChanged={() => refresh({ silent: true })}
+      />
 
       <DailyCarePanel
         missionId={missionId}
@@ -101,11 +186,14 @@ export function MyHealthPage() {
       />
 
       <section className="rd-card" data-testid="consent-demo">
-        <h2>{en ? 'Act: appointments, grants & urgent help' : 'Actuar: citas, permisos y ayuda urgente'}</h2>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
+          <ShieldCheck size={22} style={{ color: '#38bdf8' }} aria-hidden="true" />
+          <h2 style={{ margin: 0 }}>{en ? 'Data Privacy & Clinical Consent' : 'Privacidad de datos y consentimiento clínico'}</h2>
+        </div>
         <p className="rd-muted">
           {en
-            ? `Judge path: Share vitals with medic → switch to Sofía (medic) → Revoke here → medic sees “Ask access”. Appointments: ${appointments.length} · Active grants: ${activeGrants.length}.`
-            : `Ruta jurado: Compartir vitales con médica → cambiar a Sofía (médica) → Revocar aquí → médica ve “Pedir acceso”. Citas: ${appointments.length} · Permisos activos: ${activeGrants.length}.`}
+            ? `Your biomedical telemetry, pain logs, and mental wellbeing check-ins are protected under strict aerospace medical ethics. Flight surgeons and psychologists can only review information you explicitly authorize. Active consents: ${activeGrants.length}.`
+            : `Tus signos biomédicos, registros de dolor y chequeos de bienestar están protegidos bajo estricto secreto médico espacial. Los médicos y psicólogos solo pueden acceder a la información que autorices explícitamente. Consentimientos activos: ${activeGrants.length}.`}
         </p>
         <div className="rd-actions">
           <button
@@ -200,7 +288,6 @@ export function MyHealthPage() {
           ) : null}
         </ul>
       </section>
-
     </div>
   )
 }

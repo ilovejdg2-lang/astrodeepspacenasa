@@ -5,6 +5,7 @@ import type { Alert, AlertStatus, Integrity, Measurement, MeasurementKind } from
 import { Users, ChevronRight } from 'lucide-react'
 import { SciencePanel } from '../components/SciencePanel'
 import { Empty, Modal } from '../components/ui'
+import { InfoHelp } from '../components/InfoHelp'
 import { isSensorAlert } from '../domain/access'
 import { CREW } from '../domain/crew'
 import { alertKindLabel, alertReasonLabel } from '../domain/alertCopy'
@@ -173,14 +174,34 @@ export function AlertsPage() {
     if (busy) return
     if (alert.crewId) dispatch({ type: 'selectCrew', crewId: alert.crewId })
     dispatch({ type: 'selectEpisode', episodeId: alert.episodeId })
-    navigate('/app/analisis', { state: { alertId: alert.id } })
+    navigate('/app/biomedical')
   }
 
   return (
     <div className="alerts-page">
       <header className="alerts-head">
         <p className="alerts-kicker">{en ? 'Alerts' : 'Alertas'}</p>
-        <h1>{en ? 'Alert center' : 'Centro de Alertas'}</h1>
+        <h1>
+          {en ? 'Alert center' : 'Centro de Alertas'}
+          <InfoHelp
+            title="Centro de Alertas de Salud"
+            enTitle="Health Alert Center"
+            whatIs="Centro de monitoreo donde el sistema detecta de forma automática anomalías fisiológicas (arritmias, desoxigenación, cambios bruscos de temperatura), falta de telemetría de los trajes o síntomas críticos reportados por la tripulación."
+            enWhatIs="Automated monitoring hub where the system flags physiological anomalies (arrhythmias, desaturation, temperature spikes), telemetry gaps, or critical symptoms reported by crew members."
+            steps={[
+              'Filtrá los avisos por estado: "Todos", "Abiertos" (requieren atención) o "Cerrados" (ya resueltos).',
+              'Hacé clic en cualquier aviso para ver qué tripulante está afectado, los valores de sus signos vitales y el motivo de la alarma.',
+              'Presioná "Confirmar aviso" para registrar que el equipo médico tomó conocimiento, o "Cerrar aviso" si el episodio ya se estabilizó.',
+              'Si necesitás investigar a fondo la causa, hacé clic en "Abrir análisis en Quirón" para que la IA médica evalúe el caso.',
+            ]}
+            enSteps={[
+              'Filter alerts by status: "All", "Open" (need attention), or "Closed" (resolved).',
+              'Click any alert to inspect the affected crew member, recent vital readings, and triggering telemetry.',
+              'Click "Confirm notice" to acknowledge you reviewed it, or "Close alert" once the episode is resolved.',
+              'For a deep clinical review, click "Open Quirón analysis" to run the AI diagnostic assistant on the episode.',
+            ]}
+          />
+        </h1>
       </header>
 
       <section className="alerts-health" aria-labelledby="alerts-health-title">
@@ -246,7 +267,7 @@ export function AlertsPage() {
                     aria-pressed={alert.id === selected?.id} onClick={() => setSelectedId(alert.id)}>
                     <span className="alert-card-copy">
                       <span className="alert-card-kind">{alertKindLabel(alert.type, alert.title, en)}</span>
-                      <span className={`alert-badge is-${alert.type}`}>{alertTypeLabel(alert.type)}</span>
+                      <span className={`alert-badge is-${alert.type}`}>{alertTypeLabel(alert.type, lang)}</span>
                       <span className="alerts-event-status">{statusLabel(alert.status)}</span>
                     </span>
                     <span className="alert-card-when"><b>{when.day}</b><span>{when.time}</span></span>
@@ -355,14 +376,21 @@ function AlertDetail({
   english: boolean
 }) {
   const opened = stamp(alert.openedAt, english)
-  const updated = stamp(alert.updatedAt, english)
   return (
     <>
-      <p className="alerts-detail-kind">{alertKindLabel(alert.type, alert.title, english)}</p>
-      <h2>{name}</h2>
-      {reasonLines(alertReasonLabel(alert, name, english)).map((line) => <p key={line} className="alerts-detail-reason">{line}</p>)}
+      <div className="alert-detail-header-block">
+        <p className="alerts-detail-kind">{alertKindLabel(alert.type, alert.title, english)}</p>
+        <h2>{name}</h2>
+      </div>
+      <div className="alert-detail-reason-box">
+        {reasonLines(alertReasonLabel(alert, name, english)).map((line) => (
+          <p key={line} className="alerts-detail-reason">
+            • {systemText(line, english ? 'en' : 'es')}
+          </p>
+        ))}
+      </div>
       <p className="alerts-meta">
-        {english ? 'Opened' : 'Abierta'} {opened.day}, {opened.time} - {english ? 'Updated' : 'Actualizada'} {updated.day}, {updated.time} - {alert.astronautAck ? (english ? 'Notice confirmed' : 'Aviso confirmado') : (english ? 'Notice not confirmed' : 'Aviso sin confirmar')}
+        {english ? 'Opened' : 'Abierta'} {opened.day}, {opened.time} · {alert.astronautAck ? (english ? 'Notice confirmed' : 'Aviso confirmado') : (english ? 'Notice not confirmed' : 'Aviso sin confirmar')}
       </p>
       <div className="alerts-actions">
         <button type="button" className="alerts-btn is-line" disabled={alert.astronautAck || busy !== null} aria-busy={busy === 'ack'} onClick={onAck}>
@@ -371,8 +399,8 @@ function AlertDetail({
         <button type="button" className="alerts-btn is-line" disabled={alert.status !== 'active' || busy !== null} aria-busy={busy === 'follow'} onClick={onFollow}>
           {busy === 'follow' ? (english ? 'Updating…' : 'Actualizando…') : (english ? 'Move to follow-up' : 'Pasar a seguimiento')}
         </button>
-        <Link className="alerts-btn is-fill" to="/app/analisis" onClick={(event) => { event.preventDefault(); onAnalysis() }}>
-          {english ? 'Open analysis' : 'Abrir análisis'}
+        <Link className="alerts-btn is-fill" to="/app/biomedical" onClick={(event) => { event.preventDefault(); onAnalysis() }}>
+          {english ? 'Biomedical review' : 'Revisión biomédica'}
         </Link>
         <button type="button" className="alerts-btn is-close" disabled={alert.status === 'closed' || busy !== null} aria-busy={busy === 'close'} onClick={onClose}>
           {busy === 'close' ? (english ? 'Closing…' : 'Cerrando…') : (english ? 'Close alert' : 'Cerrar alerta')}
@@ -381,12 +409,12 @@ function AlertDetail({
       <div className="alerts-timeline">
         <h3>{english ? 'Timeline' : 'Línea de tiempo'}</h3>
         {audit.length === 0 ? (
-          <p>• {english ? 'Created by the scenario, with no later actions.' : 'Generada por el escenario, sin acciones posteriores.'}</p>
+          <p>• {english ? 'Alert logged automatically via telemetry.' : 'Alerta registrada automáticamente por telemetría.'}</p>
         ) : (
           <ul>
             {audit.map((item) => (
               <li key={item.id}>
-                • {auditActionLabel(item.action)} · {stamp(item.at, english).day}, {stamp(item.at, english).time} · {roleLabel(item.actor)} · {systemText(item.detail)}
+                • {auditActionLabel(item.action, english ? 'en' : 'es')} · {stamp(item.at, english).day}, {stamp(item.at, english).time} · {roleLabel(item.actor, english ? 'en' : 'es')} · {systemText(item.detail, english ? 'en' : 'es')}
               </li>
             ))}
           </ul>

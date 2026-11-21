@@ -4,10 +4,11 @@ import { HeliosLogo } from '../../components/HeliosLogo'
 import { LocaleThemeSwitch } from '../../components/LocaleThemeSwitch'
 import { OrbitalBackdrop } from '../../components/role/RoleArt'
 import { QuironFigure } from '../../components/quiron/QuironFigure'
+import { ColdStartNotice, useColdStartTimer } from '../../components/ColdStartNotice'
 import { useLocale } from '../../i18n'
-import { platformApi, type Profile } from '../../platform/api'
+import { getCachedProfiles, platformApi, type Profile } from '../../platform/api'
 import { ROLE_CARDS } from '../../platform/roleCatalog'
-import { clearActiveMission, setSession } from '../../platform/session'
+import { setActiveMissionId, setSession } from '../../platform/session'
 import {
   DEMO_ROLE_PROFILES,
   type WorkspaceRole,
@@ -23,28 +24,33 @@ export function EnterPage() {
   const navigate = useNavigate()
   const { lang } = useLocale()
   const en = lang === 'en'
-  const [profiles, setProfiles] = useState<Profile[]>([])
-  const [loading, setLoading] = useState(true)
+  const [profiles, setProfiles] = useState<Profile[]>(() => getCachedProfiles())
+  const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState<string | null>(null)
   const [selected, setSelected] = useState<WorkspaceRole | null>(null)
 
+  const { showNotice, elapsed } = useColdStartTimer(Boolean(busy || (loading && profiles.length === 0)), 2200)
+
   useEffect(() => {
     document.title = en ? 'HELIOS · Explore' : 'HELIOS · Explorar'
     let alive = true
-    setLoading(true)
+    // Warm up backend and fetch live profiles without blocking initial render
     platformApi.profiles()
       .then((data) => {
-        if (alive) setProfiles(data.profiles)
+        if (alive && data.profiles?.length) setProfiles(data.profiles)
       })
       .catch((err: Error) => {
-        if (alive) setError(err.message || (en ? 'Could not load roles' : 'No se pudieron cargar los roles'))
+        // Only set error if we don't already have profiles
+        if (alive && profiles.length === 0) {
+          setError(err.message || (en ? 'Could not load roles' : 'No se pudieron cargar los roles'))
+        }
       })
       .finally(() => {
         if (alive) setLoading(false)
       })
     return () => { alive = false }
-  }, [en])
+  }, [en, profiles.length])
 
   async function explore(role: WorkspaceRole) {
     setSelected(role)
@@ -66,8 +72,8 @@ export function EnterPage() {
         title: result.profile.title,
         demoRole: result.profile.demoRole,
       })
-      clearActiveMission()
       clearWorkspace()
+      setActiveMissionId('mission-demo-horizon')
       setWorkspaceRole(role)
       setWorkspaceMode('demo')
       setDemoExplore(true)
@@ -84,7 +90,9 @@ export function EnterPage() {
       <div className="enter-bg" aria-hidden="true">
         <OrbitalBackdrop className="enter-orbit" />
       </div>
-      {(loading || busy) ? (
+      {showNotice ? (
+        <ColdStartNotice en={en} elapsed={elapsed} variant="overlay" />
+      ) : (busy || (loading && profiles.length === 0)) ? (
         <div className="plat-loader" role="status" aria-live="polite">
           <span className="plat-spinner" aria-hidden="true" />
           <p>{busy ? (en ? 'Opening experience…' : 'Abriendo experiencia…') : (en ? 'Loading…' : 'Cargando…')}</p>

@@ -196,7 +196,7 @@ export async function askQuiron(options: {
   // ── 4. Dashboard general fallback (mission resources / comms) ────────────────
   const general = answerPublicLocal(trimmed, locale, options.historyConsent ? options.history : [])
   const mission =
-    state && /mision|misión|mission|destino|destination|enlace|comunic|link|communicat|inventar|recurso|resource|prepar/i.test(trimmed)
+    state && /mision|misión|mission|destino|destination|enlace|comunic|link|communicat|inventar|recurso|resource|preembarque|checklist/i.test(trimmed)
       ? systemText(answerMissionLocal(state, trimmed, locale), locale)
       : general.text
   return {

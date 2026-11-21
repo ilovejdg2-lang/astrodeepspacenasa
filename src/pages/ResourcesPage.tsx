@@ -144,7 +144,7 @@ export function ResourcesPage() {
       <section className="inv-moves">
         <h2>{en ? 'Movements' : 'Movimientos'}</h2>
         {state.movements.length === 0 ? (
-          <p>{en ? 'There are no movements in this scenario yet.' : 'Todavía no hay movimientos en este escenario.'}</p>
+          <p className="inv-moves-empty">{en ? 'There are no movements in this scenario yet.' : 'Todavía no hay movimientos en este escenario.'}</p>
         ) : (
           <ul>
             {[...state.movements].reverse().map((item) => {
