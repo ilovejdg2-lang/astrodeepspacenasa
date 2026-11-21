@@ -1,4 +1,4 @@
-import { lazy, Suspense, type ReactNode } from 'react'
+import { Component, lazy, Suspense, type ReactNode } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { useWorkspaceRole } from './platform/workspace'
 import { RouteFallback } from './components/RouteFallback'
@@ -34,8 +34,51 @@ const BiomedicalPage = lazy(() =>
   import('./pages/BiomedicalPage').then((m) => ({ default: m.BiomedicalPage })),
 )
 
+class ChunkErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
+  override state = { hasError: false }
+  static getDerivedStateFromError() {
+    return { hasError: true }
+  }
+  override componentDidCatch(error: unknown) {
+    const msg = String(error instanceof Error ? error.message : error)
+    if (
+      msg.includes('dynamically imported module') ||
+      msg.includes('Expected a JavaScript-or-Wasm module script') ||
+      msg.includes('MIME type of "text/html"')
+    ) {
+      const last = Number(sessionStorage.getItem('helios_chunk_reload') || '0')
+      if (Date.now() - last > 5000) {
+        sessionStorage.setItem('helios_chunk_reload', String(Date.now()))
+        window.location.reload()
+      }
+    }
+  }
+  override render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{ padding: 32, textAlign: 'center', display: 'grid', placeContent: 'center', gap: 12 }}>
+          <p style={{ fontWeight: 650 }}>Una nueva versión del sistema está disponible.</p>
+          <button
+            type="button"
+            className="btn btn-primary"
+            style={{ margin: '0 auto' }}
+            onClick={() => window.location.reload()}
+          >
+            Actualizar aplicación
+          </button>
+        </div>
+      )
+    }
+    return this.props.children
+  }
+}
+
 function LazyPage({ children }: { children: ReactNode }) {
-  return <Suspense fallback={<RouteFallback />}>{children}</Suspense>
+  return (
+    <ChunkErrorBoundary>
+      <Suspense fallback={<RouteFallback />}>{children}</Suspense>
+    </ChunkErrorBoundary>
+  )
 }
 
 /** A crew member sees only their own health. Clinicians and psychologists have role-restricted spaces. */

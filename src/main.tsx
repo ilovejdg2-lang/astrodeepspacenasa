@@ -11,6 +11,31 @@ import { LocaleProvider } from './i18n'
 import './index.css'
 import { hardenDomAgainstExternalMutations } from './domHarden'
 
+// Auto-reload and recover when a new deployment invalidates old hashed chunks
+window.addEventListener('vite:preloadError', (event) => {
+  event.preventDefault()
+  const last = Number(sessionStorage.getItem('helios_chunk_reload') || '0')
+  if (Date.now() - last > 5000) {
+    sessionStorage.setItem('helios_chunk_reload', String(Date.now()))
+    window.location.reload()
+  }
+})
+
+window.addEventListener('error', (event) => {
+  const msg = String(event?.message || '')
+  if (
+    msg.includes('Failed to fetch dynamically imported module') ||
+    msg.includes('Expected a JavaScript-or-Wasm module script') ||
+    msg.includes('error loading dynamically imported module')
+  ) {
+    const last = Number(sessionStorage.getItem('helios_chunk_reload') || '0')
+    if (Date.now() - last > 5000) {
+      sessionStorage.setItem('helios_chunk_reload', String(Date.now()))
+      window.location.reload()
+    }
+  }
+})
+
 hardenDomAgainstExternalMutations()
 
 const root = document.getElementById('root')
