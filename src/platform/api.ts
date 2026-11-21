@@ -155,7 +155,7 @@ function errorMessage(status: number, data: unknown) {
 import { getActiveMissionId, getSessionToken } from './session'
 import { careConversationSchema, careDraftSchema, type CareAiOptions } from '../../shared/careSchema'
 
-async function platformFetch<T>(path: string, init?: RequestInit, retries = 2): Promise<T> {
+async function platformFetch<T>(path: string, init?: RequestInit, retries = 2, timeoutMs = 6000): Promise<T> {
   const headers = new Headers(init?.headers)
   headers.set('Accept', 'application/json')
   headers.set('Accept-Language', uiLang())
@@ -167,20 +167,29 @@ async function platformFetch<T>(path: string, init?: RequestInit, retries = 2): 
 
   for (let attempt = 0; attempt <= retries; attempt++) {
     let response: Response
+    const controller = new AbortController()
+    const timer = setTimeout(() => controller.abort(), timeoutMs)
     try {
-      response = await fetch(apiUrl(path), { ...init, headers })
+      response = await fetch(apiUrl(path), {
+        ...init,
+        headers,
+        signal: init?.signal || controller.signal,
+      })
     } catch {
+      clearTimeout(timer)
       if (attempt < retries) {
-        await new Promise((r) => setTimeout(r, 2000))
+        await new Promise((r) => setTimeout(r, 1000))
         continue
       }
       throw new Error(connectionMessage())
+    } finally {
+      clearTimeout(timer)
     }
 
     if (!response.ok) {
       // When Render is waking up from cold-start, reverse proxies return 502/503/504
       if ((response.status === 502 || response.status === 503 || response.status === 504) && attempt < retries) {
-        await new Promise((r) => setTimeout(r, 2000))
+        await new Promise((r) => setTimeout(r, 1000))
         continue
       }
       const data = await response.json().catch(() => ({}))
@@ -213,7 +222,8 @@ export const platformApi = {
           method: 'POST',
           body: JSON.stringify({ profileId }),
         },
-        3,
+        1,
+        4000,
       )
     } catch (err) {
       const cached = getCachedProfiles()
