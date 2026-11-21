@@ -90,6 +90,9 @@
   box-sizing: border-box;
   min-height: 44px; height: 44px;
   padding: 0 16px;
+  max-width: 170px;
+  overflow: hidden;
+  text-overflow: ellipsis;
   border: 1px solid rgba(56, 189, 248, 0.4);
   border-radius: 999px;
   background: rgba(56, 189, 248, 0.1);
@@ -122,13 +125,14 @@
   min-height: 44px; height: 44px;
   padding: 0 16px;
   border: 0; border-radius: 999px;
-  background: #f5004f; color: #fff;
+  background: var(--accent, #f5004f); color: var(--accent-ink, #fff);
   font: inherit; font-weight: 800; font-size: 0.88rem;
   letter-spacing: -0.01em;
   cursor: pointer;
-  box-shadow: 0 6px 16px color-mix(in srgb, #f5004f 35%, transparent);
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--accent, #f5004f) 35%, transparent);
   white-space: nowrap;
   flex-shrink: 0;
+  transition: filter 140ms ease, box-shadow 140ms ease;
 }
 .role-switch-short { display: none; }
 .role-switch-trigger:hover { filter: brightness(1.06); }
@@ -184,7 +188,7 @@
   .role-switch-trigger { padding: 0 14px; min-width: 64px; min-height: 44px; height: 44px; }
   .mission-switch-long { display: none; }
   .mission-switch-short { display: inline; }
-  .mission-switch-trigger { padding: 0 12px; min-height: 44px; height: 44px; }
+  .mission-switch-trigger { padding: 0 10px; max-width: 110px; min-height: 44px; height: 44px; font-size: 0.8rem; }
   .role-switch-layer {
     align-items: end;
     padding: 12px 12px calc(12px + env(safe-area-inset-bottom, 0px));
@@ -297,7 +301,7 @@
   min-height: 36px; height: 36px;
   min-width: 7.5rem; padding: 0 12px;
   border-radius: 999px; border: 0;
-  background: var(--rd-accent, var(--rd-fucsia, #d46a8e)); color: #fff;
+  background: var(--accent, var(--rd-accent, #0d9488)); color: var(--accent-ink, #fff);
   font: inherit; font-weight: 700; font-size: 0.82rem;
   line-height: 1; text-decoration: none; cursor: pointer;
   white-space: nowrap;

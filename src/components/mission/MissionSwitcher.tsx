@@ -361,8 +361,8 @@ export function MissionSwitcher() {
               {' · '}
               {stageLabel(currentStage, en)}
             </span>
-            <span className="mission-switch-short">
-              {missionName.replace('HELIOS ', '')}
+            <span className="mission-switch-short" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {missionName.replace(/^HELIOS\s+/i, '').replace(/\s*—.*$/, '').trim()}
             </span>
           </>
         )}

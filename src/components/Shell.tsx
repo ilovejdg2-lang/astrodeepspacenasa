@@ -233,7 +233,7 @@ export function Shell({ children }: { children: ReactNode }) {
                                   ? 'is-medical'
                                   : workspaceRole === 'crew'
                                     ? 'is-myhealth'
-                                    : 'is-monitor')
+                                    : 'is-mission')
                             : 'is-monitor'
 
   const workspaceClass = isBiomedical
@@ -341,7 +341,7 @@ export function Shell({ children }: { children: ReactNode }) {
         </aside>
         <div className={workspaceClass}>
           <Suspense fallback={null}>
-            {(isMonitor || (isHome && workspaceRole === 'chief')) ? <EcgBackdrop /> : null}
+            {isMonitor ? <EcgBackdrop /> : null}
             {isCrew ? <CrewBackdrop /> : null}
             {isAlerts ? <AlertsBackdrop /> : null}
             {isResources ? <ResourcesBackdrop /> : null}
@@ -350,7 +350,7 @@ export function Shell({ children }: { children: ReactNode }) {
             {isBiomedical ? <BiomedicalBackdrop /> : null}
             {(isMyHealth || (isHome && workspaceRole === 'crew')) ? <HealthBackdrop /> : null}
             {isMemories ? <MemoriesBackdrop /> : null}
-            {isMission ? <MissionBackdrop /> : null}
+            {(isMission || (isHome && workspaceRole === 'chief')) ? <MissionBackdrop /> : null}
             {isRisks ? <RisksBackdrop /> : null}
             {(isHome && workspaceRole === 'psychologist') ? <PsychologyBackdrop /> : null}
             {isSpace ? <SpaceBackdrop /> : null}

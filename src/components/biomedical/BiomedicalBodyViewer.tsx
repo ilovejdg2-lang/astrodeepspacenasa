@@ -504,7 +504,7 @@ export function BiomedicalBodyViewer({
         // Halo ring
         const ringGeo = new THREE.RingGeometry(0.046, 0.062, 32)
         const ringMat = new THREE.MeshBasicMaterial({
-          color: isSelected ? 0xff0055 : color,
+          color: isSelected ? 0x0d9488 : color,
           side: THREE.DoubleSide,
           transparent: true,
           opacity: isSelected ? 0.95 : 0.6,
@@ -528,7 +528,7 @@ export function BiomedicalBodyViewer({
           } else {
             ctx.rect(4, 4, 248, 64)
           }
-          ctx.fillStyle = isSelected ? '#ec4899' : '#1e131d'
+          ctx.fillStyle = isSelected ? '#0d9488' : '#1e131d'
           ctx.fill()
           ctx.lineWidth = 4
           ctx.strokeStyle = isSelected ? '#ffffff' : hex
@@ -837,7 +837,7 @@ export function BiomedicalBodyViewer({
                       onSelectMark?.(mark.id)
                     }}
                   >
-                    <circle cx={pinX} cy={pinY} r={isSelected ? 18 : 14} fill={isSelected ? '#ec4899' : '#f5004f'} stroke="#ffffff" strokeWidth="3" />
+                    <circle cx={pinX} cy={pinY} r={isSelected ? 18 : 14} fill={isSelected ? '#0d9488' : '#14b8a6'} stroke="#ffffff" strokeWidth="3" />
                     <text x={pinX} y={pinY + 4} textAnchor="middle" fill="#ffffff" fontSize="12" fontWeight="bold">
                       {index + 1}
                     </text>

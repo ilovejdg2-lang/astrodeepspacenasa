@@ -114,10 +114,11 @@ export function MyHealthPage() {
                 gap: 8,
                 padding: '10px 18px',
                 textDecoration: 'none',
-                background: '#ec4899',
-                color: '#ffffff',
-                fontWeight: 600,
+                background: 'var(--accent, #e11d48)',
+                color: 'var(--accent-ink, #ffffff)',
+                fontWeight: 650,
                 borderRadius: 10,
+                boxShadow: '0 4px 14px color-mix(in srgb, var(--accent, #e11d48) 35%, transparent)',
               }}
             >
               <CalendarDays size={16} aria-hidden="true" />

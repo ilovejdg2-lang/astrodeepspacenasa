@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
-import { CalendarDays, Activity, Brain, BookOpen, ChevronRight, ShieldCheck, ShieldAlert, ArrowRight } from 'lucide-react'
+import { CalendarDays, Activity, BookOpen, ChevronRight, ShieldCheck, ShieldAlert, ArrowRight } from 'lucide-react'
 import { SharedCareSummaries } from '../../components/quiron/SharedCareSummaries'
 import { InfoHelp } from '../../components/InfoHelp'
 import { useLocale } from '../../i18n'
@@ -115,21 +115,6 @@ export function MedicHome() {
             </p>
             <span className="rd-action-card-arrow">
               {en ? 'Open 3D insights' : 'Abrir modelo 3D'} <ArrowRight size={14} aria-hidden="true" />
-            </span>
-          </Link>
-
-          <Link to="/app/analisis" className="rd-action-card">
-            <div className="rd-action-card-head">
-              <Brain size={20} style={{ color: 'var(--rd-accent, #ec4899)' }} aria-hidden="true" />
-              <strong>{en ? 'Quirón AI Analysis' : 'Análisis con Quirón IA'}</strong>
-            </div>
-            <p>
-              {en
-                ? 'Comprehensive AI diagnostic assistance, trend correlation, and flight medicine evaluation.'
-                : 'Asistencia diagnóstica con IA, correlación de tendencias y evaluación clínica aeroespacial.'}
-            </p>
-            <span className="rd-action-card-arrow">
-              {en ? 'Open analysis' : 'Abrir análisis'} <ArrowRight size={14} aria-hidden="true" />
             </span>
           </Link>
 
