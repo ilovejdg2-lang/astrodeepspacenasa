@@ -1,5 +1,5 @@
 import * as Tooltip from '@radix-ui/react-tooltip'
-import { Activity, AlertTriangle, Box, BookOpen, CalendarDays, Heart, History, Image as ImageIcon, Lock, Menu, Moon, Rocket, Sun, X } from 'lucide-react'
+import { Activity, AlertTriangle, Box, BookOpen, CalendarDays, Heart, History, Image as ImageIcon, Lock, Menu, Moon, Sun, X } from 'lucide-react'
 import { lazy, Suspense, useEffect, useRef, useState, type ReactNode, type SVGProps } from 'react'
 import { Link, NavLink, useLocation } from 'react-router-dom'
 import { profileTitle, roleLabel } from '../platform/copy'
@@ -116,7 +116,6 @@ export function Shell({ children }: { children: ReactNode }) {
   const resourcesLink = { to: '/app/recursos', label: shell.resources, icon: Box, end: false }
   const historyLink = { to: '/app/historial', label: shell.history, icon: History, end: false }
   const medicalLink = { to: '/app/citas', label: shell.medical, icon: CalendarDays, end: false }
-  const missionLink = { to: '/app/mision', label: shell.mission, icon: Rocket, end: false }
   const risksLink = { to: '/app/riesgos', label: shell.risks, icon: BookOpen, end: false }
   const profileRole = profile?.demoRole === 'psychologist' || profile?.id === 'alex-morgan' ? 'psychologist'
     : profile?.demoRole === 'medic' || profile?.id === 'sofia-chen' ? 'medic'
@@ -157,7 +156,6 @@ export function Shell({ children }: { children: ReactNode }) {
       memoriesLink,
       resourcesLink,
       historyLink,
-      missionLink,
       risksLink,
     ]
   }
@@ -233,7 +231,7 @@ export function Shell({ children }: { children: ReactNode }) {
                                   ? 'is-medical'
                                   : workspaceRole === 'crew'
                                     ? 'is-myhealth'
-                                    : 'is-mission')
+                                    : 'is-monitor')
                             : 'is-monitor'
 
   const workspaceClass = isBiomedical
@@ -341,7 +339,7 @@ export function Shell({ children }: { children: ReactNode }) {
         </aside>
         <div className={workspaceClass}>
           <Suspense fallback={null}>
-            {isMonitor ? <EcgBackdrop /> : null}
+            {(isMonitor || (isHome && workspaceRole === 'chief')) ? <EcgBackdrop /> : null}
             {isCrew ? <CrewBackdrop /> : null}
             {isAlerts ? <AlertsBackdrop /> : null}
             {isResources ? <ResourcesBackdrop /> : null}
@@ -350,7 +348,7 @@ export function Shell({ children }: { children: ReactNode }) {
             {isBiomedical ? <BiomedicalBackdrop /> : null}
             {(isMyHealth || (isHome && workspaceRole === 'crew')) ? <HealthBackdrop /> : null}
             {isMemories ? <MemoriesBackdrop /> : null}
-            {(isMission || (isHome && workspaceRole === 'chief')) ? <MissionBackdrop /> : null}
+            {isMission ? <MissionBackdrop /> : null}
             {isRisks ? <RisksBackdrop /> : null}
             {(isHome && workspaceRole === 'psychologist') ? <PsychologyBackdrop /> : null}
             {isSpace ? <SpaceBackdrop /> : null}

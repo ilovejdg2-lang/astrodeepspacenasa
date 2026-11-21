@@ -88,11 +88,24 @@ export function MyHealthPage() {
       <OfflineSyncBar />
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 16 }}>
-        <section className="rd-card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: 12, border: '1px solid rgba(236, 72, 153, 0.35)', background: 'linear-gradient(180deg, rgba(236, 72, 153, 0.08) 0%, rgba(20, 20, 30, 0.6) 100%)' }}>
+        <section
+          className="rd-card"
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between',
+            gap: 12,
+            border: '1px solid color-mix(in srgb, #2563eb 25%, var(--line))',
+            background: 'var(--surface)',
+            borderRadius: 16,
+            padding: 20,
+            boxShadow: '0 4px 16px rgba(0, 0, 0, 0.04)',
+          }}
+        >
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-              <CalendarDays size={20} strokeWidth={2} style={{ color: '#ec4899' }} aria-hidden="true" />
-              <p className="rd-kicker" style={{ margin: 0 }}>
+              <CalendarDays size={20} strokeWidth={2} style={{ color: '#2563eb' }} aria-hidden="true" />
+              <p className="rd-kicker" style={{ margin: 0, color: '#2563eb' }}>
                 {en ? 'Medical & Psychological Care' : 'Atención médica y psicológica'}
               </p>
             </div>
@@ -114,11 +127,11 @@ export function MyHealthPage() {
                 gap: 8,
                 padding: '10px 18px',
                 textDecoration: 'none',
-                background: 'var(--accent, #e11d48)',
-                color: 'var(--accent-ink, #ffffff)',
+                background: '#2563eb',
+                color: '#ffffff',
                 fontWeight: 650,
                 borderRadius: 10,
-                boxShadow: '0 4px 14px color-mix(in srgb, var(--accent, #e11d48) 35%, transparent)',
+                boxShadow: '0 4px 14px rgba(37, 99, 235, 0.3)',
               }}
             >
               <CalendarDays size={16} aria-hidden="true" />
@@ -126,18 +139,31 @@ export function MyHealthPage() {
               <ArrowRight size={14} aria-hidden="true" />
             </Link>
             {upcomingCount > 0 ? (
-              <span style={{ fontSize: '0.82rem', color: '#67e8f9', textAlign: 'center' }}>
+              <span style={{ fontSize: '0.82rem', color: '#2563eb', textAlign: 'center', fontWeight: 600 }}>
                 {en ? `● ${upcomingCount} upcoming appointment(s)` : `● ${upcomingCount} cita(s) próxima(s) agendada(s)`}
               </span>
             ) : null}
           </div>
         </section>
 
-        <section className="rd-card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: 12, border: '1px solid rgba(255, 77, 106, 0.35)', background: 'linear-gradient(180deg, rgba(255, 77, 106, 0.08) 0%, rgba(20, 20, 30, 0.6) 100%)' }}>
+        <section
+          className="rd-card"
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between',
+            gap: 12,
+            border: '1px solid color-mix(in srgb, #0d9488 25%, var(--line))',
+            background: 'var(--surface)',
+            borderRadius: 16,
+            padding: 20,
+            boxShadow: '0 4px 16px rgba(0, 0, 0, 0.04)',
+          }}
+        >
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-              <Activity size={20} strokeWidth={2} style={{ color: '#ff4d6a' }} aria-hidden="true" />
-              <p className="rd-kicker" style={{ margin: 0 }}>{en ? 'Physiological Telemetry' : 'Telemetría fisiológica'}</p>
+              <Activity size={20} strokeWidth={2} style={{ color: '#0d9488' }} aria-hidden="true" />
+              <p className="rd-kicker" style={{ margin: 0, color: '#0d9488' }}>{en ? 'Physiological Telemetry' : 'Telemetría fisiológica'}</p>
             </div>
             <h2 style={{ margin: '4px 0 6px' }}>{en ? 'Biomedical Insights' : 'Perspectivas biomédicas'}</h2>
             <p className="rd-muted" style={{ margin: 0, fontSize: '0.9rem' }}>
@@ -159,6 +185,10 @@ export function MyHealthPage() {
                 textDecoration: 'none',
                 width: '100%',
                 borderRadius: 10,
+                background: '#0d9488',
+                color: '#ffffff',
+                fontWeight: 650,
+                boxShadow: '0 4px 14px rgba(13, 148, 136, 0.3)',
               }}
             >
               <Activity size={16} aria-hidden="true" />

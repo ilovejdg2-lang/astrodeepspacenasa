@@ -8,21 +8,21 @@ export function HealthBackdrop() {
           <path
             d="M 80 340 L 250 340 L 280 310 L 310 390 L 350 180 L 390 440 L 420 330 L 450 350 L 490 340 L 780 340"
             stroke="#f43f5e"
-            strokeWidth="20"
-            opacity="0.8"
+            strokeWidth="10"
+            opacity="0.35"
           />
 
           {/* Halo de pulso vital */}
-          <circle cx="350" cy="180" r="42" stroke="#fb7185" strokeWidth="12" fill="#ffe4e6" fillOpacity="0.4" />
-          <circle cx="350" cy="180" r="16" fill="#e11d48" opacity="0.6" />
+          <circle cx="350" cy="180" r="38" stroke="#fb7185" strokeWidth="6" fill="#ffe4e6" fillOpacity="0.25" />
+          <circle cx="350" cy="180" r="12" fill="#e11d48" opacity="0.35" />
 
           {/* Anillos de expansión de latido */}
-          <ellipse cx="430" cy="340" rx="280" ry="140" stroke="#fda4af" strokeWidth="8" strokeDasharray="18 14" opacity="0.5" />
-          <ellipse cx="430" cy="340" rx="340" ry="180" stroke="#fecdd3" strokeWidth="6" opacity="0.4" />
+          <ellipse cx="430" cy="340" rx="280" ry="140" stroke="#fda4af" strokeWidth="4" strokeDasharray="18 14" opacity="0.25" />
+          <ellipse cx="430" cy="340" rx="340" ry="180" stroke="#fecdd3" strokeWidth="3" opacity="0.2" />
 
           {/* Marcadores de telemetría de salud somática */}
-          <circle cx="250" cy="340" r="14" fill="#fb7185" />
-          <circle cx="490" cy="340" r="14" fill="#fb7185" />
+          <circle cx="250" cy="340" r="8" fill="#fb7185" opacity="0.4" />
+          <circle cx="490" cy="340" r="8" fill="#fb7185" opacity="0.4" />
         </g>
       </svg>
     </div>

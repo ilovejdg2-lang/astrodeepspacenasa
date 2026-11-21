@@ -6127,34 +6127,63 @@ html.tab-hidden .skeleton {
 
 .workspace-biomedical {
   background: linear-gradient(115deg, #e6fffa 0%, #f0fdfa 25%, #e0f2fe 65%, #f0fdf4 100%);
+  --accent: #0d9488;
+  --accent-soft: #ccfbf1;
+  --accent-ink: #ffffff;
+  --rd-accent: #0d9488;
+  --rd-wash: #ccfbf1;
 }
 
 .workspace-myhealth {
   background: linear-gradient(125deg, #fff1f2 0%, #ffe4e6 30%, #fdf2f8 70%, #fae8ff 100%);
+  --accent: #e11d48;
+  --accent-soft: #ffe4ec;
+  --accent-ink: #ffffff;
 }
 
 .workspace-memories {
   background: linear-gradient(125deg, #fff7ed 0%, #ffedd5 30%, #fce7f3 65%, #fdf2f8 100%);
+  --accent: #ea580c;
+  --accent-soft: #ffedd5;
+  --accent-ink: #ffffff;
 }
 
 .workspace-mission {
   background: linear-gradient(120deg, #f0fdf4 0%, #dcfce7 35%, #ecfdf5 70%, #e0f2fe 100%);
+  --accent: #059669;
+  --accent-soft: #d1fae5;
+  --accent-ink: #ffffff;
 }
 
 .workspace-risks {
   background: linear-gradient(125deg, #fffbeb 0%, #fef3c7 40%, #fde68a 70%, #ffedd5 100%);
+  --accent: #b45309;
+  --accent-soft: #fef3c7;
+  --accent-ink: #ffffff;
+  --rb-accent: #b45309;
+  --rb-soft: #fef3c7;
+  --rb-line: #fde68a;
 }
 
 .workspace-psychology {
   background: linear-gradient(120deg, #faf5ff 0%, #f3e8ff 45%, #ede9fe 75%, #fce7f3 100%);
+  --accent: #7c3aed;
+  --accent-soft: #ede9fe;
+  --accent-ink: #ffffff;
 }
 
 .workspace-space {
   background: linear-gradient(120deg, #eef2ff 0%, #e0e7ff 45%, #ede9fe 80%, #f1f5f9 100%);
+  --accent: #4f46e5;
+  --accent-soft: #e0e7ff;
+  --accent-ink: #ffffff;
 }
 
 .workspace-analysis {
   background: linear-gradient(108deg, #e4f4f4 0%, #e7eef1 28%, #ece7ef 52%, #f4e3ee 78%, #f7dceb 100%);
+  --accent: #7a3e9d;
+  --accent-soft: #f3e8ff;
+  --accent-ink: #ffffff;
 }
 
 /* Backdrops por sección */
@@ -6186,7 +6215,7 @@ html.tab-hidden .skeleton {
   height: auto;
   right: -2%;
   top: 8%;
-  opacity: 0.85;
+  opacity: 0.22;
 }
 
 .an-page {
@@ -6299,34 +6328,63 @@ html.tab-hidden .skeleton {
 
 :root[data-theme="dark"] .workspace-biomedical {
   background: linear-gradient(115deg, #042f2e 0%, #083344 50%, #0b1e2e 100%);
+  --accent: #14b8a6;
+  --accent-soft: #083344;
+  --accent-ink: #000000;
+  --rd-accent: #14b8a6;
+  --rd-wash: #083344;
 }
 
 :root[data-theme="dark"] .workspace-myhealth {
   background: linear-gradient(125deg, #2b1118 0%, #38121f 50%, #261129 100%);
+  --accent: #f43f5e;
+  --accent-soft: #38121f;
+  --accent-ink: #ffffff;
 }
 
 :root[data-theme="dark"] .workspace-memories {
   background: linear-gradient(125deg, #2a1515 0%, #301728 50%, #1f122e 100%);
+  --accent: #f97316;
+  --accent-soft: #301728;
+  --accent-ink: #000000;
 }
 
 :root[data-theme="dark"] .workspace-mission {
   background: linear-gradient(120deg, #052e16 0%, #064e3b 50%, #092f3a 100%);
+  --accent: #10b981;
+  --accent-soft: #064e3b;
+  --accent-ink: #000000;
 }
 
 :root[data-theme="dark"] .workspace-risks {
   background: linear-gradient(125deg, #291e0a 0%, #38280f 50%, #2a1808 100%);
+  --accent: #f59e0b;
+  --accent-soft: #38280f;
+  --accent-ink: #000000;
+  --rb-accent: #f59e0b;
+  --rb-soft: #38280f;
+  --rb-line: #70581f;
 }
 
 :root[data-theme="dark"] .workspace-psychology {
   background: linear-gradient(120deg, #201335 0%, #27163f 50%, #1e1329 100%);
+  --accent: #8b5cf6;
+  --accent-soft: #27163f;
+  --accent-ink: #ffffff;
 }
 
 :root[data-theme="dark"] .workspace-space {
   background: linear-gradient(120deg, #0f172a 0%, #1e1b4b 50%, #172554 100%);
+  --accent: #6366f1;
+  --accent-soft: #1e1b4b;
+  --accent-ink: #ffffff;
 }
 
 :root[data-theme="dark"] .workspace-analysis {
   background: linear-gradient(108deg, #142428 0%, #221c28 52%, #2a1824 100%);
+  --accent: #a855f7;
+  --accent-soft: #2a1c32;
+  --accent-ink: #000000;
 }
 
 :root[data-theme="dark"] .biomed-mark,
@@ -6337,7 +6395,7 @@ html.tab-hidden .skeleton {
 :root[data-theme="dark"] .psych-mark,
 :root[data-theme="dark"] .space-mark,
 :root[data-theme="dark"] .an-mark {
-  opacity: 0.4;
+  opacity: 0.16;
 }
 
 :root[data-theme="dark"] .an-page,

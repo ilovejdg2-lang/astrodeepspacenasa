@@ -1,8 +1,8 @@
 /* NASA Risks · emergency briefing layout */
 .risks-brief {
-  --rb-accent: var(--accent);
-  --rb-line: color-mix(in srgb, var(--accent) 35%, var(--line));
-  --rb-soft: var(--accent-soft);
+  --rb-accent: var(--accent, #b45309);
+  --rb-line: color-mix(in srgb, var(--accent, #b45309) 35%, var(--line));
+  --rb-soft: var(--accent-soft, #fef3c7);
   display: grid;
   gap: 16px;
   max-width: 960px;
@@ -62,13 +62,18 @@
 .risks-brief-tabs button:focus-visible,
 .risks-brief-hazard:focus-visible,
 .risks-guide-actions .btn:focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--accent, #b45309);
   outline-offset: 2px;
 }
 .risks-brief-tabs button[aria-selected='true'] {
-  border-color: var(--rb-line);
-  background: var(--rb-soft);
-  color: var(--rb-accent);
+  border-color: var(--rb-accent);
+  background: var(--rb-accent);
+  color: var(--accent-ink, #ffffff);
+}
+:root[data-theme="dark"] .risks-brief-tabs button[aria-selected='true'] {
+  border-color: var(--rb-accent);
+  background: var(--rb-accent);
+  color: #000000;
 }
 .risks-brief-grid {
   display: grid;
@@ -108,9 +113,10 @@
   line-height: 1.3;
 }
 .risks-brief-hazard.is-on {
-  border-color: var(--accent);
-  background: var(--accent-soft);
+  border-color: var(--rb-accent);
+  background: var(--rb-soft);
   color: var(--ink);
+  font-weight: 700;
 }
 .risks-guide-detail {
   display: grid;
@@ -143,8 +149,8 @@
   align-content: start;
   padding: 16px;
   border-radius: 16px;
-  border: 1px solid var(--line);
-  background: color-mix(in srgb, var(--accent-soft) 55%, var(--surface));
+  border: 1px solid var(--rb-line);
+  background: color-mix(in srgb, var(--rb-soft) 55%, var(--surface));
   min-width: 0;
 }
 .risks-guide-pair h3 {
@@ -153,7 +159,7 @@
   font-weight: 750;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: var(--accent);
+  color: var(--rb-accent);
 }
 .risks-guide-pair ul {
   margin: 0;
@@ -173,11 +179,11 @@
   height: 7px;
   margin-right: 8px;
   border-radius: 999px;
-  background: var(--accent);
+  background: var(--rb-accent);
   transform: translateY(-1px);
 }
 .risks-brief-meta a {
-  color: var(--accent);
+  color: var(--rb-accent);
   font-weight: 650;
   text-decoration: none;
 }
@@ -192,6 +198,14 @@
 }
 .risks-guide-actions .btn {
   min-height: 44px;
+}
+.risks-guide-actions .btn.btn-primary {
+  background: var(--rb-accent) !important;
+  color: var(--accent-ink, #ffffff) !important;
+  border-color: transparent !important;
+}
+.risks-guide-actions .btn.btn-primary:hover {
+  filter: brightness(1.08);
 }
 .risks-brief-panel {
   padding: 12px 14px;

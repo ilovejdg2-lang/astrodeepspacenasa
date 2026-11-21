@@ -1,8 +1,11 @@
 /* —— Biomedical Insights Styles —— */
 
 .biomedical-page {
-  --rd-accent: var(--accent, #0d9488);
-  --rd-wash: var(--accent-soft, #ccfbf1);
+  --accent: #0d9488;
+  --accent-soft: #ccfbf1;
+  --accent-ink: #ffffff;
+  --rd-accent: #0d9488;
+  --rd-wash: #ccfbf1;
   display: grid;
   gap: 22px;
   min-width: 0;
@@ -33,7 +36,7 @@
   background: color-mix(in srgb, var(--rd-wash, #efe8f8) 75%, transparent);
   padding: 8px 12px;
   border-radius: 14px;
-  border: 1px solid color-mix(in srgb, var(--rd-accent, #d46a8e) 24%, transparent);
+  border: 1px solid color-mix(in srgb, var(--rd-accent, #0d9488) 24%, transparent);
 }
 
 .biomed-patient-label {
@@ -213,9 +216,9 @@
 }
 
 .rd-btn-xs.is-active {
-  background: var(--rd-accent, #d46a8e);
+  background: var(--rd-accent, #0d9488);
   color: #fff;
-  border-color: var(--rd-accent, #d46a8e);
+  border-color: var(--rd-accent, #0d9488);
 }
 
 .rd-btn-xs.ghost:hover {
@@ -340,8 +343,8 @@
   width: 3px;
   height: 12px;
   border-radius: 3px;
-  background: var(--rd-accent, #ff2d6a);
-  box-shadow: 0 0 4px var(--rd-accent, #ff2d6a);
+  background: var(--rd-accent, #0d9488);
+  box-shadow: 0 0 4px var(--rd-accent, #0d9488);
   transform-origin: 50% 12px;
 }
 
@@ -374,15 +377,15 @@
 }
 
 .biomed-svg-part:hover {
-  fill: #ffe4ec;
-  stroke: var(--rd-accent, #f5004f);
+  fill: #ccfbf1;
+  stroke: var(--rd-accent, #0d9488);
 }
 
 .biomed-svg-part.is-active {
-  fill: #ffd1dc;
-  stroke: var(--rd-accent, #f5004f);
+  fill: #99f6e4;
+  stroke: var(--rd-accent, #0d9488);
   stroke-width: 3.5px;
-  filter: drop-shadow(0 0 8px rgba(245, 0, 79, 0.4));
+  filter: drop-shadow(0 0 8px rgba(13, 148, 136, 0.4));
 }
 
 :root[data-theme="dark"] .biomed-svg-part.is-active {
@@ -420,8 +423,8 @@
 
 .biomed-system-btn:hover,
 .biomed-system-btn.is-active {
-  background: color-mix(in srgb, var(--rd-accent, #d46a8e) 14%, var(--surface, #fff));
-  border-color: var(--rd-accent, #d46a8e);
+  background: color-mix(in srgb, var(--rd-accent, #0d9488) 14%, var(--surface, #fff));
+  border-color: var(--rd-accent, #0d9488);
 }
 
 .biomed-system-btn strong {
@@ -469,8 +472,8 @@
   width: 44px;
   height: 44px;
   border-radius: 14px;
-  background: color-mix(in srgb, var(--rd-accent, #d46a8e) 15%, transparent);
-  color: var(--rd-accent, #d46a8e);
+  background: color-mix(in srgb, var(--rd-accent, #0d9488) 15%, transparent);
+  color: var(--rd-accent, #0d9488);
   flex-shrink: 0;
 }
 
@@ -853,14 +856,14 @@
 
 .biomed-chart-path {
   fill: none;
-  stroke: var(--rd-accent, #d46a8e);
+  stroke: var(--rd-accent, #0d9488);
   stroke-width: 2.5px;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
 
 .biomed-chart-dot {
-  fill: var(--rd-accent, #d46a8e);
+  fill: var(--rd-accent, #0d9488);
   stroke: var(--surface, #fff);
   stroke-width: 2px;
 }
@@ -978,7 +981,7 @@
 }
 
 .biomed-link {
-  color: var(--rd-accent, #d46a8e);
+  color: var(--rd-accent, #0d9488);
   text-decoration: underline;
   text-underline-offset: 2px;
 }
@@ -1119,7 +1122,7 @@
   padding: 12px;
   border-radius: 16px;
   background: color-mix(in srgb, var(--rd-wash, #efe8f8) 75%, transparent);
-  border: 1px solid color-mix(in srgb, var(--rd-accent, #d46a8e) 24%, transparent);
+  border: 1px solid color-mix(in srgb, var(--rd-accent, #0d9488) 24%, transparent);
 }
 
 .biomed-quiron-avatar {
@@ -1166,7 +1169,7 @@
   align-items: center;
   gap: 6px;
   font-size: 0.82rem;
-  color: var(--rd-accent, #d46a8e);
+  color: var(--rd-accent, #0d9488);
 }
 
 .biomed-disclosed-list {
@@ -1206,7 +1209,7 @@
 
 /* Link Card in MyHealth */
 .biomedical-link-card {
-  border: 1.5px solid color-mix(in srgb, var(--rd-accent, #d46a8e) 35%, transparent);
+  border: 1.5px solid color-mix(in srgb, var(--rd-accent, #0d9488) 35%, transparent);
   background:
     linear-gradient(135deg, color-mix(in srgb, var(--rd-wash, #f8e9ef) 80%, transparent), transparent 70%),
     color-mix(in srgb, var(--surface, #fff) 90%, transparent);
